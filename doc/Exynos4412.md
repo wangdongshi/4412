@@ -32,7 +32,8 @@ exynos4412上电复位时的启动流程，可参考图1。
 开发板的eMMC上有一个烧写好的Andriod系统，虽然版本比较老，但好歹也是移植成功的一个系统，为了今后便于参照，，在开发途中尽量采用SD卡作为启动介质，这样可以完全不影响eMMC上的Andriod系统。  
 
 Exynos4412从SD卡启动，需要在SD卡上写入一些RAW数据，即在不存在文件系统的情况下向SD卡写入信息，这个在Windows环境下比较困难，而Linux下由于有dd命令，因此可以轻松的胜任这一任务。因为我一直在virtualbox下使用Linux，因此首先要透过virtualbox来访问SD卡。  
-在virtualbox中，要想在虚拟机中使用宿主机的USB设备，需要安装一个virtualbox的插件————Oracle_VM_VirtualBox_Extension_Pack-X.X.XX。安装了这个扩展机能后，需要在连接SD卡读卡器的状态下，在virtualbox的Machine->settings中，在USB选项卡中设置相应的SD卡读卡器过滤器。然后断开SD卡读卡器，重启虚拟机。最后再连接SD卡读卡器，此时Windows宿主机应该会发现新设备（virtualbox的USB设备），安装驱动完成后，SD卡读卡器即可透过宿主机而变为虚拟机上的设备了。  
+在virtualbox中，要想在虚拟机中使用宿主机的USB设备，需要安装一个virtualbox的插件————Oracle_VM_VirtualBox_Extension_Pack-X.X.XX。安装了这个扩展机能后，需要在连接SD卡读卡器的状态下，在virtualbox的Machine->settings中，在USB选项卡中设置相应的SD卡读卡器过滤器。然后断开SD卡读卡器，重启虚拟机。最后再连接SD卡读卡器，此时Windows宿主机应该会发现新设备（virtualbox的USB设备），安装驱动完成后，SD卡读卡器即可透过宿主机而变为虚拟机上的设备了。当然，在Linux下，需要用以下命令来挂载SD卡（假设SD卡被识别为sdb）：  
+mount -t vfat /dev/sdb1 /mnt/sdcard
 
 再来看dd命令。dd是Linux下的一个非常有用的命令，其作用是用指定大小的块拷贝一个文件，并在拷贝的同时进行指定的转换。该命令可以直接将数据拷贝至目标存储器特定的block，因此，它可以进行很多超越文件系统的磁盘操作。（基于文件系统的写操作不能指定Block。）那么，来看看真实的dd命令的用法吧。  
 dd iflag=dsync oflag=dsync if=$1 of=$2 seek=$3  
@@ -46,8 +47,8 @@ iflag和oflag参数是指定为同步读写，到底怎么算同步，这个我�
 *图4 exynos4412的eMMC卡映像结构*  
 
 好了，闲言少序。我们来实际操作一下。我们的材料有三星提供的BL1，即E4412_N.bl1.bin文件，还有开发板配套的裸机程序，比如测试LED的x4412_led.bin文件，该怎么做呢？  
-dd iflag=dsync oflag=dsync if=~/E4412_N.bl1.bin of=/dev/sdb seek=1  
-dd iflag=dsync oflag=dsync if=~/x4412_led.bin of=/dev/sdb seek=17  
+dd iflag=dsync oflag=dsync if=/root/E4412_N.bl1.bin of=/dev/sdb seek=1  
+dd iflag=dsync oflag=dsync if=/root/x4412_led.bin of=/dev/sdb seek=17  
 
 这样应该就可以了吧。
 
