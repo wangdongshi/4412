@@ -36,7 +36,7 @@ void leds_on(unsigned int no)
 			GPX2DAT = (GPX2DAT & 0x3f) | 0x00;
 			break;
 		case LED1:
-			GPX1DAT = (GPX1DAT & 0x3f) | 0x40;
+			GPX1DAT = (GPX1DAT & 0x3f) | 0x80;
 			GPX2DAT = (GPX2DAT & 0x3f) | 0x00;
 			break;
 		case LED2:
@@ -45,7 +45,7 @@ void leds_on(unsigned int no)
 			break;
 		case LED3:
 			GPX1DAT = (GPX1DAT & 0x3f) | 0x00;
-			GPX2DAT = (GPX2DAT & 0x3f) | 0x40;
+			GPX2DAT = (GPX2DAT & 0x3f) | 0x80;
 			break;
 		default:
 			GPX1DAT = (GPX1DAT & 0x3f) | 0x00;

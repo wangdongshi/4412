@@ -103,8 +103,8 @@ echo "source file image is fused successfully."
 echo "Eject SD card and insert it to Exynos 4412 board again."
 
 
-#umount /dev/sdb1
-#eject /dev/sdb
+umount /dev/mmcblk0p1
+#eject /dev/mmcblk0
 #if [ $? -eq 0 ];then
 #	echo "Eject SD card successfully."
 #fi
