@@ -32,8 +32,8 @@ exynos4412上电复位时的启动流程，可参考图1。
 开发板的eMMC上有一个烧写好的Andriod系统，虽然版本比较老，但好歹也是移植成功的一个系统，为了今后便于参照，，在开发途中尽量采用SD卡作为启动介质，这样可以完全不影响eMMC上的Andriod系统。  
 
 Exynos4412从SD卡启动，需要在SD卡上写入一些RAW数据，即在不存在文件系统的情况下向SD卡写入信息，这个在Windows环境下比较困难，而Linux下由于有dd命令，因此可以轻松的胜任这一任务。因为我一直在virtualbox下使用Linux，因此首先要透过virtualbox来访问SD卡。  
-在virtualbox中，要想在虚拟机中使用宿主机的USB设备，需要安装一个virtualbox的插件————Oracle_VM_VirtualBox_Extension_Pack-X.X.XX。安装了这个扩展机能后，需要在连接SD卡读卡器的状态下，在virtualbox的Machine->settings中，在USB选项卡中设置相应的SD卡读卡器过滤器。然后断开SD卡读卡器，重启虚拟机。最后再连接SD卡读卡器，此时Windows宿主机应该会发现新设备（virtualbox的USB设备），安装驱动完成后，SD卡读卡器即可透过宿主机而变为虚拟机上的设备了。当然，在Linux下，需要用以下命令来挂载SD卡（假设SD卡被识别为sdb）：  
-mount -t vfat /dev/sdb1 /mnt/sdcard
+在virtualbox中，要想在虚拟机中使用宿主机的USB设备，需要安装一个virtualbox的插件：Oracle_VM_VirtualBox_Extension_Pack-X.X.XX。安装了这个扩展机能后，需要在连接SD卡读卡器的状态下，在virtualbox的Machine->settings中，在USB选项卡中设置相应的SD卡读卡器过滤器。然后断开SD卡读卡器，重启虚拟机。最后再连接SD卡读卡器，此时Windows宿主机应该会发现新设备（virtualbox的USB设备），安装驱动完成后，SD卡读卡器即可透过宿主机而变为虚拟机上的设备了。当然，在Linux下，需要用以下命令来挂载SD卡（假设SD卡被识别为mmcblk0）：  
+mount /dev/mmcblk0p1 /mnt/sdcard
 
 再来看dd命令。dd是Linux下的一个非常有用的命令，其作用是用指定大小的块拷贝一个文件，并在拷贝的同时进行指定的转换。该命令可以直接将数据拷贝至目标存储器特定的block，因此，它可以进行很多超越文件系统的磁盘操作。（基于文件系统的写操作不能指定Block。）那么，来看看真实的dd命令的用法吧。  
 dd iflag=dsync oflag=dsync if=$1 of=$2 seek=$3  
@@ -46,11 +46,23 @@ iflag和oflag参数是指定为同步读写，到底怎么算同步，这个我�
 ![图4](https://github.com/wangdongshi/4412/blob/master/res/eMMC_image_format.jpg)  
 *图4 exynos4412的eMMC卡映像结构*  
 
-好了，闲言少序。我们来实际操作一下。我们的材料有三星提供的BL1，即E4412_N.bl1.bin文件，还有开发板配套的裸机程序，比如测试LED的x4412_led.bin文件，该怎么做呢？  
+好了，闲言少序，来实际操作一下。现在的材料有三星提供的BL1，即E4412_N.bl1.bin文件，还有一个用来测试的裸机程序leds.bin文件，该怎么做呢？  
 dd iflag=dsync oflag=dsync if=/root/E4412_N.bl1.bin of=/dev/sdb seek=1  
-dd iflag=dsync oflag=dsync if=/root/x4412_led.bin of=/dev/sdb seek=17  
+dd iflag=dsync oflag=dsync if=/root/leds.bin of=/dev/sdb seek=17  
+sync
 
-这样应该就可以了吧。
+在这三个步骤中，BL1的写操作没啥可说的，sync是保证dd命令写SD卡操作完成，也没啥可说的。重要的是第二步，编译好的测试程序leds.bin并不能直接写入到17区，因为BL1的程序会首先校验BL2的checksum，这个checksum是根据原始的bin文件计算的，放在BL2的14KB的最后4字节。因此，实际上需要每次动态的计算这个checksum。为了简化这一系列操作，4412的开发者写了一个shell程序，叫做sd_fusing，它可以自动完成给BL2加checksum，和向SD卡写入BL1和BL2的所有操作，格式如下：  
+./sd_fusing /dev/mmcblk0 leds.bin  
+要注意，以上命令的第一个参数指向SD卡设备，这里一定要写对，不是mmcblk0p1，而是mmcblk0。在这里困扰了很久！  
+
+另外一个要吐槽一下的事情是，本人手中的这块九鼎创展的开发板，参考资料整理得非常不友好，以上这些简单易懂的操作他统统不做说明，而是把整个烧写SD卡的过程封装在一个自己提供的Windows工具中，让开发者无从学起，鄙视这种行为！  
+
+有了以上这些东东，一个最简4412裸机运行环境已经OK了！为了小小的纪念一下，拍张运行着流水灯测试程序的开发板照片放在这里。  
+![图5](https://github.com/wangdongshi/4412/blob/master/res/water_light.jpg)  
+*图5 运行着流水灯测试程序的4412开发板*  
+
+有一个问题再在这里记录一下，开发板上的电源键要一直按下方可运行程序，这个是为了Android的延迟开机准备的，可以理解，但对于裸机程序难道都要一直这样持续按着电源键吗？如果移植其它的系统，比如U-boot和Ubuntu怎么办？  
+
 
 ### 参考文章  
 
