@@ -1,46 +1,80 @@
 /*************************************************************************
-	> File Name: led.c
-	> Created Time: 2014年11月22日 星期六 16时07分20秒
+ @File Name	: leds.c
+ @Author	: Wang.Yu
+ @Revision	: 0.0.1
  ************************************************************************/
 
-#include "typedef.h"
+//#define GPM4CON (*(volatile unsigned int *)0x110002e0)
+//#define GPM4DAT (*(volatile u8 *)0x110002e4)
 
-#define GPM4CON (*(volatile u32 *)0x110002e0)
-#define GPM4DAT (*(volatile u8 *)0x110002e4)
+#define GPX1CON (*(volatile unsigned int *)0x11000C20)
+#define GPX1DAT (*(volatile unsigned int *)0x11000C24)
+#define GPX2CON (*(volatile unsigned int *)0x11000C40)
+#define GPX2DAT (*(volatile unsigned int *)0x11000C44)
 
+#define LED0	0	/* D22:GPX1_6 */
+#define LED1	1	/* D23:GPX1_7 */
+#define LED2	2	/* D24:GPX2_6 */
+#define LED3	3	/* D25:GPX2_7 */
 
-static void delay(u32 d)
+static void delay(unsigned int cnt)
 {
-	while(d--);
+	while(cnt--);
 }
 
 void leds_init()
 {
-	GPM4CON = (GPM4CON & (!0xffff)) | 1 | 1 << 4 | 1 << 8 | 1 << 12;
+	GPX1CON = (GPX1CON & (!0xffff)) | 1 << 24 | 1 << 28; /* D22:GPX1_6, D23:GPX1_7 */
+	GPX2CON = (GPX1CON & (!0xffff)) | 1 << 24 | 1 << 28; /* D24:GPX2_6, D25:GPX2_7 */
 }
 
-void leds_on(u8 n)
+void leds_on(unsigned int no)
 {
-	GPM4DAT = (GPM4DAT & 0xf0) | (n & 0xf);
+	switch (no) {
+		case LED0:
+			GPX1DAT = (GPX1DAT & 0x3f) | 0x40;
+			GPX2DAT = (GPX2DAT & 0x3f) | 0x00;
+			break;
+		case LED1:
+			GPX1DAT = (GPX1DAT & 0x3f) | 0x40;
+			GPX2DAT = (GPX2DAT & 0x3f) | 0x00;
+			break;
+		case LED2:
+			GPX1DAT = (GPX1DAT & 0x3f) | 0x00;
+			GPX2DAT = (GPX2DAT & 0x3f) | 0x40;
+			break;
+		case LED3:
+			GPX1DAT = (GPX1DAT & 0x3f) | 0x00;
+			GPX2DAT = (GPX2DAT & 0x3f) | 0x40;
+			break;
+		default:
+			GPX1DAT = (GPX1DAT & 0x3f) | 0x00;
+			GPX2DAT = (GPX2DAT & 0x3f) | 0x00;
+			break;
+	}
 }
 
 int main(void)
 {
-//	leds_init();
+	/* initialize 4 LED */
+	leds_init();
+	
+	/* delay */
 	delay(0xffff);
-	while (1) { //好吧,我承认,方法......
-		leds_on(0b0001);
+	
+	/* turn on water light */
+	while (1) {
+		leds_on(LED0);
 		delay(0xffff);
-		leds_on(0b0010);
+		leds_on(LED1);
 		delay(0xffff);
-		leds_on(0b0100);
+		leds_on(LED2);
 		delay(0xffff);
-		leds_on(0b1000);
+		leds_on(LED3);
 		delay(0xffff);
 	}
+	
 	return 0;
 }
 
-module_init(leds_init);
-
-
+//module_init(leds_init);
