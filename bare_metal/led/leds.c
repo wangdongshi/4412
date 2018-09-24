@@ -1,11 +1,8 @@
 /*************************************************************************
  @File Name	: leds.c
  @Author	: Wang.Yu
- @Revision	: 0.0.1
+ @Revision	: 0.0.1			Create
  ************************************************************************/
-
-//#define GPM4CON (*(volatile unsigned int *)0x110002e0)
-//#define GPM4DAT (*(volatile u8 *)0x110002e4)
 
 #define GPX1CON (*(volatile unsigned int *)0x11000C20)
 #define GPX1DAT (*(volatile unsigned int *)0x11000C24)
@@ -76,5 +73,3 @@ int main(void)
 	
 	return 0;
 }
-
-//module_init(leds_init);
