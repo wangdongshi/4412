@@ -1,8 +1,9 @@
-/*************************************************************************
- @File Name	: leds.c
- @Author	: Wang.Yu
- @Revision	: 0.0.1			Create
- ************************************************************************/
+/*
+ * File Name : leds.c
+ * Author    : Wang.Yu
+ * Revision  : 0.0.1	2018/09/23	Create
+ * Revision  : 0.0.2	2018/09/25	Add XPSHOLD support
+ */
 
 #define GPX1CON (*(volatile unsigned int *)0x11000C20)
 #define GPX1DAT (*(volatile unsigned int *)0x11000C24)
