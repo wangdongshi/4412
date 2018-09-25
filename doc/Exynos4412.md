@@ -69,6 +69,14 @@ sync
 
 
 
+### U-boot移植  
+
+经过上面的裸机程序移植，我们已经对开发的基本情况有所了解，接下来直接搞个U-boot试一下吧！这个移植过程基本参照彭东林博客上的移植步骤，他写得比较全面了。  
+
+不过在移植之前，有个关于环境的问题还想记录一下——如何使用diff和patch工具，来给自己的工程制作和打上补丁。  
+diff -ruN u-boot-2018.07 u-boot-x4412 > x4412_uboot.patch  
+patch –p1 < ../x4412_uboot.patch  
+
 ### 参考文章  
 
 网上有一篇非常详细的介绍4412的U-boot移植的[文章](https://www.cnblogs.com/pengdonglin137/p/5080309.html)。  
