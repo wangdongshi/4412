@@ -4550,7 +4550,8 @@
 #define MACH_TYPE_CANISMAJOR           4605
 #define MACH_TYPE_AT91SAM9263MIB       4606
 #define MACH_TYPE_COSINO_9G35          4607
-#define MACH_TYPE_TINY4412             4608
+//#define MACH_TYPE_TINY4412             4608
+#define MACH_TYPE_X4412                4608
 #define MACH_TYPE_BALLOON4             4609
 #define MACH_TYPE_PGG                  4610
 #define MACH_TYPE_XXSQ701              4611
