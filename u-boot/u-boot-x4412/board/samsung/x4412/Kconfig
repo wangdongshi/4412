@@ -1,4 +1,4 @@
-if TARGET_ORIGEN
+if TARGET_X4412
 
 config SYS_BOARD
 	default "x4412"
