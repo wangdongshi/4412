@@ -1,192 +1,137 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
-/*
- * Copyright (C) 2014 Samsung Electronics
- * Sanghee Kim <sh0130.kim@samsung.com>
- * Piotr Wilczek <p.wilczek@samsung.com>
- * Przemyslaw Marczak <p.marczak@samsung.com>
+/* Copyright (C) 2011 Samsung Electronics
  *
- * Configuation settings for the Odroid-U3 (EXYNOS4412) board.
+ * Configuration settings for the SAMSUNG X4412 (EXYNOS4412) board.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
+ * Add by Wang.Yu 2018-09-26.
  */
 
-#ifndef __CONFIG_ODROID_U3_H
-#define __CONFIG_ODROID_U3_H
+#ifndef __CONFIG_X4412_H
+#define __CONFIG_X4412_H
 
 #include <configs/exynos4-common.h>
 
-#define CONFIG_SYS_L2CACHE_OFF
-#ifndef CONFIG_SYS_L2CACHE_OFF
-#define CONFIG_SYS_L2_PL310
-#define CONFIG_SYS_PL310_BASE	0x10502000
-#endif
+/* High Level Configuration Options */
+#define CONFIG_X4412			1
 
-#define CONFIG_MACH_TYPE	4289
+#define CONFIG_SPL_SERIAL_SUPPORT
+#define CONFIG_SPL_GPIO_SUPPORT
+#define CONFIG_DEBUG_UART
+#define CONFIG_DEBUG_UART_S5P
+#define CONFIG_DEBUG_UART_BASE 		0x13800000	/* UART0 base address  */
+#define CONFIG_DEBUG_UART_CLOCK 	(100000000)	/* SCLK_UART0 is 100MHz  */
 
-#define CONFIG_NR_DRAM_BANKS	8
-#define CONFIG_SYS_SDRAM_BASE	0x40000000
-#define SDRAM_BANK_SIZE		(256 << 20)	/* 256 MB */
-#define PHYS_SDRAM_1		CONFIG_SYS_SDRAM_BASE
-/* Reserve the last 1 MiB for the secure firmware */
-#define CONFIG_SYS_MEM_TOP_HIDE		(1UL << 20UL)
-#define CONFIG_TZSW_RESERVED_DRAM_SIZE	CONFIG_SYS_MEM_TOP_HIDE
+#define CONFIG_SYS_DCACHE_OFF		1
+
+/* ORIGEN has 4 bank of DRAM */
+#define CONFIG_NR_DRAM_BANKS		4
+#define CONFIG_SYS_SDRAM_BASE		0x40000000
+#define PHYS_SDRAM_1			CONFIG_SYS_SDRAM_BASE
+#define SDRAM_BANK_SIZE			(256 << 20)	/* 256 MB */
 
 /* memtest works on */
 #define CONFIG_SYS_MEMTEST_START	CONFIG_SYS_SDRAM_BASE
-#define CONFIG_SYS_MEMTEST_END		(CONFIG_SYS_SDRAM_BASE + 0x5E00000)
+#define CONFIG_SYS_MEMTEST_END		(CONFIG_SYS_SDRAM_BASE + 0x6000000)
 #define CONFIG_SYS_LOAD_ADDR		(CONFIG_SYS_SDRAM_BASE + 0x3E00000)
-
-#include <linux/sizes.h>
+#define CONFIG_SYS_TEXT_BASE		0x43E00000
+#define CONFIG_MACH_TYPE		MACH_TYPE_X4412
 
 /* select serial console configuration */
-#define CONFIG_SERIAL1
+#define CONFIG_SERIAL2
+#define CONFIG_BAUDRATE			115200
 
 /* Console configuration */
+#define CONFIG_SYS_CONSOLE_INFO_QUIET
+#define CONFIG_SYS_CONSOLE_IS_IN_ENV
+#define CONFIG_DEFAULT_CONSOLE		"console=ttySAC1,115200n8\0"
 
-#define CONFIG_BOOTCOMMAND		"run autoboot"
-#define CONFIG_DEFAULT_CONSOLE		"ttySAC1,115200n8"
+#define CONFIG_SYS_MEM_TOP_HIDE		(1 << 20)	/* ram console */
+#define CONFIG_SYS_MONITOR_BASE		0x00000000
 
-#define CONFIG_SYS_INIT_SP_ADDR	(CONFIG_SYS_LOAD_ADDR \
-					- GENERATED_GBL_DATA_SIZE)
+/* Power Down Modes */
+#define S5P_CHECK_SLEEP			0x00000BAD
+#define S5P_CHECK_DIDLE			0xBAD00000
+#define S5P_CHECK_LPA			0xABAD0000
 
-#define CONFIG_SYS_MONITOR_BASE	0x00000000
+#undef CONFIG_CMD_PING
+#define CONFIG_CMD_ELF
+#define CONFIG_CMD_DHCP
+#define CONFIG_CMD_EXT2
+#define CONFIG_CMD_FS_GENERIC
+#define CONFIG_CMD_BOOTZ
+#define CONFIG_SUPPORT_RAW_INITRD
 
-#define CONFIG_SYS_MMC_ENV_DEV		CONFIG_MMC_DEFAULT_DEV
-#define CONFIG_ENV_SIZE			4096
-#define CONFIG_ENV_OFFSET		(SZ_1K * 1280) /* 1.25 MiB offset */
-#define CONFIG_ENV_OVERWRITE
+/* MMC SPL */
+#define COPY_BL2_FNPTR_ADDR		0x02020030
+/* Because bl1 will copy bl2(spl) to iram address 0x02023400 */
+#define CONFIG_SPL_TEXT_BASE		0x02023400
 
-/* Partitions name */
-#define PARTS_BOOT		"boot"
-#define PARTS_ROOT		"platform"
-
-#define CONFIG_DFU_ALT \
-	"uImage fat 0 1;" \
-	"zImage fat 0 1;" \
-	"Image.itb fat 0 1;" \
-	"uInitrd fat 0 1;" \
-	"exynos4412-odroidu3.dtb fat 0 1;" \
-	"exynos4412-odroidx2.dtb fat 0 1;" \
-	""PARTS_BOOT" part 0 1;" \
-	""PARTS_ROOT" part 0 2\0" \
-
-#define CONFIG_SET_DFU_ALT_INFO
-#define CONFIG_SET_DFU_ALT_BUF_LEN	(SZ_1K)
-
-#define CONFIG_DFU_ALT_BOOT_EMMC \
-	"u-boot raw 0x3e 0x800 mmcpart 1;" \
-	"bl1 raw 0x0 0x1e mmcpart 1;" \
-	"bl2 raw 0x1e 0x1d mmcpart 1;" \
-	"tzsw raw 0x83e 0x138 mmcpart 1\0"
-
-#define CONFIG_DFU_ALT_BOOT_SD \
-	"u-boot raw 0x3f 0x800;" \
-	"bl1 raw 0x1 0x1e;" \
-	"bl2 raw 0x1f 0x1d;" \
-	"tzsw raw 0x83f 0x138\0"
-
-/*
- * Bootable media layout:
- * dev:    SD   eMMC(part boot)
- * BL1      1    0
- * BL2     31   30
- * UBOOT   63   62
- * TZSW  2111 2110
- * ENV   2560 2560(part user)
- *
- * MBR Primary partiions:
- * Num Name   Size  Offset
- * 1.  BOOT:  100MiB 2MiB
- * 2.  ROOT:  -
-*/
 #define CONFIG_EXTRA_ENV_SETTINGS \
-	"loadbootscript=load mmc ${mmcbootdev}:${mmcbootpart} ${scriptaddr} " \
-		"boot.scr\0" \
-	"loadkernel=load mmc ${mmcbootdev}:${mmcbootpart} ${kerneladdr} " \
-		"${kernelname}\0" \
-	"loadinitrd=load mmc ${mmcbootdev}:${mmcbootpart} ${initrdaddr} " \
-		"${initrdname}\0" \
-	"loaddtb=load mmc ${mmcbootdev}:${mmcbootpart} ${fdtaddr} " \
-		"${fdtfile}\0" \
-	"check_ramdisk=" \
-		"if run loadinitrd; then " \
-			"setenv initrd_addr ${initrdaddr};" \
-		"else " \
-			"setenv initrd_addr -;" \
-		"fi;\0" \
-	"check_dtb=" \
-		"if run loaddtb; then " \
-			"setenv fdt_addr ${fdtaddr};" \
-		"else " \
-			"setenv fdt_addr;" \
-		"fi;\0" \
-	"kernel_args=" \
-		"setenv bootargs root=/dev/mmcblk${mmcrootdev}p${mmcrootpart}" \
-		" rootwait ${console} ${opts}\0" \
-	"boot_script=" \
-		"run loadbootscript;" \
-		"source ${scriptaddr}\0" \
-	"boot_fit=" \
-		"setenv kerneladdr 0x42000000;" \
-		"setenv kernelname Image.itb;" \
-		"run loadkernel;" \
-		"run kernel_args;" \
-		"bootm ${kerneladdr}#${boardname}\0" \
-	"boot_uimg=" \
-		"setenv kerneladdr 0x40007FC0;" \
-		"setenv kernelname uImage;" \
-		"run check_dtb;" \
-		"run check_ramdisk;" \
-		"run loadkernel;" \
-		"run kernel_args;" \
-		"bootm ${kerneladdr} ${initrd_addr} ${fdt_addr};\0" \
-	"boot_zimg=" \
-		"setenv kerneladdr 0x40007FC0;" \
-		"setenv kernelname zImage;" \
-		"run check_dtb;" \
-		"run check_ramdisk;" \
-		"run loadkernel;" \
-		"run kernel_args;" \
-		"bootz ${kerneladdr} ${initrd_addr} ${fdt_addr};\0" \
-	"autoboot=" \
-		"if test -e mmc 0 boot.scr; then; " \
-			"run boot_script; " \
-		"elif test -e mmc 0 Image.itb; then; " \
-			"run boot_fit;" \
-		"elif test -e mmc 0 zImage; then; " \
-			"run boot_zimg;" \
-		"elif test -e mmc 0 uImage; then; " \
-			"run boot_uimg;" \
-		"fi;\0" \
-	"console=" CONFIG_DEFAULT_CONSOLE "\0" \
-	"mmcbootdev=0\0" \
-	"mmcbootpart=1\0" \
-	"mmcrootdev=0\0" \
-	"mmcrootpart=2\0" \
-	"bootdelay=0\0" \
-	"dfu_alt_system="CONFIG_DFU_ALT \
-	"dfu_alt_info=Please reset the board\0" \
-	"consoleon=set console console=ttySAC1,115200n8; save; reset\0" \
-	"consoleoff=set console console=ram; save; reset\0" \
-	"initrdname=uInitrd\0" \
-	"initrdaddr=42000000\0" \
-	"scriptaddr=0x42000000\0" \
-	"fdtaddr=40800000\0"
+	"loadaddr=0x40007000\0" \
+	"rdaddr=0x48000000\0" \
+	"kerneladdr=0x40007000\0" \
+	"ramdiskaddr=0x48000000\0" \
+	"console=ttySAC2,115200n8\0" \
+	"mmcdev=0\0" \
+	"bootenv=uEnv.txt\0" \
+	"loadbootenv=load mmc ${mmcdev} ${loadaddr} ${bootenv}\0" \
+	"importbootenv=echo Importing environment from mmc ...; " \
+		"env import -t $loadaddr $filesize\0" \
+		"loadbootscript=load mmc ${mmcdev} ${loadaddr} boot.scr\0" \
+		"bootscript=echo Running bootscript from mmc${mmcdev} ...; " \
+				"source ${loadaddr}\0"
+#define CONFIG_BOOTCOMMAND \
+	"if mmc rescan; then " \
+		"echo SD/MMC found on device ${mmcdev};" \
+		"if run loadbootenv; then " \
+			"echo Loaded environment from ${bootenv};" \
+			"run importbootenv;" \
+		"fi;" \
+		"if test -n $uenvcmd; then " \
+			"echo Running uenvcmd ...;" \
+			"run uenvcmd;" \
+		"fi;" \
+		"if run loadbootscript; then " \
+			"run bootscript; " \
+		"fi; " \
+	"fi;" \
+	"load mmc ${mmcdev} ${loadaddr} uImage; bootm ${loadaddr} "
 
-/* GPT */
+#define CONFIG_IDENT_STRING		" for X4412"
+#define CONFIG_CLK_1000_400_200
 
-/* Security subsystem - enable hw_rand() */
-#define CONFIG_EXYNOS_ACE_SHA
-
-/* USB */
-#define CONFIG_USB_EHCI_EXYNOS
+/* MIU (Memory Interleaving Unit) */
+#define CONFIG_MIU_2BIT_21_7_INTERLEAVED
 
 /*
- * Supported Odroid boards: X3, U3
- * TODO: Add Odroid X support
+ * SD MMC layout:
+ * +------+-------------------------------------------------------------+
+ * |									|
+ * |	  |	      |		   |	   	  |		   	|
+ * | 512B |  8K(bl1)  |16k(bl2/spl)|   16k(ENV)   |  	512k(u-boot)	|
+ * | 	  |	      |		   | 	   	  |		   	|
+ * |								    	|
+ * +------+-------------------------------------------------------------+
+ *
  */
-#define CONFIG_MISC_COMMON
-#define CONFIG_BOARD_TYPES
-#define CONFIG_MISC_INIT_R
+#define CONFIG_ENV_IS_IN_MMC
+#define CONFIG_SYS_MMC_ENV_DEV		0
+#define CONFIG_ENV_SIZE			(16 <;< 10)	/* 16 KB */
+#define RESERVE_BLOCK_SIZE		(512)
+#define BL1_SIZE			(8 <;< 10)  /*16 K reserved for BL1*/
+#define BL2_SIZE			(16 <;< 10) /*16 k reserved for BL2*/
+#define CONFIG_ENV_OFFSET		(RESERVE_BLOCK_SIZE + BL1_SIZE + BL2_SIZE)
 
-#undef CONFIG_REVISION_TAG
+#define CONFIG_SPL_LDSCRIPT		"board/samsung/common/exynos-uboot-spl.lds"
+#define CONFIG_SPL_MAX_FOOTPRINT	(14 * 1024)
+
+#define CONFIG_SYS_INIT_SP_ADDR		0x02040000
+
+/* U-boot copy size from boot Media to DRAM.*/
+#define COPY_UBOOT_SIZE			0x80000
+#define UBOOT_START_OFFSET		((CONFIG_ENV_OFFSET + CONFIG_ENV_SIZE)/512)
+#define UBOOT_SIZE_BLOC_COUNT		(COPY_UBOOT_SIZE/512)
+
+/* #define UBOOT_DEBUG_20151226 */
 
 #endif	/* __CONFIG_H */

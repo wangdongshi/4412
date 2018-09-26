@@ -1,6 +1,6 @@
 diff -ruN u-boot-2018.07/arch/arm/dts/exynos4412-x4412.dts u-boot-x4412/arch/arm/dts/exynos4412-x4412.dts
 --- u-boot-2018.07/arch/arm/dts/exynos4412-x4412.dts	1970-01-01 08:00:00.000000000 +0800
-+++ u-boot-x4412/arch/arm/dts/exynos4412-x4412.dts	2018-09-26 06:16:47.106004000 +0800
++++ u-boot-x4412/arch/arm/dts/exynos4412-x4412.dts	2018-09-25 18:52:51.902046210 +0800
 @@ -0,0 +1,252 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +/*
@@ -256,7 +256,7 @@ diff -ruN u-boot-2018.07/arch/arm/dts/exynos4412-x4412.dts u-boot-x4412/arch/arm
 +};
 diff -ruN u-boot-2018.07/arch/arm/dts/Makefile u-boot-x4412/arch/arm/dts/Makefile
 --- u-boot-2018.07/arch/arm/dts/Makefile	2018-07-09 22:24:14.000000000 +0800
-+++ u-boot-x4412/arch/arm/dts/Makefile	2018-09-26 05:54:09.130004000 +0800
++++ u-boot-x4412/arch/arm/dts/Makefile	2018-09-25 18:52:51.902046210 +0800
 @@ -12,7 +12,8 @@
  	exynos4210-universal_c210.dtb \
  	exynos4210-trats.dtb \
@@ -269,7 +269,7 @@ diff -ruN u-boot-2018.07/arch/arm/dts/Makefile u-boot-x4412/arch/arm/dts/Makefil
  
 diff -ruN u-boot-2018.07/arch/arm/include/asm/mach-types.h u-boot-x4412/arch/arm/include/asm/mach-types.h
 --- u-boot-2018.07/arch/arm/include/asm/mach-types.h	2018-07-09 22:24:14.000000000 +0800
-+++ u-boot-x4412/arch/arm/include/asm/mach-types.h	2018-09-26 05:58:21.486004000 +0800
++++ u-boot-x4412/arch/arm/include/asm/mach-types.h	2018-09-25 18:52:51.902046210 +0800
 @@ -4550,7 +4550,8 @@
  #define MACH_TYPE_CANISMAJOR           4605
  #define MACH_TYPE_AT91SAM9263MIB       4606
@@ -282,7 +282,7 @@ diff -ruN u-boot-2018.07/arch/arm/include/asm/mach-types.h u-boot-x4412/arch/arm
  #define MACH_TYPE_XXSQ701              4611
 diff -ruN u-boot-2018.07/arch/arm/mach-exynos/clock_init_exynos4.c u-boot-x4412/arch/arm/mach-exynos/clock_init_exynos4.c
 --- u-boot-2018.07/arch/arm/mach-exynos/clock_init_exynos4.c	2018-07-09 22:24:14.000000000 +0800
-+++ u-boot-x4412/arch/arm/mach-exynos/clock_init_exynos4.c	2018-09-26 06:44:21.710004000 +0800
++++ u-boot-x4412/arch/arm/mach-exynos/clock_init_exynos4.c	2018-09-25 18:52:51.902046210 +0800
 @@ -30,7 +30,11 @@
  #include <asm/arch/clk.h>
  #include <asm/arch/clock.h>
@@ -573,12 +573,12 @@ diff -ruN u-boot-2018.07/arch/arm/mach-exynos/clock_init_exynos4.c u-boot-x4412/
  }
 diff -ruN u-boot-2018.07/arch/arm/mach-exynos/dmc_init_exynos4.c u-boot-x4412/arch/arm/mach-exynos/dmc_init_exynos4.c
 --- u-boot-2018.07/arch/arm/mach-exynos/dmc_init_exynos4.c	2018-07-09 22:24:14.000000000 +0800
-+++ u-boot-x4412/arch/arm/mach-exynos/dmc_init_exynos4.c	2018-09-26 07:51:22.458000000 +0800
++++ u-boot-x4412/arch/arm/mach-exynos/dmc_init_exynos4.c	2018-09-26 17:51:21.248634886 +0800
 @@ -29,6 +29,27 @@
  #include "exynos4_setup.h"
  
  struct mem_timings mem = {
-+#ifdef CONFIG_TINY4412
++#ifdef CONFIG_X4412
 +struct mem_timings mem = {
 +	.direct_cmd_msr = {
 +		DIRECT_CMD1, DIRECT_CMD2, DIRECT_CMD3, DIRECT_CMD4
@@ -602,7 +602,7 @@ diff -ruN u-boot-2018.07/arch/arm/mach-exynos/dmc_init_exynos4.c u-boot-x4412/ar
  	.direct_cmd_msr = {
  		DIRECT_CMD1, DIRECT_CMD2, DIRECT_CMD3, DIRECT_CMD4
  	},
-@@ -47,10 +68,14 @@
+@@ -47,10 +68,16 @@
  	.memconfig1 = MEMCONFIG1_VAL,
  	.dll_resync = FORCE_DLL_RESYNC,
  	.dll_on = DLL_CONTROL_ON,
@@ -611,7 +611,9 @@ diff -ruN u-boot-2018.07/arch/arm/mach-exynos/dmc_init_exynos4.c u-boot-x4412/ar
  static void phy_control_reset(int ctrl_no, struct exynos4_dmc *dmc)
  {
  	if (ctrl_no) {
-+#ifdef CONFIG_TINY4412
++#ifdef CONFIG_X4412
++		/* Add by Wang.Yu 2018-09-26 */
++		/* It is copied from Pengdonglin's blog, but it seems different from this U-boot version(2018-07). */
 +		writel(0x8000001F, &dmc->ivcontrol);
 +#endif
  		writel((mem.control1 | (1 << mem.dll_resync)),
@@ -619,7 +621,7 @@ diff -ruN u-boot-2018.07/arch/arm/mach-exynos/dmc_init_exynos4.c u-boot-x4412/ar
  		writel((mem.control1 | (0 << mem.dll_resync)),
 diff -ruN u-boot-2018.07/arch/arm/mach-exynos/Kconfig u-boot-x4412/arch/arm/mach-exynos/Kconfig
 --- u-boot-2018.07/arch/arm/mach-exynos/Kconfig	2018-07-09 22:24:14.000000000 +0800
-+++ u-boot-x4412/arch/arm/mach-exynos/Kconfig	2018-09-26 06:02:22.598004000 +0800
++++ u-boot-x4412/arch/arm/mach-exynos/Kconfig	2018-09-25 18:52:51.902046210 +0800
 @@ -60,6 +60,10 @@
  	bool "Exynos4412 Origen board"
  	select SUPPORT_SPL
@@ -639,9 +641,86 @@ diff -ruN u-boot-2018.07/arch/arm/mach-exynos/Kconfig u-boot-x4412/arch/arm/mach
  source "board/samsung/trats2/Kconfig"
  source "board/samsung/odroid/Kconfig"
  source "board/samsung/arndale/Kconfig"
+diff -ruN u-boot-2018.07/arch/arm/mach-exynos/lowlevel_init.c u-boot-x4412/arch/arm/mach-exynos/lowlevel_init.c
+--- u-boot-2018.07/arch/arm/mach-exynos/lowlevel_init.c	2018-07-09 22:24:14.000000000 +0800
++++ u-boot-x4412/arch/arm/mach-exynos/lowlevel_init.c	2018-09-26 17:53:34.595064840 +0800
+@@ -218,8 +218,9 @@
+ #ifdef CONFIG_DEBUG_UART
+ #if (defined(CONFIG_SPL_BUILD) && defined(CONFIG_SPL_SERIAL_SUPPORT)) || \
+     !defined(CONFIG_SPL_BUILD)
+-		exynos_pinmux_config(PERIPH_ID_UART3, PINMUX_FLAG_NONE);
++		exynos_pinmux_config(PERIPH_ID_UART0, PINMUX_FLAG_NONE);
+ 		debug_uart_init();
++		printascii("UART OK!\n\r");
+ #endif
+ #endif
+ 		mem_ctrl_init(actions & DO_MEM_RESET);
+diff -ruN u-boot-2018.07/arch/arm/mach-exynos/spl_boot.c u-boot-x4412/arch/arm/mach-exynos/spl_boot.c
+--- u-boot-2018.07/arch/arm/mach-exynos/spl_boot.c	2018-07-09 22:24:14.000000000 +0800
++++ u-boot-x4412/arch/arm/mach-exynos/spl_boot.c	2018-09-26 17:59:39.594383237 +0800
+@@ -184,7 +184,8 @@
+ {
+ 	unsigned int bootmode = BOOT_MODE_OM;
+ 
+-	u32 (*copy_bl2)(u32 offset, u32 nblock, u32 dst) = NULL;
++	//u32 (*copy_bl2)(u32 offset, u32 nblock, u32 dst) = NULL;
++	u32 (*copy_uboot)(u32 offset, u32 nblock, u32 dst) = NULL;
+ 	u32 offset = 0, size = 0;
+ #ifdef CONFIG_SPI_BOOTING
+ 	struct spl_machine_param *param = spl_get_machine_params();
+@@ -221,9 +222,9 @@
+ 		break;
+ #endif
+ 	case BOOT_MODE_SD:
+-		offset = BL2_START_OFFSET;
+-		size = BL2_SIZE_BLOC_COUNT;
+-		copy_bl2 = get_irom_func(MMC_INDEX);
++		offset = UBOOT_START_OFFSET;
++		size = UBOOT_SIZE_BLOC_COUNT;
++		copy_uboot = get_irom_func(MMC_INDEX);
+ 		break;
+ #ifdef CONFIG_SUPPORT_EMMC_BOOT
+ 	case BOOT_MODE_EMMC:
+@@ -253,8 +254,34 @@
+ 		break;
+ 	}
+ 
+-	if (copy_bl2)
+-		copy_bl2(offset, size, CONFIG_SYS_TEXT_BASE);
++#ifdef CONFIG_X4412
++	if (copy_uboot)
++	{
++		/*
++		 * Here I use iram 0x020250000-0x020260000 (64k)
++		 * as an buffer, and copy u-boot from sd card to 
++		 * this buffer, then copy it to dram started 
++		 * from 0x43e00000.
++		 *
++		 */
++		unsigned int i, count = 0;
++		unsigned char *buffer = (unsigned char *)0x02050000;
++		unsigned char *dst = (unsigned char *)CONFIG_SYS_TEXT_BASE;
++		unsigned int step = (0x10000 / 512);
++
++		for (count = 0; count < UBOOT_SIZE_BLOC_COUNT; count+=step) {
++			/* copy u-boot from sdcard to iram firstly.  */
++			copy_uboot((u32)(UBOOT_START_OFFSET+count), (u32)step, (u32)buffer);
++			/* then copy u-boot from iram to dram. */
++			for (i=0; i<0x10000; i++) {
++				*dst++ = buffer[i];
++			}
++		}
++	}
++#else
++	if (copy_uboot)
++		copy_uboot(offset, size, CONFIG_SYS_TEXT_BASE);
++#endif
+ }
+ 
+ void memzero(void *s, size_t n)
 diff -ruN u-boot-2018.07/arch/arm/mach-exynos/x4412_setup.h u-boot-x4412/arch/arm/mach-exynos/x4412_setup.h
 --- u-boot-2018.07/arch/arm/mach-exynos/x4412_setup.h	1970-01-01 08:00:00.000000000 +0800
-+++ u-boot-x4412/arch/arm/mach-exynos/x4412_setup.h	2018-09-26 07:35:01.614000000 +0800
++++ u-boot-x4412/arch/arm/mach-exynos/x4412_setup.h	2018-09-25 18:52:51.902046210 +0800
 @@ -0,0 +1,228 @@
 +/*
 + * Copyright (C) 2014 Samsung Electronics
@@ -873,7 +952,7 @@ diff -ruN u-boot-2018.07/arch/arm/mach-exynos/x4412_setup.h u-boot-x4412/arch/ar
 +
 diff -ruN u-boot-2018.07/board/samsung/x4412/Kconfig u-boot-x4412/board/samsung/x4412/Kconfig
 --- u-boot-2018.07/board/samsung/x4412/Kconfig	1970-01-01 08:00:00.000000000 +0800
-+++ u-boot-x4412/board/samsung/x4412/Kconfig	2018-09-26 06:03:34.386004000 +0800
++++ u-boot-x4412/board/samsung/x4412/Kconfig	2018-09-25 18:52:51.902046210 +0800
 @@ -0,0 +1,12 @@
 +if TARGET_ORIGEN
 +
@@ -889,7 +968,7 @@ diff -ruN u-boot-2018.07/board/samsung/x4412/Kconfig u-boot-x4412/board/samsung/
 +endif
 diff -ruN u-boot-2018.07/board/samsung/x4412/MAINTAINERS u-boot-x4412/board/samsung/x4412/MAINTAINERS
 --- u-boot-2018.07/board/samsung/x4412/MAINTAINERS	1970-01-01 08:00:00.000000000 +0800
-+++ u-boot-x4412/board/samsung/x4412/MAINTAINERS	2018-09-25 22:37:15.301668999 +0800
++++ u-boot-x4412/board/samsung/x4412/MAINTAINERS	2018-07-09 22:24:14.000000000 +0800
 @@ -0,0 +1,6 @@
 +ORIGEN BOARD
 +M:	Chander Kashyap <k.chander@samsung.com>
@@ -899,7 +978,7 @@ diff -ruN u-boot-2018.07/board/samsung/x4412/MAINTAINERS u-boot-x4412/board/sams
 +F:	configs/origen_defconfig
 diff -ruN u-boot-2018.07/board/samsung/x4412/Makefile u-boot-x4412/board/samsung/x4412/Makefile
 --- u-boot-2018.07/board/samsung/x4412/Makefile	1970-01-01 08:00:00.000000000 +0800
-+++ u-boot-x4412/board/samsung/x4412/Makefile	2018-09-25 22:37:15.301668999 +0800
++++ u-boot-x4412/board/samsung/x4412/Makefile	2018-09-25 18:18:12.000000000 +0800
 @@ -0,0 +1,22 @@
 +# SPDX-License-Identifier: GPL-2.0+
 +#
@@ -925,7 +1004,7 @@ diff -ruN u-boot-2018.07/board/samsung/x4412/Makefile u-boot-x4412/board/samsung
 +endif
 diff -ruN u-boot-2018.07/board/samsung/x4412/tools/mkx4412spl.c u-boot-x4412/board/samsung/x4412/tools/mkx4412spl.c
 --- u-boot-2018.07/board/samsung/x4412/tools/mkx4412spl.c	1970-01-01 08:00:00.000000000 +0800
-+++ u-boot-x4412/board/samsung/x4412/tools/mkx4412spl.c	2018-09-25 22:37:15.301668999 +0800
++++ u-boot-x4412/board/samsung/x4412/tools/mkx4412spl.c	2018-09-25 18:18:46.000000000 +0800
 @@ -0,0 +1,110 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +/*
@@ -1039,7 +1118,7 @@ diff -ruN u-boot-2018.07/board/samsung/x4412/tools/mkx4412spl.c u-boot-x4412/boa
 +}
 diff -ruN u-boot-2018.07/board/samsung/x4412/x4412.c u-boot-x4412/board/samsung/x4412/x4412.c
 --- u-boot-2018.07/board/samsung/x4412/x4412.c	1970-01-01 08:00:00.000000000 +0800
-+++ u-boot-x4412/board/samsung/x4412/x4412.c	2018-09-25 22:37:15.301668999 +0800
++++ u-boot-x4412/board/samsung/x4412/x4412.c	2018-09-25 18:18:13.000000000 +0800
 @@ -0,0 +1,36 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +/*
@@ -1077,840 +1156,214 @@ diff -ruN u-boot-2018.07/board/samsung/x4412/x4412.c u-boot-x4412/board/samsung/
 +	return 0;
 +}
 +#endif
-diff -ruN u-boot-2018.07/.checkpatch.conf u-boot-x4412/.checkpatch.conf
---- u-boot-2018.07/.checkpatch.conf	2018-07-09 22:24:14.000000000 +0800
-+++ u-boot-x4412/.checkpatch.conf	1970-01-01 08:00:00.000000000 +0800
-@@ -1,30 +0,0 @@
--# Not Linux, so don't expect a Linux tree.
----no-tree
--
--# Temporary for false positive in checkpatch
----ignore COMPLEX_MACRO
--
--# For CONFIG_SYS_I2C_NOPROBES
----ignore MULTISTATEMENT_MACRO_USE_DO_WHILE
--
--# For simple_strtoul
----ignore CONSIDER_KSTRTO
--
--# For min/max
----ignore MINMAX
--
--# enable more tests
----strict
--
--# Not Linux, so we don't recommend usleep_range() over udelay()
----ignore USLEEP_RANGE
--
--# Ignore networking block comment style
----ignore NETWORKING_BLOCK_COMMENT_STYLE
--
--# Ignore "WARNING: Prefer ether_addr_copy() over memcpy() if the Ethernet
--# addresses are __aligned(2)".
----ignore PREFER_ETHER_ADDR_COPY
--
--# A bit shorter of a description is OK with us.
----min-conf-desc-length=2
+diff -ruN u-boot-2018.07/common/board_f.c u-boot-x4412/common/board_f.c
+--- u-boot-2018.07/common/board_f.c	2018-07-09 22:24:14.000000000 +0800
++++ u-boot-x4412/common/board_f.c	2018-09-26 18:02:30.102898104 +0800
+@@ -38,6 +38,7 @@
+ #include <asm/sections.h>
+ #include <dm/root.h>
+ #include <linux/errno.h>
++#include <debug_uart.h>
+ 
+ /*
+  * Pointer to initial global data area
+@@ -894,6 +895,7 @@
+ 
+ void board_init_f(ulong boot_flags)
+ {
++	printascii("Uboot running.\r\n");
+ 	gd->flags = boot_flags;
+ 	gd->have_console = 0;
+ 
 diff -ruN u-boot-2018.07/configs/x4412_defconfig u-boot-x4412/configs/x4412_defconfig
 --- u-boot-2018.07/configs/x4412_defconfig	1970-01-01 08:00:00.000000000 +0800
-+++ u-boot-x4412/configs/x4412_defconfig	2018-09-25 22:37:15.385711000 +0800
-@@ -0,0 +1,59 @@
++++ u-boot-x4412/configs/x4412_defconfig	2018-09-26 18:05:44.512507997 +0800
+@@ -0,0 +1,15 @@
 +CONFIG_ARM=y
 +CONFIG_ARCH_EXYNOS=y
-+CONFIG_SYS_TEXT_BASE=0x43e00000
-+CONFIG_ARCH_EXYNOS4=y
-+CONFIG_TARGET_ODROID=y
-+CONFIG_DEFAULT_DEVICE_TREE="exynos4412-odroid"
-+CONFIG_DISTRO_DEFAULTS=y
-+# CONFIG_SYS_MALLOC_CLEAR_ON_INIT is not set
-+CONFIG_FIT=y
-+CONFIG_FIT_VERBOSE=y
-+CONFIG_USE_BOOTARGS=y
-+CONFIG_BOOTARGS="Please use defined boot"
-+# CONFIG_USE_BOOTCOMMAND is not set
-+CONFIG_SYS_CONSOLE_IS_IN_ENV=y
-+CONFIG_SYS_CONSOLE_INFO_QUIET=y
-+CONFIG_SYS_PROMPT="Odroid # "
++CONFIG_TARGET_X4412=y
++CONFIG_DEFAULT_DEVICE_TREE="exynos4412-x4412"
++CONFIG_SPL=y
++CONFIG_SYS_PROMPT="X4412 # "
++# CONFIG_CMD_IMLS is not set
 +# CONFIG_CMD_XIMG is not set
-+CONFIG_CMD_THOR_DOWNLOAD=y
-+CONFIG_CMD_DFU=y
-+CONFIG_CMD_GPIO=y
-+CONFIG_CMD_GPT=y
-+CONFIG_CMD_I2C=y
-+CONFIG_CMD_MMC=y
-+CONFIG_CMD_USB=y
-+CONFIG_CMD_USB_MASS_STORAGE=y
++# CONFIG_CMD_FPGA is not set
++# CONFIG_CMD_NET is not set
 +# CONFIG_CMD_NFS is not set
-+CONFIG_CMD_CACHE=y
 +# CONFIG_CMD_MISC is not set
-+CONFIG_CMD_PMIC=y
-+CONFIG_CMD_REGULATOR=y
-+CONFIG_CMD_EXT4_WRITE=y
 +CONFIG_OF_CONTROL=y
-+CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG=y
-+CONFIG_DFU_MMC=y
-+CONFIG_SYS_I2C_S3C24X0=y
-+CONFIG_DM_MMC=y
-+CONFIG_MMC_DW=y
-+CONFIG_MMC_SDHCI=y
-+CONFIG_MMC_SDHCI_SDMA=y
-+CONFIG_MMC_SDHCI_S5P=y
-+CONFIG_DM_PMIC=y
-+CONFIG_DM_PMIC_MAX77686=y
-+CONFIG_DM_REGULATOR=y
-+CONFIG_DM_REGULATOR_MAX77686=y
 +CONFIG_USB=y
 +CONFIG_DM_USB=y
-+CONFIG_USB_EHCI_HCD=y
-+CONFIG_USB_STORAGE=y
-+CONFIG_USB_GADGET=y
-+CONFIG_USB_GADGET_MANUFACTURER="Samsung"
-+CONFIG_USB_GADGET_VENDOR_NUM=0x04e8
-+CONFIG_USB_GADGET_PRODUCT_NUM=0x6601
-+CONFIG_USB_GADGET_DWC2_OTG=y
-+CONFIG_USB_GADGET_DOWNLOAD=y
-+CONFIG_USB_FUNCTION_THOR=y
-+CONFIG_USB_HOST_ETHER=y
-+CONFIG_USB_ETHER_SMSC95XX=y
-+CONFIG_LIB_HW_RAND=y
-+CONFIG_ERRNO_STR=y
+diff -ruN u-boot-2018.07/drivers/serial/serial_s5p.c u-boot-x4412/drivers/serial/serial_s5p.c
+--- u-boot-2018.07/drivers/serial/serial_s5p.c	2018-07-09 22:24:14.000000000 +0800
++++ u-boot-x4412/drivers/serial/serial_s5p.c	2018-09-26 18:06:56.996225157 +0800
+@@ -62,12 +62,14 @@
+ static void __maybe_unused s5p_serial_init(struct s5p_uart *uart)
+ {
+ 	/* enable FIFOs, auto clear Rx FIFO */
+-	writel(0x3, &uart->ufcon);
++	//writel(0x3, &uart->ufcon);
++	writel(0x111, &uart->ufcon);
+ 	writel(0, &uart->umcon);
+ 	/* 8N1 */
+ 	writel(0x3, &uart->ulcon);
+ 	/* No interrupts, no DMA, pure polling */
+-	writel(0x245, &uart->ucon);
++	//writel(0x245, &uart->ucon);
++	writel(0x3c5, &uart->ucon);
+ }
+ 
+ static void __maybe_unused s5p_serial_baud(struct s5p_uart *uart, uint uclk,
 diff -ruN u-boot-2018.07/include/configs/x4412.h u-boot-x4412/include/configs/x4412.h
 --- u-boot-2018.07/include/configs/x4412.h	1970-01-01 08:00:00.000000000 +0800
-+++ u-boot-x4412/include/configs/x4412.h	2018-09-25 22:37:15.641839000 +0800
-@@ -0,0 +1,192 @@
-+/* SPDX-License-Identifier: GPL-2.0+ */
-+/*
-+ * Copyright (C) 2014 Samsung Electronics
-+ * Sanghee Kim <sh0130.kim@samsung.com>
-+ * Piotr Wilczek <p.wilczek@samsung.com>
-+ * Przemyslaw Marczak <p.marczak@samsung.com>
++++ u-boot-x4412/include/configs/x4412.h	2018-09-26 18:20:32.221785922 +0800
+@@ -0,0 +1,137 @@
++/* Copyright (C) 2011 Samsung Electronics
 + *
-+ * Configuation settings for the Odroid-U3 (EXYNOS4412) board.
++ * Configuration settings for the SAMSUNG X4412 (EXYNOS4412) board.
++ *
++ * SPDX-License-Identifier:	GPL-2.0+
++ * Add by Wang.Yu 2018-09-26.
 + */
 +
-+#ifndef __CONFIG_ODROID_U3_H
-+#define __CONFIG_ODROID_U3_H
++#ifndef __CONFIG_X4412_H
++#define __CONFIG_X4412_H
 +
 +#include <configs/exynos4-common.h>
 +
-+#define CONFIG_SYS_L2CACHE_OFF
-+#ifndef CONFIG_SYS_L2CACHE_OFF
-+#define CONFIG_SYS_L2_PL310
-+#define CONFIG_SYS_PL310_BASE	0x10502000
-+#endif
++/* High Level Configuration Options */
++#define CONFIG_X4412			1
 +
-+#define CONFIG_MACH_TYPE	4289
++#define CONFIG_SPL_SERIAL_SUPPORT
++#define CONFIG_SPL_GPIO_SUPPORT
++#define CONFIG_DEBUG_UART
++#define CONFIG_DEBUG_UART_S5P
++#define CONFIG_DEBUG_UART_BASE 		0x13800000	/* UART0 base address  */
++#define CONFIG_DEBUG_UART_CLOCK 	(100000000)	/* SCLK_UART0 is 100MHz  */
 +
-+#define CONFIG_NR_DRAM_BANKS	8
-+#define CONFIG_SYS_SDRAM_BASE	0x40000000
-+#define SDRAM_BANK_SIZE		(256 << 20)	/* 256 MB */
-+#define PHYS_SDRAM_1		CONFIG_SYS_SDRAM_BASE
-+/* Reserve the last 1 MiB for the secure firmware */
-+#define CONFIG_SYS_MEM_TOP_HIDE		(1UL << 20UL)
-+#define CONFIG_TZSW_RESERVED_DRAM_SIZE	CONFIG_SYS_MEM_TOP_HIDE
++#define CONFIG_SYS_DCACHE_OFF		1
++
++/* ORIGEN has 4 bank of DRAM */
++#define CONFIG_NR_DRAM_BANKS		4
++#define CONFIG_SYS_SDRAM_BASE		0x40000000
++#define PHYS_SDRAM_1			CONFIG_SYS_SDRAM_BASE
++#define SDRAM_BANK_SIZE			(256 << 20)	/* 256 MB */
 +
 +/* memtest works on */
 +#define CONFIG_SYS_MEMTEST_START	CONFIG_SYS_SDRAM_BASE
-+#define CONFIG_SYS_MEMTEST_END		(CONFIG_SYS_SDRAM_BASE + 0x5E00000)
++#define CONFIG_SYS_MEMTEST_END		(CONFIG_SYS_SDRAM_BASE + 0x6000000)
 +#define CONFIG_SYS_LOAD_ADDR		(CONFIG_SYS_SDRAM_BASE + 0x3E00000)
-+
-+#include <linux/sizes.h>
++#define CONFIG_SYS_TEXT_BASE		0x43E00000
++#define CONFIG_MACH_TYPE		MACH_TYPE_X4412
 +
 +/* select serial console configuration */
-+#define CONFIG_SERIAL1
++#define CONFIG_SERIAL2
++#define CONFIG_BAUDRATE			115200
 +
 +/* Console configuration */
++#define CONFIG_SYS_CONSOLE_INFO_QUIET
++#define CONFIG_SYS_CONSOLE_IS_IN_ENV
++#define CONFIG_DEFAULT_CONSOLE		"console=ttySAC1,115200n8\0"
 +
-+#define CONFIG_BOOTCOMMAND		"run autoboot"
-+#define CONFIG_DEFAULT_CONSOLE		"ttySAC1,115200n8"
++#define CONFIG_SYS_MEM_TOP_HIDE		(1 << 20)	/* ram console */
++#define CONFIG_SYS_MONITOR_BASE		0x00000000
 +
-+#define CONFIG_SYS_INIT_SP_ADDR	(CONFIG_SYS_LOAD_ADDR \
-+					- GENERATED_GBL_DATA_SIZE)
++/* Power Down Modes */
++#define S5P_CHECK_SLEEP			0x00000BAD
++#define S5P_CHECK_DIDLE			0xBAD00000
++#define S5P_CHECK_LPA			0xABAD0000
 +
-+#define CONFIG_SYS_MONITOR_BASE	0x00000000
++#undef CONFIG_CMD_PING
++#define CONFIG_CMD_ELF
++#define CONFIG_CMD_DHCP
++#define CONFIG_CMD_EXT2
++#define CONFIG_CMD_FS_GENERIC
++#define CONFIG_CMD_BOOTZ
++#define CONFIG_SUPPORT_RAW_INITRD
 +
-+#define CONFIG_SYS_MMC_ENV_DEV		CONFIG_MMC_DEFAULT_DEV
-+#define CONFIG_ENV_SIZE			4096
-+#define CONFIG_ENV_OFFSET		(SZ_1K * 1280) /* 1.25 MiB offset */
-+#define CONFIG_ENV_OVERWRITE
++/* MMC SPL */
++#define COPY_BL2_FNPTR_ADDR		0x02020030
++/* Because bl1 will copy bl2(spl) to iram address 0x02023400 */
++#define CONFIG_SPL_TEXT_BASE		0x02023400
 +
-+/* Partitions name */
-+#define PARTS_BOOT		"boot"
-+#define PARTS_ROOT		"platform"
-+
-+#define CONFIG_DFU_ALT \
-+	"uImage fat 0 1;" \
-+	"zImage fat 0 1;" \
-+	"Image.itb fat 0 1;" \
-+	"uInitrd fat 0 1;" \
-+	"exynos4412-odroidu3.dtb fat 0 1;" \
-+	"exynos4412-odroidx2.dtb fat 0 1;" \
-+	""PARTS_BOOT" part 0 1;" \
-+	""PARTS_ROOT" part 0 2\0" \
-+
-+#define CONFIG_SET_DFU_ALT_INFO
-+#define CONFIG_SET_DFU_ALT_BUF_LEN	(SZ_1K)
-+
-+#define CONFIG_DFU_ALT_BOOT_EMMC \
-+	"u-boot raw 0x3e 0x800 mmcpart 1;" \
-+	"bl1 raw 0x0 0x1e mmcpart 1;" \
-+	"bl2 raw 0x1e 0x1d mmcpart 1;" \
-+	"tzsw raw 0x83e 0x138 mmcpart 1\0"
-+
-+#define CONFIG_DFU_ALT_BOOT_SD \
-+	"u-boot raw 0x3f 0x800;" \
-+	"bl1 raw 0x1 0x1e;" \
-+	"bl2 raw 0x1f 0x1d;" \
-+	"tzsw raw 0x83f 0x138\0"
-+
-+/*
-+ * Bootable media layout:
-+ * dev:    SD   eMMC(part boot)
-+ * BL1      1    0
-+ * BL2     31   30
-+ * UBOOT   63   62
-+ * TZSW  2111 2110
-+ * ENV   2560 2560(part user)
-+ *
-+ * MBR Primary partiions:
-+ * Num Name   Size  Offset
-+ * 1.  BOOT:  100MiB 2MiB
-+ * 2.  ROOT:  -
-+*/
 +#define CONFIG_EXTRA_ENV_SETTINGS \
-+	"loadbootscript=load mmc ${mmcbootdev}:${mmcbootpart} ${scriptaddr} " \
-+		"boot.scr\0" \
-+	"loadkernel=load mmc ${mmcbootdev}:${mmcbootpart} ${kerneladdr} " \
-+		"${kernelname}\0" \
-+	"loadinitrd=load mmc ${mmcbootdev}:${mmcbootpart} ${initrdaddr} " \
-+		"${initrdname}\0" \
-+	"loaddtb=load mmc ${mmcbootdev}:${mmcbootpart} ${fdtaddr} " \
-+		"${fdtfile}\0" \
-+	"check_ramdisk=" \
-+		"if run loadinitrd; then " \
-+			"setenv initrd_addr ${initrdaddr};" \
-+		"else " \
-+			"setenv initrd_addr -;" \
-+		"fi;\0" \
-+	"check_dtb=" \
-+		"if run loaddtb; then " \
-+			"setenv fdt_addr ${fdtaddr};" \
-+		"else " \
-+			"setenv fdt_addr;" \
-+		"fi;\0" \
-+	"kernel_args=" \
-+		"setenv bootargs root=/dev/mmcblk${mmcrootdev}p${mmcrootpart}" \
-+		" rootwait ${console} ${opts}\0" \
-+	"boot_script=" \
-+		"run loadbootscript;" \
-+		"source ${scriptaddr}\0" \
-+	"boot_fit=" \
-+		"setenv kerneladdr 0x42000000;" \
-+		"setenv kernelname Image.itb;" \
-+		"run loadkernel;" \
-+		"run kernel_args;" \
-+		"bootm ${kerneladdr}#${boardname}\0" \
-+	"boot_uimg=" \
-+		"setenv kerneladdr 0x40007FC0;" \
-+		"setenv kernelname uImage;" \
-+		"run check_dtb;" \
-+		"run check_ramdisk;" \
-+		"run loadkernel;" \
-+		"run kernel_args;" \
-+		"bootm ${kerneladdr} ${initrd_addr} ${fdt_addr};\0" \
-+	"boot_zimg=" \
-+		"setenv kerneladdr 0x40007FC0;" \
-+		"setenv kernelname zImage;" \
-+		"run check_dtb;" \
-+		"run check_ramdisk;" \
-+		"run loadkernel;" \
-+		"run kernel_args;" \
-+		"bootz ${kerneladdr} ${initrd_addr} ${fdt_addr};\0" \
-+	"autoboot=" \
-+		"if test -e mmc 0 boot.scr; then; " \
-+			"run boot_script; " \
-+		"elif test -e mmc 0 Image.itb; then; " \
-+			"run boot_fit;" \
-+		"elif test -e mmc 0 zImage; then; " \
-+			"run boot_zimg;" \
-+		"elif test -e mmc 0 uImage; then; " \
-+			"run boot_uimg;" \
-+		"fi;\0" \
-+	"console=" CONFIG_DEFAULT_CONSOLE "\0" \
-+	"mmcbootdev=0\0" \
-+	"mmcbootpart=1\0" \
-+	"mmcrootdev=0\0" \
-+	"mmcrootpart=2\0" \
-+	"bootdelay=0\0" \
-+	"dfu_alt_system="CONFIG_DFU_ALT \
-+	"dfu_alt_info=Please reset the board\0" \
-+	"consoleon=set console console=ttySAC1,115200n8; save; reset\0" \
-+	"consoleoff=set console console=ram; save; reset\0" \
-+	"initrdname=uInitrd\0" \
-+	"initrdaddr=42000000\0" \
-+	"scriptaddr=0x42000000\0" \
-+	"fdtaddr=40800000\0"
++	"loadaddr=0x40007000\0" \
++	"rdaddr=0x48000000\0" \
++	"kerneladdr=0x40007000\0" \
++	"ramdiskaddr=0x48000000\0" \
++	"console=ttySAC2,115200n8\0" \
++	"mmcdev=0\0" \
++	"bootenv=uEnv.txt\0" \
++	"loadbootenv=load mmc ${mmcdev} ${loadaddr} ${bootenv}\0" \
++	"importbootenv=echo Importing environment from mmc ...; " \
++		"env import -t $loadaddr $filesize\0" \
++		"loadbootscript=load mmc ${mmcdev} ${loadaddr} boot.scr\0" \
++		"bootscript=echo Running bootscript from mmc${mmcdev} ...; " \
++				"source ${loadaddr}\0"
++#define CONFIG_BOOTCOMMAND \
++	"if mmc rescan; then " \
++		"echo SD/MMC found on device ${mmcdev};" \
++		"if run loadbootenv; then " \
++			"echo Loaded environment from ${bootenv};" \
++			"run importbootenv;" \
++		"fi;" \
++		"if test -n $uenvcmd; then " \
++			"echo Running uenvcmd ...;" \
++			"run uenvcmd;" \
++		"fi;" \
++		"if run loadbootscript; then " \
++			"run bootscript; " \
++		"fi; " \
++	"fi;" \
++	"load mmc ${mmcdev} ${loadaddr} uImage; bootm ${loadaddr} "
 +
-+/* GPT */
++#define CONFIG_IDENT_STRING		" for X4412"
++#define CONFIG_CLK_1000_400_200
 +
-+/* Security subsystem - enable hw_rand() */
-+#define CONFIG_EXYNOS_ACE_SHA
-+
-+/* USB */
-+#define CONFIG_USB_EHCI_EXYNOS
++/* MIU (Memory Interleaving Unit) */
++#define CONFIG_MIU_2BIT_21_7_INTERLEAVED
 +
 +/*
-+ * Supported Odroid boards: X3, U3
-+ * TODO: Add Odroid X support
++ * SD MMC layout:
++ * +------+-------------------------------------------------------------+
++ * |									|
++ * |	  |	      |		   |	   	  |		   	|
++ * | 512B |  8K(bl1)  |16k(bl2/spl)|   16k(ENV)   |  	512k(u-boot)	|
++ * | 	  |	      |		   | 	   	  |		   	|
++ * |								    	|
++ * +------+-------------------------------------------------------------+
++ *
 + */
-+#define CONFIG_MISC_COMMON
-+#define CONFIG_BOARD_TYPES
-+#define CONFIG_MISC_INIT_R
++#define CONFIG_ENV_IS_IN_MMC
++#define CONFIG_SYS_MMC_ENV_DEV		0
++#define CONFIG_ENV_SIZE			(16 <;< 10)	/* 16 KB */
++#define RESERVE_BLOCK_SIZE		(512)
++#define BL1_SIZE			(8 <;< 10)  /*16 K reserved for BL1*/
++#define BL2_SIZE			(16 <;< 10) /*16 k reserved for BL2*/
++#define CONFIG_ENV_OFFSET		(RESERVE_BLOCK_SIZE + BL1_SIZE + BL2_SIZE)
 +
-+#undef CONFIG_REVISION_TAG
++#define CONFIG_SPL_LDSCRIPT		"board/samsung/common/exynos-uboot-spl.lds"
++#define CONFIG_SPL_MAX_FOOTPRINT	(14 * 1024)
++
++#define CONFIG_SYS_INIT_SP_ADDR		0x02040000
++
++/* U-boot copy size from boot Media to DRAM.*/
++#define COPY_UBOOT_SIZE			0x80000
++#define UBOOT_START_OFFSET		((CONFIG_ENV_OFFSET + CONFIG_ENV_SIZE)/512)
++#define UBOOT_SIZE_BLOC_COUNT		(COPY_UBOOT_SIZE/512)
++
++/* #define UBOOT_DEBUG_20151226 */
 +
 +#endif	/* __CONFIG_H */
-Binary files u-boot-2018.07/tools/binman/test/descriptor.bin and u-boot-x4412/tools/binman/test/descriptor.bin differ
-diff -ruN u-boot-2018.07/tools/patman/test/0000-cover-letter.patch u-boot-x4412/tools/patman/test/0000-cover-letter.patch
---- u-boot-2018.07/tools/patman/test/0000-cover-letter.patch	2018-07-09 22:24:14.000000000 +0800
-+++ u-boot-x4412/tools/patman/test/0000-cover-letter.patch	1970-01-01 08:00:00.000000000 +0800
-@@ -1,23 +0,0 @@
--From 5ab48490f03051875ab13d288a4bf32b507d76fd Mon Sep 17 00:00:00 2001
--From: Simon Glass <sjg@chromium.org>
--Date: Sat, 27 May 2017 20:52:11 -0600
--Subject: [RFC 0/2] *** SUBJECT HERE ***
--MIME-Version: 1.0
--Content-Type: text/plain; charset=UTF-8
--Content-Transfer-Encoding: 8bit
--
--*** BLURB HERE ***
--
--Simon Glass (2):
--  pci: Correct cast for sandbox
--  fdt: Correct cast for sandbox in fdtdec_setup_memory_size()
--
-- cmd/pci.c                   | 3 ++-
-- fs/fat/fat.c                | 1 +
-- lib/efi_loader/efi_memory.c | 1 +
-- lib/fdtdec.c                | 3 ++-
-- 4 files changed, 6 insertions(+), 2 deletions(-)
--
---- 
--2.7.4
--
-diff -ruN u-boot-2018.07/tools/patman/test/0001-pci-Correct-cast-for-sandbox.patch u-boot-x4412/tools/patman/test/0001-pci-Correct-cast-for-sandbox.patch
---- u-boot-2018.07/tools/patman/test/0001-pci-Correct-cast-for-sandbox.patch	2018-07-09 22:24:14.000000000 +0800
-+++ u-boot-x4412/tools/patman/test/0001-pci-Correct-cast-for-sandbox.patch	1970-01-01 08:00:00.000000000 +0800
-@@ -1,48 +0,0 @@
--From b9da5f937bd5ea4931ea17459bf79b2905d9594d Mon Sep 17 00:00:00 2001
--From: Simon Glass <sjg@chromium.org>
--Date: Sat, 15 Apr 2017 15:39:08 -0600
--Subject: [RFC 1/2] pci: Correct cast for sandbox
--MIME-Version: 1.0
--Content-Type: text/plain; charset=UTF-8
--Content-Transfer-Encoding: 8bit
--
--This gives a warning with some native compilers:
--
--cmd/pci.c:152:11: warning: format ‘%llx’ expects argument of type
--   ‘long long unsigned int’, but argument 3 has type
--   ‘u64 {aka long unsigned int}’ [-Wformat=]
--
--Fix it with a cast.
--
--Signed-off-by: Simon Glass <sjg@chromium.org>
--Series-notes:
--some notes
--about some things
--from the first commit
--END
--
--Commit-notes:
--Some notes about
--the first commit
--END
-----
-- cmd/pci.c | 3 ++-
-- 1 file changed, 2 insertions(+), 1 deletion(-)
--
--diff --git a/cmd/pci.c b/cmd/pci.c
--index 41b4fff..fe27b4f 100644
----- a/cmd/pci.c
--+++ b/cmd/pci.c
--@@ -150,7 +150,8 @@ int pci_bar_show(struct udevice *dev)
-- 		if ((!is_64 && size_low) || (is_64 && size)) {
-- 			size = ~size + 1;
-- 			printf(" %d   %#016llx  %#016llx  %d     %s   %s\n",
---			       bar_id, base, size, is_64 ? 64 : 32,
--+			       bar_id, (unsigned long long)base,
--+			       (unsigned long long)size, is_64 ? 64 : 32,
-- 			       is_io ? "I/O" : "MEM",
-- 			       prefetchable ? "Prefetchable" : "");
-- 		}
---- 
--2.7.4
--
-diff -ruN u-boot-2018.07/tools/patman/test/0002-fdt-Correct-cast-for-sandbox-in-fdtdec_setup_memory_.patch u-boot-x4412/tools/patman/test/0002-fdt-Correct-cast-for-sandbox-in-fdtdec_setup_memory_.patch
---- u-boot-2018.07/tools/patman/test/0002-fdt-Correct-cast-for-sandbox-in-fdtdec_setup_memory_.patch	2018-07-09 22:24:14.000000000 +0800
-+++ u-boot-x4412/tools/patman/test/0002-fdt-Correct-cast-for-sandbox-in-fdtdec_setup_memory_.patch	1970-01-01 08:00:00.000000000 +0800
-@@ -1,73 +0,0 @@
--From 5ab48490f03051875ab13d288a4bf32b507d76fd Mon Sep 17 00:00:00 2001
--From: Simon Glass <sjg@chromium.org>
--Date: Sat, 15 Apr 2017 15:39:08 -0600
--Subject: [RFC 2/2] fdt: Correct cast for sandbox in fdtdec_setup_memory_size()
--MIME-Version: 1.0
--Content-Type: text/plain; charset=UTF-8
--Content-Transfer-Encoding: 8bit
--
--This gives a warning with some native compilers:
--
--lib/fdtdec.c:1203:8: warning: format ‘%llx’ expects argument of type
--   ‘long long unsigned int’, but argument 3 has type
--   ‘long unsigned int’ [-Wformat=]
--
--Fix it with a cast.
--
--Signed-off-by: Simon Glass <sjg@chromium.org>
--Series-to: u-boot
--Series-prefix: RFC
--Series-cc: Stefan Brüns <stefan.bruens@rwth-aachen.de>
--Cover-letter-cc: Lord Mëlchett <clergy@palace.gov>
--Series-version: 3
--Patch-cc: fred
--Series-changes: 4
--- Some changes
--
--Cover-letter:
--test: A test patch series
--This is a test of how the cover
--leter
--works
--END
-----
-- fs/fat/fat.c                | 1 +
-- lib/efi_loader/efi_memory.c | 1 +
-- lib/fdtdec.c                | 3 ++-
-- 3 files changed, 4 insertions(+), 1 deletion(-)
--
--diff --git a/fs/fat/fat.c b/fs/fat/fat.c
--index a71bad1..ba169dc 100644
----- a/fs/fat/fat.c
--+++ b/fs/fat/fat.c
--@@ -1,3 +1,4 @@
--+
-- /*
--  * fat.c
--  *
--diff --git a/lib/efi_loader/efi_memory.c b/lib/efi_loader/efi_memory.c
--index db2ae19..05f75d1 100644
----- a/lib/efi_loader/efi_memory.c
--+++ b/lib/efi_loader/efi_memory.c
--@@ -1,3 +1,4 @@
--+
-- /*
--  *  EFI application memory management
--  *
--diff --git a/lib/fdtdec.c b/lib/fdtdec.c
--index c072e54..942244f 100644
----- a/lib/fdtdec.c
--+++ b/lib/fdtdec.c
--@@ -1200,7 +1200,8 @@ int fdtdec_setup_memory_size(void)
-- 	}
-- 
-- 	gd->ram_size = (phys_size_t)(res.end - res.start + 1);
---	debug("%s: Initial DRAM size %llx\n", __func__, (u64)gd->ram_size);
--+	debug("%s: Initial DRAM size %llx\n", __func__,
--+	      (unsigned long long)gd->ram_size);
-- 
-- 	return 0;
-- }
---- 
--2.7.4
--
-diff -ruN u-boot-2018.07/.travis.yml u-boot-x4412/.travis.yml
---- u-boot-2018.07/.travis.yml	2018-07-09 22:24:14.000000000 +0800
-+++ u-boot-x4412/.travis.yml	1970-01-01 08:00:00.000000000 +0800
-@@ -1,383 +0,0 @@
--# SPDX-License-Identifier: GPL-2.0+
--# Copyright Roger Meier <r.meier@siemens.com>
--
--# build U-Boot on Travis CI - https://travis-ci.org/
--
--sudo: required
--dist: trusty
--
--language: c
--
--addons:
--  apt:
--    packages:
--    - cppcheck
--    - sloccount
--    - sparse
--    - bc
--    - build-essential
--    - libsdl1.2-dev
--    - python
--    - python-virtualenv
--    - swig
--    - libpython-dev
--    - iasl
--    - grub-efi-ia32-bin
--    - rpm2cpio
--    - wget
--    - device-tree-compiler
--    - lzop
--
--before_install:
-- - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
-- - sudo apt-get update -q
-- - sudo apt-get install libisl15 -y
--
--install:
-- # Clone uboot-test-hooks
-- - git clone --depth=1 git://github.com/swarren/uboot-test-hooks.git /tmp/uboot-test-hooks
-- - ln -s travis-ci /tmp/uboot-test-hooks/bin/`hostname`
-- - ln -s travis-ci /tmp/uboot-test-hooks/py/`hostname`
-- # prepare buildman environment
-- - echo -e "[toolchain]\nroot = /usr" > ~/.buildman
-- - echo -e "arc = /tmp/arc_gnu_2017.09_prebuilt_uclibc_le_archs_linux_install" >> ~/.buildman
-- - echo -e "\n[toolchain-alias]\nsh = sh2\n" >> ~/.buildman
-- - cat ~/.buildman
-- - virtualenv /tmp/venv
-- - . /tmp/venv/bin/activate
-- - pip install pytest
-- - grub-mkimage -o ~/grub_x86.efi -O i386-efi normal  echo lsefimmap lsefi lsefisystab efinet tftp minicmd
-- - mkdir ~/grub2-arm
-- - ( cd ~/grub2-arm; wget -O - http://download.opensuse.org/ports/armv7hl/distribution/leap/42.2/repo/oss/suse/armv7hl/grub2-arm-efi-2.02~beta2-87.1.armv7hl.rpm | rpm2cpio | cpio -di )
-- - mkdir ~/grub2-arm64
-- - ( cd ~/grub2-arm64; wget -O - http://download.opensuse.org/ports/aarch64/distribution/leap/42.2/repo/oss/suse/aarch64/grub2-arm64-efi-2.02~beta2-87.1.aarch64.rpm | rpm2cpio | cpio -di )
--
--env:
--  global:
--    - PATH=/tmp/qemu-install/bin:/tmp/uboot-test-hooks/bin:/usr/bin:/bin
--    - PYTHONPATH=/tmp/uboot-test-hooks/py/travis-ci
--    - BUILD_DIR=build
--    - HOSTCC="cc"
--    - HOSTCXX="c++"
--
--before_script:
--  # install toolchains based on TOOLCHAIN} variable
--  - if [[ "${TOOLCHAIN}" == *m68k* ]]; then ./tools/buildman/buildman --fetch-arch m68k ; fi
--  - if [[ "${TOOLCHAIN}" == *microblaze* ]]; then ./tools/buildman/buildman --fetch-arch microblaze ; fi
--  - if [[ "${TOOLCHAIN}" == *mips* ]]; then ./tools/buildman/buildman --fetch-arch mips ; fi
--  - if [[ "${TOOLCHAIN}" == *or32* ]]; then ./tools/buildman/buildman --fetch-arch or32 ; fi
--  - if [[ "${TOOLCHAIN}" == *sh* ]]; then ./tools/buildman/buildman --fetch-arch sh2 ; fi
--  - if [[ "${TOOLCHAIN}" == *x86_64* ]]; then
--      ./tools/buildman/buildman --fetch-arch x86_64;
--      echo -e "\n[toolchain-prefix]\nx86 = ${HOME}/.buildman-toolchains/gcc-7.3.0-nolibc/x86_64-linux/bin/x86_64-linux-" >> ~/.buildman;
--    fi
--  - if [[ "${TOOLCHAIN}" == arc ]]; then
--       wget https://github.com/foss-for-synopsys-dwc-arc-processors/toolchain/releases/download/arc-2017.09-release/arc_gnu_2017.09_prebuilt_uclibc_le_archs_linux_install.tar.gz &&
--       tar -C /tmp -xf arc_gnu_2017.09_prebuilt_uclibc_le_archs_linux_install.tar.gz;
--    fi
--  - if [[ "${TOOLCHAIN}" == *xtensa* ]]; then
--       wget https://github.com/foss-xtensa/toolchain/releases/download/2018.02/x86_64-2018.02-${TOOLCHAIN}.tar.gz &&
--       tar -C /tmp -xf x86_64-2018.02-${TOOLCHAIN}.tar.gz &&
--       echo -e "\n[toolchain-prefix]\nxtensa = /tmp/2018.02/${TOOLCHAIN}/bin/${TOOLCHAIN}-" >> ~/.buildman;
--    fi
--  # If TOOLCHAIN is unset, we're on some flavour of ARM.
--  - if [[ "${TOOLCHAIN}" == "" ]]; then
--       ./tools/buildman/buildman --fetch-arch arm &&
--       ./tools/buildman/buildman --fetch-arch aarch64;
--    fi
--  - if [[ "${TOOLCHAIN}" == "powerpc" ]]; then ./tools/buildman/buildman --fetch-arch powerpc; fi
--  - if [[ "${TOOLCHAIN}" == "riscv" ]]; then
--        wget https://github.com/andestech/prebuilt/releases/download/20180530/riscv64-unknown-linux-gnu.tar.gz &&
--        tar -C /tmp -xf riscv64-unknown-linux-gnu.tar.gz &&
--        echo -e "\n[toolchain-prefix]\nriscv = /tmp/riscv64-unknown-linux-gnu/bin/riscv64-unknown-linux-gnu-" >> ~/.buildman;
--    fi
--  - if [[ "${QEMU_TARGET}" != "" ]]; then
--       git clone git://git.qemu.org/qemu.git /tmp/qemu;
--       pushd /tmp/qemu;
--       git submodule update --init dtc &&
--       git checkout v2.8.0-rc3 &&
--       ./configure --prefix=/tmp/qemu-install --target-list=${QEMU_TARGET} &&
--       make -j4 all install;
--       popd;
--    fi
--
--script:
-- # Comments must be outside the command strings below, or the Travis parser
-- # will get confused.
-- #
-- # Exit code 129 means warnings only.
-- - if [[ "${BUILDMAN}" != "" ]]; then
--     ret=0;
--     tools/buildman/buildman -P -E ${BUILDMAN} || ret=$?;
--     if [[ $ret -ne 0 && $ret -ne 129 ]]; then
--       tools/buildman/buildman -sdeP ${BUILDMAN};
--       exit $ret;
--     fi;
--   fi
-- # "not a_test_which_does_not_exist" is a dummy -k parameter which will
-- # never prevent any test from running. That way, we can always pass
-- # "-k something" even when $TEST_PY_TEST_SPEC doesnt need a custom
-- # value.
-- - export UBOOT_TRAVIS_BUILD_DIR=`cd .. && pwd`/.bm-work/${TEST_PY_BD};
--   cp ~/grub_x86.efi $UBOOT_TRAVIS_BUILD_DIR/;
--   cp ~/grub2-arm/usr/lib/grub2/arm-efi/grub.efi $UBOOT_TRAVIS_BUILD_DIR/grub_arm.efi;
--   cp ~/grub2-arm64/usr/lib/grub2/arm64-efi/grub.efi $UBOOT_TRAVIS_BUILD_DIR/grub_arm64.efi;
--   if [[ "${TEST_PY_BD}" != "" ]]; then
--     ./test/py/test.py --bd ${TEST_PY_BD} ${TEST_PY_ID}
--       -k "${TEST_PY_TEST_SPEC:-not a_test_which_does_not_exist}"
--       --build-dir "$UBOOT_TRAVIS_BUILD_DIR";
--     ret=$?;
--     if [[ $ret -ne 0 ]]; then
--       exit $ret;
--     fi;
--   fi;
--   if [[ -n "${TEST_PY_TOOLS}" ]]; then
--     PYTHONPATH="${UBOOT_TRAVIS_BUILD_DIR}/scripts/dtc/pylibfdt"
--     PATH="${UBOOT_TRAVIS_BUILD_DIR}/scripts/dtc:${PATH}"
--     ./tools/binman/binman -t &&
--     ./tools/patman/patman --test &&
--     ./tools/buildman/buildman -t &&
--     PYTHONPATH="${UBOOT_TRAVIS_BUILD_DIR}/scripts/dtc/pylibfdt"
--     PATH="${UBOOT_TRAVIS_BUILD_DIR}/scripts/dtc:${PATH}"
--     ./tools/dtoc/dtoc -t;
--   fi
--
--matrix:
--  include:
--  # we need to build by vendor due to 50min time limit for builds
--  # each env setting here is a dedicated build
--    - env:
--        - BUILDMAN="arc"
--          TOOLCHAIN="arc"
--    - env:
--        - BUILDMAN="arm11 arm7 arm920t arm946es"
--    - env:
--        - JOB="arm926ejs"
--          BUILDMAN="arm926ejs -x mx,siemens,atmel"
--    - env:
--        - BUILDMAN="atmel"
--    - env:
--          BUILDMAN="boundary engicam toradex"
--    - env:
--        - JOB="Freescale ARM32"
--          BUILDMAN="freescale -x powerpc,m68k,aarch64"
--    - env:
--        - JOB="Freescale AArch64"
--          BUILDMAN="freescale&aarch64"
--    - env:
--        - JOB="i.MX6 (non-Freescale)"
--          BUILDMAN="mx6 -x freescale,toradex,boundary,engicam"
--    - env:
--        - JOB="i.MX (non-Freescale, non-i.MX6)"
--          BUILDMAN="mx -x freescale,mx6,toradex"
--    - env:
--        - BUILDMAN="k2"
--    - env:
--        - BUILDMAN="samsung socfpga"
--    - env:
--        - BUILDMAN="sun4i"
--    - env:
--        - BUILDMAN="sun5i"
--    - env:
--        - BUILDMAN="sun6i"
--    - env:
--        - BUILDMAN="sun7i"
--    - env:
--        - BUILDMAN="sun8i"
--    - env:
--        - BUILDMAN="sun9i"
--    - env:
--        - BUILDMAN="sun50i"
--    - env:
--        - JOB="Catch-all ARM"
--          BUILDMAN="arm -x arm11,arm7,arm9,aarch64,atmel,freescale,kirkwood,mvebu,siemens,tegra,uniphier,mx,samsung,sunxi,am33xx,omap,pxa,rockchip,toradex,socfpga,k2,xilinx"
--    - env:
--        - BUILDMAN="sandbox x86"
--          TOOLCHAIN="x86_64"
--    - env:
--        - BUILDMAN="kirkwood"
--    - env:
--        - BUILDMAN="mvebu"
--    - env:
--        - JOB="PXA"
--        - BUILDMAN="pxa -x toradex"
--    - env:
--        - BUILDMAN="m68k"
--          TOOLCHAIN="m68k"
--    - env:
--        - BUILDMAN="microblaze"
--          TOOLCHAIN="microblaze"
--    - env:
--        - BUILDMAN="mips"
--          TOOLCHAIN="mips"
--    - env:
--        - JOB="Non-Freescale PowerPC"
--          BUILDMAN="powerpc -x freescale"
--          TOOLCHAIN="powerpc"
--    - env:
--        - BUILDMAN="mpc85xx&freescale -x t208xrdb -x t4qds -x t102* -x p1_p2_rdb_pc -x p1010rdb -x corenet_ds -x b4860qds -x bsc91*"
--          TOOLCHAIN="powerpc"
--    - env:
--        - BUILDMAN="t208xrdb corenet_ds"
--          TOOLCHAIN="powerpc"
--    - env:
--        - BUILDMAN="t4qds b4860qds mpc83xx&freescale mpc86xx&freescale"
--          TOOLCHAIN="powerpc"
--    - env:
--        - BUILDMAN="t102*"
--          TOOLCHAIN="powerpc"
--    - env:
--        - BUILDMAN="p1_p2_rdb_pc"
--          TOOLCHAIN="powerpc"
--    - env:
--        - BUILDMAN="p1010rdb bsc91"
--          TOOLCHAIN="powerpc"
--    - env:
--        - BUILDMAN="siemens"
--    - env:
--        - JOB="tegra"
--          BUILDMAN="tegra -x toradex"
--    - env:
--        - JOB="am33xx"
--          BUILDMAN="am33xx -x siemens"
--    - env:
--        - BUILDMAN="omap"
--    - env:
--        - BUILDMAN="uniphier"
--    - env:
--        - JOB="Catch-all AArch64"
--          BUILDMAN="aarch64 -x tegra,freescale,mvebu,uniphier,sunxi,samsung,rockchip,xilinx"
--    - env:
--        - BUILDMAN="rockchip"
--    - env:
--        - JOB="sh"
--          BUILDMAN="sh -x arm"
--          TOOLCHAIN="sh"
--    - env:
--        - JOB="Xilinx (ARM)"
--          BUILDMAN="xilinx -x microblaze"
--    - env:
--        - BUILDMAN="xtensa"
--          TOOLCHAIN="xtensa-dc233c-elf"
--    - env:
--        - BUILDMAN="riscv"
--          TOOLCHAIN="riscv"
--
--    # QA jobs for code analytics
--    # static code analysis with cppcheck (we can add --enable=all later)
--    - env:
--        - JOB="cppcheck"
--      script:
--        - cppcheck --force --quiet --inline-suppr .
--    # search for TODO within source tree
--    - env:
--        - JOB="grep TODO"
--      script:
--        - grep -r TODO .
--    # search for FIXME within source tree
--    - env:
--        - JOB="grep FIXME HACK"
--      script:
--        - grep -r FIXME .
--    # search for HACK within source tree and ignore HACKKIT board
--      script:
--        - grep -r HACK . | grep -v HACKKIT
--    # some statistics about the code base
--    - env:
--        - JOB="sloccount"
--      script:
--        - sloccount .
--
--    # test/py
--    - env:
--        - TEST_PY_BD="sandbox"
--          BUILDMAN="^sandbox$"
--          TOOLCHAIN="x86_64"
--    - env:
--        - TEST_PY_BD="sandbox_spl"
--          TEST_PY_TEST_SPEC="test_ofplatdata"
--          BUILDMAN="^sandbox$"
--          TOOLCHAIN="x86_64"
--          TEST_PY_TOOLS="yes"
--    - env:
--        - TEST_PY_BD="sandbox_flattree"
--          BUILDMAN="^sandbox_flattree$"
--          TOOLCHAIN="x86_64"
--    - env:
--        - TEST_PY_BD="vexpress_ca15_tc2"
--          TEST_PY_ID="--id qemu"
--          QEMU_TARGET="arm-softmmu"
--          BUILDMAN="^vexpress_ca15_tc2$"
--    - env:
--        - TEST_PY_BD="vexpress_ca9x4"
--          TEST_PY_ID="--id qemu"
--          QEMU_TARGET="arm-softmmu"
--          BUILDMAN="^vexpress_ca9x4$"
--    - env:
--        - TEST_PY_BD="integratorcp_cm926ejs"
--          TEST_PY_TEST_SPEC="not sleep"
--          TEST_PY_ID="--id qemu"
--          QEMU_TARGET="arm-softmmu"
--          BUILDMAN="^integratorcp_cm926ejs$"
--    - env:
--        - TEST_PY_BD="qemu_arm"
--          TEST_PY_TEST_SPEC="not sleep"
--          QEMU_TARGET="arm-softmmu"
--          BUILDMAN="^qemu_arm$"
--    - env:
--        - TEST_PY_BD="qemu_arm64"
--          TEST_PY_TEST_SPEC="not sleep"
--          QEMU_TARGET="aarch64-softmmu"
--          BUILDMAN="^qemu_arm64$"
--    - env:
--        - TEST_PY_BD="qemu_mips"
--          TEST_PY_TEST_SPEC="not sleep"
--          QEMU_TARGET="mips-softmmu"
--          BUILDMAN="^qemu_mips$"
--          TOOLCHAIN="mips"
--    - env:
--        - TEST_PY_BD="qemu_mipsel"
--          TEST_PY_TEST_SPEC="not sleep"
--          QEMU_TARGET="mipsel-softmmu"
--          BUILDMAN="^qemu_mipsel$"
--          TOOLCHAIN="mips"
--    - env:
--        - TEST_PY_BD="qemu_mips64"
--          TEST_PY_TEST_SPEC="not sleep"
--          QEMU_TARGET="mips64-softmmu"
--          BUILDMAN="^qemu_mips64$"
--          TOOLCHAIN="mips"
--    - env:
--        - TEST_PY_BD="qemu_mips64el"
--          TEST_PY_TEST_SPEC="not sleep"
--          QEMU_TARGET="mips64el-softmmu"
--          BUILDMAN="^qemu_mips64el$"
--          TOOLCHAIN="mips"
--    - env:
--        - TEST_PY_BD="qemu-ppce500"
--          TEST_PY_TEST_SPEC="not sleep"
--          QEMU_TARGET="ppc-softmmu"
--          BUILDMAN="^qemu-ppce500$"
--          TOOLCHAIN="powerpc"
--    - env:
--        - TEST_PY_BD="qemu-x86"
--          TEST_PY_TEST_SPEC="not sleep"
--          QEMU_TARGET="i386-softmmu"
--          BUILDMAN="^qemu-x86$"
--          TOOLCHAIN="x86_64"
--          BUILD_ROM="yes"
--    - env:
--        - TEST_PY_BD="zynq_zc702"
--          TEST_PY_TEST_SPEC="not sleep"
--          QEMU_TARGET="arm-softmmu"
--          TEST_PY_ID="--id qemu"
--          BUILDMAN="^zynq_zc702$"
--    - env:
--        - TEST_PY_BD="xtfpga"
--          TEST_PY_TEST_SPEC="not sleep"
--          QEMU_TARGET="xtensa-softmmu"
--          TEST_PY_ID="--id qemu"
--          BUILDMAN="^xtfpga$"
--          TOOLCHAIN="xtensa-dc233c-elf"
--
--# TODO make it perfect ;-r
+diff -ruN u-boot-2018.07/Makefile u-boot-x4412/Makefile
+--- u-boot-2018.07/Makefile	2018-07-09 22:24:14.000000000 +0800
++++ u-boot-x4412/Makefile	2018-09-26 18:22:33.266589044 +0800
+@@ -241,7 +241,7 @@
+ 
+ # set default to nothing for native builds
+ ifeq ($(HOSTARCH),$(ARCH))
+-CROSS_COMPILE ?=
++CROSS_COMPILE = arm-linux-
+ endif
+ 
+ KCONFIG_CONFIG	?= .config

@@ -29,7 +29,7 @@
 #include "exynos4_setup.h"
 
 struct mem_timings mem = {
-#ifdef CONFIG_TINY4412
+#ifdef CONFIG_X4412
 struct mem_timings mem = {
 	.direct_cmd_msr = {
 		DIRECT_CMD1, DIRECT_CMD2, DIRECT_CMD3, DIRECT_CMD4
@@ -73,7 +73,9 @@ struct mem_timings mem = {
 static void phy_control_reset(int ctrl_no, struct exynos4_dmc *dmc)
 {
 	if (ctrl_no) {
-#ifdef CONFIG_TINY4412
+#ifdef CONFIG_X4412
+		/* Add by Wang.Yu 2018-09-26 */
+		/* It is copied from Pengdonglin's blog, but it seems different from this U-boot version(2018-07). */
 		writel(0x8000001F, &dmc->ivcontrol);
 #endif
 		writel((mem.control1 | (1 << mem.dll_resync)),
