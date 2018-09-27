@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2011 Samsung Electronics
  * Lukasz Majewski <l.majewski@samsung.com>
@@ -7,6 +6,8 @@
  * Stefano Babic, DENX Software Engineering, sbabic@denx.de
  *
  * (C) Copyright 2008-2009 Freescale Semiconductor, Inc.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -26,14 +27,14 @@ static u32 pmic_reg(struct pmic *p, u32 reg, u32 *val, u32 write)
 					p->hw.spi.mode);
 
 		if (!slave)
-			return -ENODEV;
+			return -1;
 	}
 
 	if (check_reg(p, reg))
-		return -EINVAL;
+		return -1;
 
 	if (spi_claim_bus(slave))
-		return -EBUSY;
+		return -1;
 
 	pmic_tx = p->hw.spi.prepare_tx(reg, val, write);
 
@@ -58,15 +59,21 @@ static u32 pmic_reg(struct pmic *p, u32 reg, u32 *val, u32 write)
 
 err:
 	spi_release_bus(slave);
-	return -ENOTSUPP;
+	return -1;
 }
 
 int pmic_reg_write(struct pmic *p, u32 reg, u32 val)
 {
-	return pmic_reg(p, reg, &val, 1);
+	if (pmic_reg(p, reg, &val, 1))
+		return -1;
+
+	return 0;
 }
 
 int pmic_reg_read(struct pmic *p, u32 reg, u32 *val)
 {
-	return pmic_reg(p, reg, val, 0);
+	if (pmic_reg(p, reg, val, 0))
+		return -1;
+
+	return 0;
 }

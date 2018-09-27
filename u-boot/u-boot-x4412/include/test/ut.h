@@ -1,8 +1,9 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Simple unit test library
  *
  * Copyright (c) 2013 Google, Inc
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __TEST_UT_H
@@ -16,9 +17,9 @@ struct unit_test_state;
  * ut_fail() - Record failure of a unit test
  *
  * @uts: Test state
- * @fname: Filename where the error occurred
- * @line: Line number where the error occurred
- * @func: Function name where the error occurred
+ * @fname: Filename where the error occured
+ * @line: Line number where the error occured
+ * @func: Function name where the error occured
  * @cond: The condition that failed
  */
 void ut_fail(struct unit_test_state *uts, const char *fname, int line,
@@ -28,9 +29,9 @@ void ut_fail(struct unit_test_state *uts, const char *fname, int line,
  * ut_failf() - Record failure of a unit test
  *
  * @uts: Test state
- * @fname: Filename where the error occurred
- * @line: Line number where the error occurred
- * @func: Function name where the error occurred
+ * @fname: Filename where the error occured
+ * @line: Line number where the error occured
+ * @func: Function name where the error occured
  * @cond: The condition that failed
  * @fmt: printf() format string for the error, followed by args
  */
@@ -103,7 +104,7 @@ void ut_failf(struct unit_test_state *uts, const char *fname, int line,
 }
 
 /* Assert that a pointer is not an error pointer */
-#define ut_assertok_ptr(expr) {						\
+#define ut_assertok_ptr(expr) {					\
 	const void *val = (expr);					\
 									\
 	if (IS_ERR(val)) {						\

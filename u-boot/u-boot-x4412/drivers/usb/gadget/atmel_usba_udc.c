@@ -1,14 +1,15 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Driver for the Atmel USBA high speed USB device controller
  * [Original from Linux kernel: drivers/usb/gadget/atmel_usba_udc.c]
  *
  * Copyright (C) 2005-2013 Atmel Corporation
  *			   Bo Shen <voice.shen@atmel.com>
+ *
+ * SPDX-License-Identifier:     GPL-2.0+
  */
 
 #include <common.h>
-#include <linux/errno.h>
+#include <asm/errno.h>
 #include <asm/gpio.h>
 #include <asm/hardware.h>
 #include <linux/list.h>
@@ -1227,7 +1228,7 @@ int usb_gadget_register_driver(struct usb_gadget_driver *driver)
 
 	ret = driver->bind(&udc->gadget);
 	if (ret) {
-		pr_err("driver->bind() returned %d\n", ret);
+		error("driver->bind() returned %d\n", ret);
 		udc->driver = NULL;
 	}
 
@@ -1239,7 +1240,7 @@ int usb_gadget_unregister_driver(struct usb_gadget_driver *driver)
 	struct usba_udc *udc = &controller;
 
 	if (!driver || !driver->unbind || !driver->disconnect) {
-		pr_err("bad paramter\n");
+		error("bad paramter\n");
 		return -EINVAL;
 	}
 
@@ -1260,7 +1261,7 @@ static struct usba_ep *usba_udc_pdata(struct usba_platform_data *pdata,
 
 	eps = malloc(sizeof(struct usba_ep) * pdata->num_ep);
 	if (!eps) {
-		pr_err("failed to alloc eps\n");
+		error("failed to alloc eps\n");
 		return NULL;
 	}
 

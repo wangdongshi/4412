@@ -1,19 +1,20 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2014 The Chromium OS Authors.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <dm.h>
 #include <environment.h>
 #include <errno.h>
+#include <fdtdec.h>
 #include <os.h>
 #include <serial.h>
 #include <stdio_dev.h>
 #include <watchdog.h>
 #include <dm/lists.h>
 #include <dm/device-internal.h>
-#include <dm/of_access.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -22,127 +23,58 @@ DECLARE_GLOBAL_DATA_PTR;
  */
 static const unsigned long baudrate_table[] = CONFIG_SYS_BAUDRATE_TABLE;
 
-#if !CONFIG_VAL(SYS_MALLOC_F_LEN)
-#error "Serial is required before relocation - define CONFIG_$(SPL_)SYS_MALLOC_F_LEN to make this work"
+#ifndef CONFIG_SYS_MALLOC_F_LEN
+#error "Serial is required before relocation - define CONFIG_SYS_MALLOC_F_LEN to make this work"
 #endif
-
-static int serial_check_stdout(const void *blob, struct udevice **devp)
-{
-	int node;
-
-	/* Check for a chosen console */
-	node = fdtdec_get_chosen_node(blob, "stdout-path");
-	if (node < 0) {
-		const char *str, *p, *name;
-
-		/*
-		 * Deal with things like
-		 *	stdout-path = "serial0:115200n8";
-		 *
-		 * We need to look up the alias and then follow it to the
-		 * correct node.
-		 */
-		str = fdtdec_get_chosen_prop(blob, "stdout-path");
-		if (str) {
-			p = strchr(str, ':');
-			name = fdt_get_alias_namelen(blob, str,
-					p ? p - str : strlen(str));
-			if (name)
-				node = fdt_path_offset(blob, name);
-		}
-	}
-	if (node < 0)
-		node = fdt_path_offset(blob, "console");
-	if (!uclass_get_device_by_of_offset(UCLASS_SERIAL, node, devp))
-		return 0;
-
-	/*
-	 * If the console is not marked to be bound before relocation, bind it
-	 * anyway.
-	 */
-	if (node > 0 && !lists_bind_fdt(gd->dm_root, offset_to_ofnode(node),
-					devp)) {
-		if (!device_probe(*devp))
-			return 0;
-	}
-
-	return -ENODEV;
-}
 
 static void serial_find_console_or_panic(void)
 {
-	const void *blob = gd->fdt_blob;
 	struct udevice *dev;
-#ifdef CONFIG_SERIAL_SEARCH_ALL
-	int ret;
-#endif
+	int node;
 
-	if (CONFIG_IS_ENABLED(OF_PLATDATA)) {
-		uclass_first_device(UCLASS_SERIAL, &dev);
-		if (dev) {
+	if (CONFIG_IS_ENABLED(OF_CONTROL) && gd->fdt_blob) {
+		/* Check for a chosen console */
+		node = fdtdec_get_chosen_node(gd->fdt_blob, "stdout-path");
+		if (node < 0)
+			node = fdt_path_offset(gd->fdt_blob, "console");
+		if (!uclass_get_device_by_of_offset(UCLASS_SERIAL, node,
+						    &dev)) {
 			gd->cur_serial_dev = dev;
 			return;
 		}
-	} else if (CONFIG_IS_ENABLED(OF_CONTROL) && blob) {
-		/* Live tree has support for stdout */
-		if (of_live_active()) {
-			struct device_node *np = of_get_stdout();
 
-			if (np && !uclass_get_device_by_ofnode(UCLASS_SERIAL,
-					np_to_ofnode(np), &dev)) {
-				gd->cur_serial_dev = dev;
-				return;
-			}
-		} else {
-			if (!serial_check_stdout(blob, &dev)) {
+		/*
+		* If the console is not marked to be bound before relocation,
+		* bind it anyway.
+		*/
+		if (node > 0 &&
+		    !lists_bind_fdt(gd->dm_root, gd->fdt_blob, node, &dev)) {
+			if (!device_probe(dev)) {
 				gd->cur_serial_dev = dev;
 				return;
 			}
 		}
 	}
-	if (!SPL_BUILD || !CONFIG_IS_ENABLED(OF_CONTROL) || !blob) {
+	if (!SPL_BUILD || !CONFIG_IS_ENABLED(OF_CONTROL) || !gd->fdt_blob) {
 		/*
-		 * Try to use CONFIG_CONS_INDEX if available (it is numbered
-		 * from 1!).
-		 *
-		 * Failing that, get the device with sequence number 0, or in
-		 * extremis just the first working serial device we can find.
-		 * But we insist on having a console (even if it is silent).
-		 */
+		* Try to use CONFIG_CONS_INDEX if available (it is numbered
+		* from 1!).
+		*
+		* Failing that, get the device with sequence number 0, or in
+		* extremis just the first serial device we can find. But we
+		* insist on having a console (even if it is silent).
+		*/
 #ifdef CONFIG_CONS_INDEX
 #define INDEX (CONFIG_CONS_INDEX - 1)
 #else
 #define INDEX 0
 #endif
-
-#ifdef CONFIG_SERIAL_SEARCH_ALL
-		if (!uclass_get_device_by_seq(UCLASS_SERIAL, INDEX, &dev) ||
-		    !uclass_get_device(UCLASS_SERIAL, INDEX, &dev)) {
-			if (dev->flags & DM_FLAG_ACTIVATED) {
-				gd->cur_serial_dev = dev;
-				return;
-			}
-		}
-
-		/* Search for any working device */
-		for (ret = uclass_first_device_check(UCLASS_SERIAL, &dev);
-		     dev;
-		     ret = uclass_next_device_check(&dev)) {
-			if (!ret) {
-				/* Device did succeed probing */
-				gd->cur_serial_dev = dev;
-				return;
-			}
-		}
-#else
 		if (!uclass_get_device_by_seq(UCLASS_SERIAL, INDEX, &dev) ||
 		    !uclass_get_device(UCLASS_SERIAL, INDEX, &dev) ||
 		    (!uclass_first_device(UCLASS_SERIAL, &dev) && dev)) {
 			gd->cur_serial_dev = dev;
 			return;
 		}
-#endif
-
 #undef INDEX
 	}
 
@@ -163,7 +95,7 @@ int serial_init(void)
 /* Called after relocation */
 void serial_initialize(void)
 {
-	serial_init();
+	serial_find_console_or_panic();
 }
 
 static void _serial_putc(struct udevice *dev, char ch)
@@ -171,12 +103,11 @@ static void _serial_putc(struct udevice *dev, char ch)
 	struct dm_serial_ops *ops = serial_get_ops(dev);
 	int err;
 
-	if (ch == '\n')
-		_serial_putc(dev, '\r');
-
 	do {
 		err = ops->putc(dev, ch);
 	} while (err == -EAGAIN);
+	if (ch == '\n')
+		_serial_putc(dev, '\r');
 }
 
 static void _serial_puts(struct udevice *dev, const char *str)
@@ -185,7 +116,7 @@ static void _serial_puts(struct udevice *dev, const char *str)
 		_serial_putc(dev, *str++);
 }
 
-static int __serial_getc(struct udevice *dev)
+static int _serial_getc(struct udevice *dev)
 {
 	struct dm_serial_ops *ops = serial_get_ops(dev);
 	int err;
@@ -199,7 +130,7 @@ static int __serial_getc(struct udevice *dev)
 	return err >= 0 ? err : 0;
 }
 
-static int __serial_tstc(struct udevice *dev)
+static int _serial_tstc(struct udevice *dev)
 {
 	struct dm_serial_ops *ops = serial_get_ops(dev);
 
@@ -208,44 +139,6 @@ static int __serial_tstc(struct udevice *dev)
 
 	return 1;
 }
-
-#if CONFIG_IS_ENABLED(SERIAL_RX_BUFFER)
-static int _serial_tstc(struct udevice *dev)
-{
-	struct serial_dev_priv *upriv = dev_get_uclass_priv(dev);
-
-	/* Read all available chars into the RX buffer */
-	while (__serial_tstc(dev)) {
-		upriv->buf[upriv->wr_ptr++] = __serial_getc(dev);
-		upriv->wr_ptr %= CONFIG_SERIAL_RX_BUFFER_SIZE;
-	}
-
-	return upriv->rd_ptr != upriv->wr_ptr ? 1 : 0;
-}
-
-static int _serial_getc(struct udevice *dev)
-{
-	struct serial_dev_priv *upriv = dev_get_uclass_priv(dev);
-	char val;
-
-	val = upriv->buf[upriv->rd_ptr++];
-	upriv->rd_ptr %= CONFIG_SERIAL_RX_BUFFER_SIZE;
-
-	return val;
-}
-
-#else /* CONFIG_IS_ENABLED(SERIAL_RX_BUFFER) */
-
-static int _serial_getc(struct udevice *dev)
-{
-	return __serial_getc(dev);
-}
-
-static int _serial_tstc(struct udevice *dev)
-{
-	return __serial_tstc(dev);
-}
-#endif /* CONFIG_IS_ENABLED(SERIAL_RX_BUFFER) */
 
 void serial_putc(char ch)
 {
@@ -291,30 +184,27 @@ void serial_stdio_init(void)
 {
 }
 
-#if defined(CONFIG_DM_STDIO)
-
-#if CONFIG_IS_ENABLED(SERIAL_PRESENT)
+#ifdef CONFIG_DM_STDIO
 static void serial_stub_putc(struct stdio_dev *sdev, const char ch)
 {
 	_serial_putc(sdev->priv, ch);
 }
 #endif
 
-static void serial_stub_puts(struct stdio_dev *sdev, const char *str)
+void serial_stub_puts(struct stdio_dev *sdev, const char *str)
 {
 	_serial_puts(sdev->priv, str);
 }
 
-static int serial_stub_getc(struct stdio_dev *sdev)
+int serial_stub_getc(struct stdio_dev *sdev)
 {
 	return _serial_getc(sdev->priv);
 }
 
-static int serial_stub_tstc(struct stdio_dev *sdev)
+int serial_stub_tstc(struct stdio_dev *sdev)
 {
 	return _serial_tstc(sdev->priv);
 }
-#endif
 
 /**
  * on_baudrate() - Update the actual baudrate when the env var changes
@@ -377,7 +267,6 @@ static int on_baudrate(const char *name, const char *value, enum env_op op,
 }
 U_BOOT_ENV_CALLBACK(baudrate, on_baudrate);
 
-#if CONFIG_IS_ENABLED(SERIAL_PRESENT)
 static int serial_post_probe(struct udevice *dev)
 {
 	struct dm_serial_ops *ops = serial_get_ops(dev);
@@ -416,18 +305,12 @@ static int serial_post_probe(struct udevice *dev)
 	memset(&sdev, '\0', sizeof(sdev));
 
 	strncpy(sdev.name, dev->name, sizeof(sdev.name));
-	sdev.flags = DEV_FLAGS_OUTPUT | DEV_FLAGS_INPUT | DEV_FLAGS_DM;
+	sdev.flags = DEV_FLAGS_OUTPUT | DEV_FLAGS_INPUT;
 	sdev.priv = dev;
 	sdev.putc = serial_stub_putc;
 	sdev.puts = serial_stub_puts;
 	sdev.getc = serial_stub_getc;
 	sdev.tstc = serial_stub_tstc;
-
-#if CONFIG_IS_ENABLED(SERIAL_RX_BUFFER)
-	/* Allocate the RX buffer */
-	upriv->buf = malloc(CONFIG_SERIAL_RX_BUFFER_SIZE);
-#endif
-
 	stdio_register_dev(&sdev, &upriv->sdev);
 #endif
 	return 0;
@@ -435,10 +318,10 @@ static int serial_post_probe(struct udevice *dev)
 
 static int serial_pre_remove(struct udevice *dev)
 {
-#if CONFIG_IS_ENABLED(SYS_STDIO_DEREGISTER)
+#ifdef CONFIG_SYS_STDIO_DEREGISTER
 	struct serial_dev_priv *upriv = dev_get_uclass_priv(dev);
 
-	if (stdio_deregister_dev(upriv->sdev, true))
+	if (stdio_deregister_dev(upriv->sdev, 0))
 		return -EPERM;
 #endif
 
@@ -453,4 +336,3 @@ UCLASS_DRIVER(serial) = {
 	.pre_remove	= serial_pre_remove,
 	.per_device_auto_alloc_size = sizeof(struct serial_dev_priv),
 };
-#endif

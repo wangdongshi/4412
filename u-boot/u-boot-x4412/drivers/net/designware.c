@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2010
  * Vipin Kumar, ST Micoelectronics, vipin.kumar@st.com.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /*
@@ -9,7 +10,6 @@
  */
 
 #include <common.h>
-#include <clk.h>
 #include <dm.h>
 #include <errno.h>
 #include <miiphy.h>
@@ -17,19 +17,18 @@
 #include <pci.h>
 #include <linux/compiler.h>
 #include <linux/err.h>
-#include <linux/kernel.h>
 #include <asm/io.h>
-#include <power/regulator.h>
 #include "designware.h"
+
+DECLARE_GLOBAL_DATA_PTR;
+
+#if !defined(CONFIG_PHYLIB)
+# error "DesignWare Ether MAC requires PHYLIB - missing CONFIG_PHYLIB"
+#endif
 
 static int dw_mdio_read(struct mii_dev *bus, int addr, int devad, int reg)
 {
-#ifdef CONFIG_DM_ETH
-	struct dw_eth_dev *priv = dev_get_priv((struct udevice *)bus->priv);
-	struct eth_mac_regs *mac_p = priv->mac_regs_p;
-#else
 	struct eth_mac_regs *mac_p = bus->priv;
-#endif
 	ulong start;
 	u16 miiaddr;
 	int timeout = CONFIG_MDIO_TIMEOUT;
@@ -52,12 +51,7 @@ static int dw_mdio_read(struct mii_dev *bus, int addr, int devad, int reg)
 static int dw_mdio_write(struct mii_dev *bus, int addr, int devad, int reg,
 			u16 val)
 {
-#ifdef CONFIG_DM_ETH
-	struct dw_eth_dev *priv = dev_get_priv((struct udevice *)bus->priv);
-	struct eth_mac_regs *mac_p = priv->mac_regs_p;
-#else
 	struct eth_mac_regs *mac_p = bus->priv;
-#endif
 	ulong start;
 	u16 miiaddr;
 	int ret = -ETIMEDOUT, timeout = CONFIG_MDIO_TIMEOUT;
@@ -80,41 +74,7 @@ static int dw_mdio_write(struct mii_dev *bus, int addr, int devad, int reg,
 	return ret;
 }
 
-#if defined(CONFIG_DM_ETH) && defined(CONFIG_DM_GPIO)
-static int dw_mdio_reset(struct mii_dev *bus)
-{
-	struct udevice *dev = bus->priv;
-	struct dw_eth_dev *priv = dev_get_priv(dev);
-	struct dw_eth_pdata *pdata = dev_get_platdata(dev);
-	int ret;
-
-	if (!dm_gpio_is_valid(&priv->reset_gpio))
-		return 0;
-
-	/* reset the phy */
-	ret = dm_gpio_set_value(&priv->reset_gpio, 0);
-	if (ret)
-		return ret;
-
-	udelay(pdata->reset_delays[0]);
-
-	ret = dm_gpio_set_value(&priv->reset_gpio, 1);
-	if (ret)
-		return ret;
-
-	udelay(pdata->reset_delays[1]);
-
-	ret = dm_gpio_set_value(&priv->reset_gpio, 0);
-	if (ret)
-		return ret;
-
-	udelay(pdata->reset_delays[2]);
-
-	return 0;
-}
-#endif
-
-static int dw_mdio_init(const char *name, void *priv)
+static int dw_mdio_init(const char *name, struct eth_mac_regs *mac_regs_p)
 {
 	struct mii_dev *bus = mdio_alloc();
 
@@ -125,12 +85,9 @@ static int dw_mdio_init(const char *name, void *priv)
 
 	bus->read = dw_mdio_read;
 	bus->write = dw_mdio_write;
-	snprintf(bus->name, sizeof(bus->name), "%s", name);
-#if defined(CONFIG_DM_ETH) && defined(CONFIG_DM_GPIO)
-	bus->reset = dw_mdio_reset;
-#endif
+	snprintf(bus->name, sizeof(bus->name), name);
 
-	bus->priv = priv;
+	bus->priv = (void *)mac_regs_p;
 
 	return mdio_register(bus);
 }
@@ -145,13 +102,13 @@ static void tx_descs_init(struct dw_eth_dev *priv)
 
 	for (idx = 0; idx < CONFIG_TX_DESCR_NUM; idx++) {
 		desc_p = &desc_table_p[idx];
-		desc_p->dmamac_addr = (ulong)&txbuffs[idx * CONFIG_ETH_BUFSIZE];
-		desc_p->dmamac_next = (ulong)&desc_table_p[idx + 1];
+		desc_p->dmamac_addr = &txbuffs[idx * CONFIG_ETH_BUFSIZE];
+		desc_p->dmamac_next = &desc_table_p[idx + 1];
 
 #if defined(CONFIG_DW_ALTDESCRIPTOR)
 		desc_p->txrx_status &= ~(DESC_TXSTS_TXINT | DESC_TXSTS_TXLAST |
-				DESC_TXSTS_TXFIRST | DESC_TXSTS_TXCRCDIS |
-				DESC_TXSTS_TXCHECKINSCTRL |
+				DESC_TXSTS_TXFIRST | DESC_TXSTS_TXCRCDIS | \
+				DESC_TXSTS_TXCHECKINSCTRL | \
 				DESC_TXSTS_TXRINGEND | DESC_TXSTS_TXPADDIS);
 
 		desc_p->txrx_status |= DESC_TXSTS_TXCHAIN;
@@ -164,11 +121,11 @@ static void tx_descs_init(struct dw_eth_dev *priv)
 	}
 
 	/* Correcting the last pointer of the chain */
-	desc_p->dmamac_next = (ulong)&desc_table_p[0];
+	desc_p->dmamac_next = &desc_table_p[0];
 
 	/* Flush all Tx buffer descriptors at once */
-	flush_dcache_range((ulong)priv->tx_mac_descrtable,
-			   (ulong)priv->tx_mac_descrtable +
+	flush_dcache_range((unsigned int)priv->tx_mac_descrtable,
+			   (unsigned int)priv->tx_mac_descrtable +
 			   sizeof(priv->tx_mac_descrtable));
 
 	writel((ulong)&desc_table_p[0], &dma_p->txdesclistaddr);
@@ -189,26 +146,27 @@ static void rx_descs_init(struct dw_eth_dev *priv)
 	 * Otherwise there's a chance to get some of them flushed in RAM when
 	 * GMAC is already pushing data to RAM via DMA. This way incoming from
 	 * GMAC data will be corrupted. */
-	flush_dcache_range((ulong)rxbuffs, (ulong)rxbuffs + RX_TOTAL_BUFSIZE);
+	flush_dcache_range((unsigned int)rxbuffs, (unsigned int)rxbuffs +
+			   RX_TOTAL_BUFSIZE);
 
 	for (idx = 0; idx < CONFIG_RX_DESCR_NUM; idx++) {
 		desc_p = &desc_table_p[idx];
-		desc_p->dmamac_addr = (ulong)&rxbuffs[idx * CONFIG_ETH_BUFSIZE];
-		desc_p->dmamac_next = (ulong)&desc_table_p[idx + 1];
+		desc_p->dmamac_addr = &rxbuffs[idx * CONFIG_ETH_BUFSIZE];
+		desc_p->dmamac_next = &desc_table_p[idx + 1];
 
 		desc_p->dmamac_cntl =
-			(MAC_MAX_FRAME_SZ & DESC_RXCTRL_SIZE1MASK) |
+			(MAC_MAX_FRAME_SZ & DESC_RXCTRL_SIZE1MASK) | \
 				      DESC_RXCTRL_RXCHAIN;
 
 		desc_p->txrx_status = DESC_RXSTS_OWNBYDMA;
 	}
 
 	/* Correcting the last pointer of the chain */
-	desc_p->dmamac_next = (ulong)&desc_table_p[0];
+	desc_p->dmamac_next = &desc_table_p[0];
 
 	/* Flush all Rx buffer descriptors at once */
-	flush_dcache_range((ulong)priv->rx_mac_descrtable,
-			   (ulong)priv->rx_mac_descrtable +
+	flush_dcache_range((unsigned int)priv->rx_mac_descrtable,
+			   (unsigned int)priv->rx_mac_descrtable +
 			   sizeof(priv->rx_mac_descrtable));
 
 	writel((ulong)&desc_table_p[0], &dma_p->rxdesclistaddr);
@@ -230,20 +188,18 @@ static int _dw_write_hwaddr(struct dw_eth_dev *priv, u8 *mac_id)
 	return 0;
 }
 
-static int dw_adjust_link(struct dw_eth_dev *priv, struct eth_mac_regs *mac_p,
-			  struct phy_device *phydev)
+static void dw_adjust_link(struct eth_mac_regs *mac_p,
+			   struct phy_device *phydev)
 {
 	u32 conf = readl(&mac_p->conf) | FRAMEBURSTENABLE | DISABLERXOWN;
 
 	if (!phydev->link) {
 		printf("%s: No link.\n", phydev->dev->name);
-		return 0;
+		return;
 	}
 
 	if (phydev->speed != 1000)
 		conf |= MII_PORTSELECT;
-	else
-		conf &= ~MII_PORTSELECT;
 
 	if (phydev->speed == 100)
 		conf |= FES_100;
@@ -256,8 +212,6 @@ static int dw_adjust_link(struct dw_eth_dev *priv, struct eth_mac_regs *mac_p,
 	printf("Speed: %d, %s duplex%s\n", phydev->speed,
 	       (phydev->duplex) ? "full" : "half",
 	       (phydev->port == PORT_FIBRE) ? ", fiber mode" : "");
-
-	return 0;
 }
 
 static void _dw_eth_halt(struct dw_eth_dev *priv)
@@ -271,7 +225,7 @@ static void _dw_eth_halt(struct dw_eth_dev *priv)
 	phy_shutdown(priv->phydev);
 }
 
-int designware_eth_init(struct dw_eth_dev *priv, u8 *enetaddr)
+static int _dw_eth_init(struct dw_eth_dev *priv, u8 *enetaddr)
 {
 	struct eth_mac_regs *mac_p = priv->mac_regs_p;
 	struct eth_dma_regs *dma_p = priv->dma_regs_p;
@@ -279,15 +233,6 @@ int designware_eth_init(struct dw_eth_dev *priv, u8 *enetaddr)
 	int ret;
 
 	writel(readl(&dma_p->busmode) | DMAMAC_SRST, &dma_p->busmode);
-
-	/*
-	 * When a MII PHY is used, we must set the PS bit for the DMA
-	 * reset to succeed.
-	 */
-	if (priv->phydev->interface == PHY_INTERFACE_MODE_MII)
-		writel(readl(&mac_p->conf) | MII_PORTSELECT, &mac_p->conf);
-	else
-		writel(readl(&mac_p->conf) & ~MII_PORTSELECT, &mac_p->conf);
 
 	start = get_timer(0);
 	while (readl(&dma_p->busmode) & DMAMAC_SRST) {
@@ -332,16 +277,7 @@ int designware_eth_init(struct dw_eth_dev *priv, u8 *enetaddr)
 		return ret;
 	}
 
-	ret = dw_adjust_link(priv, mac_p, priv->phydev);
-	if (ret)
-		return ret;
-
-	return 0;
-}
-
-int designware_eth_enable(struct dw_eth_dev *priv)
-{
-	struct eth_mac_regs *mac_p = priv->mac_regs_p;
+	dw_adjust_link(mac_p, priv->phydev);
 
 	if (!priv->phydev->link)
 		return -EIO;
@@ -351,18 +287,17 @@ int designware_eth_enable(struct dw_eth_dev *priv)
 	return 0;
 }
 
-#define ETH_ZLEN	60
-
 static int _dw_eth_send(struct dw_eth_dev *priv, void *packet, int length)
 {
 	struct eth_dma_regs *dma_p = priv->dma_regs_p;
 	u32 desc_num = priv->tx_currdescnum;
 	struct dmamacdescr *desc_p = &priv->tx_mac_descrtable[desc_num];
-	ulong desc_start = (ulong)desc_p;
-	ulong desc_end = desc_start +
+	uint32_t desc_start = (uint32_t)desc_p;
+	uint32_t desc_end = desc_start +
 		roundup(sizeof(*desc_p), ARCH_DMA_MINALIGN);
-	ulong data_start = desc_p->dmamac_addr;
-	ulong data_end = data_start + roundup(length, ARCH_DMA_MINALIGN);
+	uint32_t data_start = (uint32_t)desc_p->dmamac_addr;
+	uint32_t data_end = data_start +
+		roundup(length, ARCH_DMA_MINALIGN);
 	/*
 	 * Strictly we only need to invalidate the "txrx_status" field
 	 * for the following check, but on some platforms we cannot
@@ -379,23 +314,21 @@ static int _dw_eth_send(struct dw_eth_dev *priv, void *packet, int length)
 		return -EPERM;
 	}
 
-	length = max(length, ETH_ZLEN);
-
-	memcpy((void *)data_start, packet, length);
+	memcpy(desc_p->dmamac_addr, packet, length);
 
 	/* Flush data to be sent */
 	flush_dcache_range(data_start, data_end);
 
 #if defined(CONFIG_DW_ALTDESCRIPTOR)
 	desc_p->txrx_status |= DESC_TXSTS_TXFIRST | DESC_TXSTS_TXLAST;
-	desc_p->dmamac_cntl |= (length << DESC_TXCTRL_SIZE1SHFT) &
+	desc_p->dmamac_cntl |= (length << DESC_TXCTRL_SIZE1SHFT) & \
 			       DESC_TXCTRL_SIZE1MASK;
 
 	desc_p->txrx_status &= ~(DESC_TXSTS_MSK);
 	desc_p->txrx_status |= DESC_TXSTS_OWNBYDMA;
 #else
-	desc_p->dmamac_cntl |= ((length << DESC_TXCTRL_SIZE1SHFT) &
-			       DESC_TXCTRL_SIZE1MASK) | DESC_TXCTRL_TXLAST |
+	desc_p->dmamac_cntl |= ((length << DESC_TXCTRL_SIZE1SHFT) & \
+			       DESC_TXCTRL_SIZE1MASK) | DESC_TXCTRL_TXLAST | \
 			       DESC_TXCTRL_TXFIRST;
 
 	desc_p->txrx_status = DESC_TXSTS_OWNBYDMA;
@@ -421,11 +354,11 @@ static int _dw_eth_recv(struct dw_eth_dev *priv, uchar **packetp)
 	u32 status, desc_num = priv->rx_currdescnum;
 	struct dmamacdescr *desc_p = &priv->rx_mac_descrtable[desc_num];
 	int length = -EAGAIN;
-	ulong desc_start = (ulong)desc_p;
-	ulong desc_end = desc_start +
+	uint32_t desc_start = (uint32_t)desc_p;
+	uint32_t desc_end = desc_start +
 		roundup(sizeof(*desc_p), ARCH_DMA_MINALIGN);
-	ulong data_start = desc_p->dmamac_addr;
-	ulong data_end;
+	uint32_t data_start = (uint32_t)desc_p->dmamac_addr;
+	uint32_t data_end;
 
 	/* Invalidate entire buffer descriptor */
 	invalidate_dcache_range(desc_start, desc_end);
@@ -435,13 +368,13 @@ static int _dw_eth_recv(struct dw_eth_dev *priv, uchar **packetp)
 	/* Check  if the owner is the CPU */
 	if (!(status & DESC_RXSTS_OWNBYDMA)) {
 
-		length = (status & DESC_RXSTS_FRMLENMSK) >>
+		length = (status & DESC_RXSTS_FRMLENMSK) >> \
 			 DESC_RXSTS_FRMLENSHFT;
 
 		/* Invalidate received data */
 		data_end = data_start + roundup(length, ARCH_DMA_MINALIGN);
 		invalidate_dcache_range(data_start, data_end);
-		*packetp = (uchar *)(ulong)desc_p->dmamac_addr;
+		*packetp = desc_p->dmamac_addr;
 	}
 
 	return length;
@@ -451,8 +384,8 @@ static int _dw_free_pkt(struct dw_eth_dev *priv)
 {
 	u32 desc_num = priv->rx_currdescnum;
 	struct dmamacdescr *desc_p = &priv->rx_mac_descrtable[desc_num];
-	ulong desc_start = (ulong)desc_p;
-	ulong desc_end = desc_start +
+	uint32_t desc_start = (uint32_t)desc_p;
+	uint32_t desc_end = desc_start +
 		roundup(sizeof(*desc_p), ARCH_DMA_MINALIGN);
 
 	/*
@@ -475,7 +408,7 @@ static int _dw_free_pkt(struct dw_eth_dev *priv)
 static int dw_phy_init(struct dw_eth_dev *priv, void *dev)
 {
 	struct phy_device *phydev;
-	int mask = 0xffffffff, ret;
+	int mask = 0xffffffff;
 
 #ifdef CONFIG_PHY_ADDR
 	mask = 1 << CONFIG_PHY_ADDR;
@@ -488,11 +421,6 @@ static int dw_phy_init(struct dw_eth_dev *priv, void *dev)
 	phy_connect_dev(phydev, dev);
 
 	phydev->supported &= PHY_GBIT_FEATURES;
-	if (priv->max_speed) {
-		ret = phy_set_supported(phydev, priv->max_speed);
-		if (ret)
-			return ret;
-	}
 	phydev->advertising = phydev->supported;
 
 	priv->phydev = phydev;
@@ -504,13 +432,7 @@ static int dw_phy_init(struct dw_eth_dev *priv, void *dev)
 #ifndef CONFIG_DM_ETH
 static int dw_eth_init(struct eth_device *dev, bd_t *bis)
 {
-	int ret;
-
-	ret = designware_eth_init(dev->priv, dev->enetaddr);
-	if (!ret)
-		ret = designware_eth_enable(dev->priv);
-
-	return ret;
+	return _dw_eth_init(dev->priv, dev->enetaddr);
 }
 
 static int dw_eth_send(struct eth_device *dev, void *packet, int length)
@@ -563,11 +485,6 @@ int designware_initialize(ulong base_addr, u32 interface)
 		return -ENOMEM;
 	}
 
-	if ((phys_addr_t)priv + sizeof(*priv) > (1ULL << 32)) {
-		printf("designware: buffers are outside DMA memory\n");
-		return -EINVAL;
-	}
-
 	memset(dev, 0, sizeof(struct eth_device));
 	memset(priv, 0, sizeof(struct dw_eth_dev));
 
@@ -601,48 +518,40 @@ int designware_initialize(ulong base_addr, u32 interface)
 static int designware_eth_start(struct udevice *dev)
 {
 	struct eth_pdata *pdata = dev_get_platdata(dev);
-	struct dw_eth_dev *priv = dev_get_priv(dev);
-	int ret;
 
-	ret = designware_eth_init(priv, pdata->enetaddr);
-	if (ret)
-		return ret;
-	ret = designware_eth_enable(priv);
-	if (ret)
-		return ret;
-
-	return 0;
+	return _dw_eth_init(dev->priv, pdata->enetaddr);
 }
 
-int designware_eth_send(struct udevice *dev, void *packet, int length)
+static int designware_eth_send(struct udevice *dev, void *packet, int length)
 {
 	struct dw_eth_dev *priv = dev_get_priv(dev);
 
 	return _dw_eth_send(priv, packet, length);
 }
 
-int designware_eth_recv(struct udevice *dev, int flags, uchar **packetp)
+static int designware_eth_recv(struct udevice *dev, int flags, uchar **packetp)
 {
 	struct dw_eth_dev *priv = dev_get_priv(dev);
 
 	return _dw_eth_recv(priv, packetp);
 }
 
-int designware_eth_free_pkt(struct udevice *dev, uchar *packet, int length)
+static int designware_eth_free_pkt(struct udevice *dev, uchar *packet,
+				   int length)
 {
 	struct dw_eth_dev *priv = dev_get_priv(dev);
 
 	return _dw_free_pkt(priv);
 }
 
-void designware_eth_stop(struct udevice *dev)
+static void designware_eth_stop(struct udevice *dev)
 {
 	struct dw_eth_dev *priv = dev_get_priv(dev);
 
 	return _dw_eth_halt(priv);
 }
 
-int designware_eth_write_hwaddr(struct udevice *dev)
+static int designware_eth_write_hwaddr(struct udevice *dev)
 {
 	struct eth_pdata *pdata = dev_get_platdata(dev);
 	struct dw_eth_dev *priv = dev_get_priv(dev);
@@ -666,58 +575,12 @@ static int designware_eth_bind(struct udevice *dev)
 	return 0;
 }
 
-int designware_eth_probe(struct udevice *dev)
+static int designware_eth_probe(struct udevice *dev)
 {
 	struct eth_pdata *pdata = dev_get_platdata(dev);
 	struct dw_eth_dev *priv = dev_get_priv(dev);
 	u32 iobase = pdata->iobase;
-	ulong ioaddr;
 	int ret;
-#ifdef CONFIG_CLK
-	int i, err, clock_nb;
-
-	priv->clock_count = 0;
-	clock_nb = dev_count_phandle_with_args(dev, "clocks", "#clock-cells");
-	if (clock_nb > 0) {
-		priv->clocks = devm_kcalloc(dev, clock_nb, sizeof(struct clk),
-					    GFP_KERNEL);
-		if (!priv->clocks)
-			return -ENOMEM;
-
-		for (i = 0; i < clock_nb; i++) {
-			err = clk_get_by_index(dev, i, &priv->clocks[i]);
-			if (err < 0)
-				break;
-
-			err = clk_enable(&priv->clocks[i]);
-			if (err && err != -ENOSYS && err != -ENOTSUPP) {
-				pr_err("failed to enable clock %d\n", i);
-				clk_free(&priv->clocks[i]);
-				goto clk_err;
-			}
-			priv->clock_count++;
-		}
-	} else if (clock_nb != -ENOENT) {
-		pr_err("failed to get clock phandle(%d)\n", clock_nb);
-		return clock_nb;
-	}
-#endif
-
-#if defined(CONFIG_DM_REGULATOR)
-	struct udevice *phy_supply;
-
-	ret = device_get_supply_regulator(dev, "phy-supply",
-					  &phy_supply);
-	if (ret) {
-		debug("%s: No phy supply\n", dev->name);
-	} else {
-		ret = regulator_set_enable(phy_supply, true);
-		if (ret) {
-			puts("Error enabling phy supply\n");
-			return ret;
-		}
-	}
-#endif
 
 #ifdef CONFIG_DM_PCI
 	/*
@@ -725,9 +588,11 @@ int designware_eth_probe(struct udevice *dev)
 	 * or via a PCI bridge, fill in platdata before we probe the hardware.
 	 */
 	if (device_is_on_pci_bus(dev)) {
+		pci_dev_t bdf = pci_get_bdf(dev);
+
 		dm_pci_read_config32(dev, PCI_BASE_ADDRESS_0, &iobase);
 		iobase &= PCI_BASE_ADDRESS_MEM_MASK;
-		iobase = dm_pci_mem_to_phys(dev, iobase);
+		iobase = pci_mem_to_phys(bdf, iobase);
 
 		pdata->iobase = iobase;
 		pdata->phy_interface = PHY_INTERFACE_MODE_RMII;
@@ -735,46 +600,20 @@ int designware_eth_probe(struct udevice *dev)
 #endif
 
 	debug("%s, iobase=%x, priv=%p\n", __func__, iobase, priv);
-	ioaddr = iobase;
-	priv->mac_regs_p = (struct eth_mac_regs *)ioaddr;
-	priv->dma_regs_p = (struct eth_dma_regs *)(ioaddr + DW_DMA_BASE_OFFSET);
+	priv->mac_regs_p = (struct eth_mac_regs *)iobase;
+	priv->dma_regs_p = (struct eth_dma_regs *)(iobase + DW_DMA_BASE_OFFSET);
 	priv->interface = pdata->phy_interface;
-	priv->max_speed = pdata->max_speed;
 
-	dw_mdio_init(dev->name, dev);
+	dw_mdio_init(dev->name, priv->mac_regs_p);
 	priv->bus = miiphy_get_dev_by_name(dev->name);
 
 	ret = dw_phy_init(priv, dev);
 	debug("%s, ret=%d\n", __func__, ret);
 
 	return ret;
-
-#ifdef CONFIG_CLK
-clk_err:
-	ret = clk_release_all(priv->clocks, priv->clock_count);
-	if (ret)
-		pr_err("failed to disable all clocks\n");
-
-	return err;
-#endif
 }
 
-static int designware_eth_remove(struct udevice *dev)
-{
-	struct dw_eth_dev *priv = dev_get_priv(dev);
-
-	free(priv->phydev);
-	mdio_unregister(priv->bus);
-	mdio_free(priv->bus);
-
-#ifdef CONFIG_CLK
-	return clk_release_all(priv->clocks, priv->clock_count);
-#else
-	return 0;
-#endif
-}
-
-const struct eth_ops designware_eth_ops = {
+static const struct eth_ops designware_eth_ops = {
 	.start			= designware_eth_start,
 	.send			= designware_eth_send,
 	.recv			= designware_eth_recv,
@@ -783,22 +622,14 @@ const struct eth_ops designware_eth_ops = {
 	.write_hwaddr		= designware_eth_write_hwaddr,
 };
 
-int designware_eth_ofdata_to_platdata(struct udevice *dev)
+static int designware_eth_ofdata_to_platdata(struct udevice *dev)
 {
-	struct dw_eth_pdata *dw_pdata = dev_get_platdata(dev);
-#ifdef CONFIG_DM_GPIO
-	struct dw_eth_dev *priv = dev_get_priv(dev);
-#endif
-	struct eth_pdata *pdata = &dw_pdata->eth_pdata;
+	struct eth_pdata *pdata = dev_get_platdata(dev);
 	const char *phy_mode;
-#ifdef CONFIG_DM_GPIO
-	int reset_flags = GPIOD_IS_OUT;
-#endif
-	int ret = 0;
 
-	pdata->iobase = dev_read_addr(dev);
+	pdata->iobase = dev_get_addr(dev);
 	pdata->phy_interface = -1;
-	phy_mode = dev_read_string(dev, "phy-mode");
+	phy_mode = fdt_getprop(gd->fdt_blob, dev->of_offset, "phy-mode", NULL);
 	if (phy_mode)
 		pdata->phy_interface = phy_get_interface_by_name(phy_mode);
 	if (pdata->phy_interface == -1) {
@@ -806,31 +637,12 @@ int designware_eth_ofdata_to_platdata(struct udevice *dev)
 		return -EINVAL;
 	}
 
-	pdata->max_speed = dev_read_u32_default(dev, "max-speed", 0);
-
-#ifdef CONFIG_DM_GPIO
-	if (dev_read_bool(dev, "snps,reset-active-low"))
-		reset_flags |= GPIOD_ACTIVE_LOW;
-
-	ret = gpio_request_by_name(dev, "snps,reset-gpio", 0,
-		&priv->reset_gpio, reset_flags);
-	if (ret == 0) {
-		ret = dev_read_u32_array(dev, "snps,reset-delays-us",
-					 dw_pdata->reset_delays, 3);
-	} else if (ret == -ENOENT) {
-		ret = 0;
-	}
-#endif
-
-	return ret;
+	return 0;
 }
 
 static const struct udevice_id designware_eth_ids[] = {
 	{ .compatible = "allwinner,sun7i-a20-gmac" },
 	{ .compatible = "altr,socfpga-stmmac" },
-	{ .compatible = "amlogic,meson6-dwmac" },
-	{ .compatible = "amlogic,meson-gx-dwmac" },
-	{ .compatible = "st,stm32-dwmac" },
 	{ }
 };
 
@@ -841,10 +653,9 @@ U_BOOT_DRIVER(eth_designware) = {
 	.ofdata_to_platdata = designware_eth_ofdata_to_platdata,
 	.bind	= designware_eth_bind,
 	.probe	= designware_eth_probe,
-	.remove	= designware_eth_remove,
 	.ops	= &designware_eth_ops,
 	.priv_auto_alloc_size = sizeof(struct dw_eth_dev),
-	.platdata_auto_alloc_size = sizeof(struct dw_eth_pdata),
+	.platdata_auto_alloc_size = sizeof(struct eth_pdata),
 	.flags = DM_FLAG_ALLOC_PRIV_DMA,
 };
 

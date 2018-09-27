@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2015 Google, Inc
  * Written by Simon Glass <sjg@chromium.org>
@@ -6,6 +5,8 @@
  * Based on Rockchip's drivers/power/pmic/pmic_act8846.c:
  * Copyright (C) 2012 rockchips
  * zyw <zyw@rock-chips.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -87,7 +88,7 @@ static int reg_get_value(struct udevice *dev)
 	int reg = dev->driver_data;
 	int ret;
 
-	ret = pmic_reg_read(dev->parent, addr_vol[reg]);
+	ret = pmic_reg_read(dev->parent, reg);
 	if (ret < 0)
 		return ret;
 
@@ -114,12 +115,12 @@ static int reg_set_enable(struct udevice *dev, bool enable)
 			       enable ? LDO_EN_MASK : 0);
 }
 
-static int reg_get_enable(struct udevice *dev)
+static bool reg_get_enable(struct udevice *dev)
 {
 	int reg = dev->driver_data;
 	int ret;
 
-	ret = pmic_reg_read(dev->parent, addr_ctl[reg]);
+	ret = pmic_reg_read(dev->parent, reg);
 	if (ret < 0)
 		return ret;
 

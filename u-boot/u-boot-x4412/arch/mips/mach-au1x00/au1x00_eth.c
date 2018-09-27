@@ -1,8 +1,9 @@
-// SPDX-License-Identifier: GPL-2.0+
 /* Only eth0 supported for now
  *
  * (C) Copyright 2003
  * Thomas.Lange@corelatus.se
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 #include <config.h>
 
@@ -42,7 +43,7 @@
 #include <net.h>
 #include <command.h>
 #include <asm/io.h>
-#include <mach/au1x00.h>
+#include <asm/au1x00.h>
 
 #if defined(CONFIG_CMD_MII)
 #include <miiphy.h>
@@ -72,9 +73,9 @@ mac_fifo_t mac_fifo[NO_OF_FIFOS];
 #define MAX_WAIT 1000
 
 #if defined(CONFIG_CMD_MII)
-int au1x00_miiphy_read(struct mii_dev *bus, int addr, int devad, int reg)
+int  au1x00_miiphy_read(const char *devname, unsigned char addr,
+		unsigned char reg, unsigned short * value)
 {
-	unsigned short value = 0;
 	volatile u32 *mii_control_reg = (volatile u32*)(ETH0_BASE+MAC_MII_CNTRL);
 	volatile u32 *mii_data_reg = (volatile u32*)(ETH0_BASE+MAC_MII_DATA);
 	u32 mii_control;
@@ -101,12 +102,12 @@ int au1x00_miiphy_read(struct mii_dev *bus, int addr, int devad, int reg)
 			return -1;
 		}
 	}
-	value = *mii_data_reg;
-	return value;
+	*value = *mii_data_reg;
+	return 0;
 }
 
-int au1x00_miiphy_write(struct mii_dev *bus, int addr, int devad, int reg,
-			u16 value)
+int  au1x00_miiphy_write(const char *devname, unsigned char addr,
+		unsigned char reg, unsigned short value)
 {
 	volatile u32 *mii_control_reg = (volatile u32*)(ETH0_BASE+MAC_MII_CNTRL);
 	volatile u32 *mii_data_reg = (volatile u32*)(ETH0_BASE+MAC_MII_DATA);
@@ -278,7 +279,7 @@ int au1x00_enet_initialize(bd_t *bis){
 
 	memset(dev, 0, sizeof *dev);
 
-	strcpy(dev->name, "Au1X00 ethernet");
+	sprintf(dev->name, "Au1X00 ethernet");
 	dev->iobase = 0;
 	dev->priv   = 0;
 	dev->init   = au1x00_init;
@@ -289,17 +290,8 @@ int au1x00_enet_initialize(bd_t *bis){
 	eth_register(dev);
 
 #if defined(CONFIG_CMD_MII)
-	int retval;
-	struct mii_dev *mdiodev = mdio_alloc();
-	if (!mdiodev)
-		return -ENOMEM;
-	strncpy(mdiodev->name, dev->name, MDIO_NAME_LEN);
-	mdiodev->read = au1x00_miiphy_read;
-	mdiodev->write = au1x00_miiphy_write;
-
-	retval = mdio_register(mdiodev);
-	if (retval < 0)
-		return retval;
+	miiphy_register(dev->name,
+		au1x00_miiphy_read, au1x00_miiphy_write);
 #endif
 
 	return 1;

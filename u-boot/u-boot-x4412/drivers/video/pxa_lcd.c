@@ -1,9 +1,10 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * PXA LCD Controller
  *
  * (C) Copyright 2001-2002
  * Wolfgang Denk, DENX Software Engineering -- wd@denx.de
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /************************************************************************/
@@ -174,7 +175,6 @@ vidinfo_t panel_info = {
 vidinfo_t panel_info = {
 	.vl_col		= 240,
 	.vl_row		= 320,
-	.vl_rot		= 3,
 	.vl_width	= 240,
 	.vl_height	= 320,
 	.vl_clkp	= CONFIG_SYS_HIGH,

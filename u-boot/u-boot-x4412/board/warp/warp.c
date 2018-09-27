@@ -1,10 +1,11 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2014, 2015 O.S. Systems Software LTDA.
  * Copyright (C) 2014 Kynetics LLC.
  * Copyright (C) 2014 Revolution Robotics, Inc.
  *
  * Author: Otavio Salvador <otavio@ossystems.com.br>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <asm/arch/clock.h>
@@ -13,8 +14,8 @@
 #include <asm/arch/mx6-pins.h>
 #include <asm/arch/sys_proto.h>
 #include <asm/gpio.h>
-#include <asm/mach-imx/iomux-v3.h>
-#include <asm/mach-imx/mxc_i2c.h>
+#include <asm/imx-common/iomux-v3.h>
+#include <asm/imx-common/mxc_i2c.h>
 #include <asm/io.h>
 #include <linux/sizes.h>
 #include <common.h>
@@ -45,7 +46,7 @@ DECLARE_GLOBAL_DATA_PTR;
 
 int dram_init(void)
 {
-	gd->ram_size = imx_ddr_size();
+	gd->ram_size = get_ram_size((void *)PHYS_SDRAM, PHYS_SDRAM_SIZE);
 
 	return 0;
 }
@@ -61,7 +62,7 @@ static void setup_iomux_uart(void)
 }
 
 static struct fsl_esdhc_cfg usdhc_cfg[1] = {
-	{USDHC2_BASE_ADDR, 0, 0, 0, 1},
+	{USDHC2_BASE_ADDR},
 };
 
 int board_mmc_getcd(struct mmc *mmc)

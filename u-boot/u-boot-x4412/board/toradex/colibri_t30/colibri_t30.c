@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
- *  (C) Copyright 2014-2016
+ *  (C) Copyright 2014
  *  Stefan Agner <stefan@agner.ch>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -13,7 +14,6 @@
 #include <asm/io.h>
 #include <i2c.h>
 #include "pinmux-config-colibri_t30.h"
-#include "../common/tdx-common.h"
 
 int arch_misc_init(void)
 {
@@ -23,20 +23,6 @@ int arch_misc_init(void)
 
 	return 0;
 }
-
-int checkboard(void)
-{
-	puts("Model: Toradex Colibri T30 1GB\n");
-
-	return 0;
-}
-
-#if defined(CONFIG_OF_LIBFDT) && defined(CONFIG_OF_BOARD_SETUP)
-int ft_board_setup(void *blob, bd_t *bd)
-{
-	return ft_common_board_setup(blob, bd);
-}
-#endif
 
 /*
  * Routine: pinmux_init
@@ -61,8 +47,8 @@ void pinmux_init(void)
 void pin_mux_usb(void)
 {
 	/* Reset ASIX using LAN_RESET */
-	gpio_request(TEGRA_GPIO(DD, 0), "LAN_RESET");
-	gpio_direction_output(TEGRA_GPIO(DD, 0), 0);
+	gpio_request(GPIO_PDD0, "LAN_RESET");
+	gpio_direction_output(GPIO_PDD0, 0);
 	udelay(5);
-	gpio_set_value(TEGRA_GPIO(DD, 0), 1);
+	gpio_set_value(GPIO_PDD0, 1);
 }

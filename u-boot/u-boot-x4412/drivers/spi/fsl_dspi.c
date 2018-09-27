@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2000-2003
  * Wolfgang Denk, DENX Software Engineering, wd@denx.de.
@@ -7,9 +6,9 @@
  * TsiChung Liew (Tsi-Chung.Liew@freescale.com)
  * Chao Fu (B44548@freescale.com)
  * Haikun Wang (B53464@freescale.com)
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
-
-#include <common.h>
 #include <dm.h>
 #include <errno.h>
 #include <common.h>
@@ -25,7 +24,7 @@
 DECLARE_GLOBAL_DATA_PTR;
 
 /* fsl_dspi_platdata flags */
-#define DSPI_FLAG_REGMAP_ENDIAN_BIG	BIT(0)
+#define DSPI_FLAG_REGMAP_ENDIAN_BIG	(1 << 0)
 
 /* idle data value */
 #define DSPI_IDLE_VAL			0x0
@@ -395,6 +394,16 @@ void spi_init(void)
 	/* Nothing to do */
 }
 
+void spi_init_f(void)
+{
+	/* Nothing to do */
+}
+
+void spi_init_r(void)
+{
+	/* Nothing to do */
+}
+
 int spi_cs_is_valid(unsigned int bus, unsigned int cs)
 {
 	if (((cs >= 0) && (cs < 8)) && ((bus >= 0) && (bus < 8)))
@@ -585,7 +594,7 @@ static int fsl_dspi_claim_bus(struct udevice *dev)
 
 	priv = dev_get_priv(bus);
 
-	/* processor special preparation work */
+	/* processor special prepartion work */
 	cpu_dspi_claim_bus(bus->seq, slave_plat->cs);
 
 	/* configure transfer mode */
@@ -637,7 +646,7 @@ static int fsl_dspi_ofdata_to_platdata(struct udevice *bus)
 	fdt_addr_t addr;
 	struct fsl_dspi_platdata *plat = bus->platdata;
 	const void *blob = gd->fdt_blob;
-	int node = dev_of_offset(bus);
+	int node = bus->of_offset;
 
 	if (fdtdec_get_bool(blob, node, "big-endian"))
 		plat->flags |= DSPI_FLAG_REGMAP_ENDIAN_BIG;
@@ -645,7 +654,7 @@ static int fsl_dspi_ofdata_to_platdata(struct udevice *bus)
 	plat->num_chipselect =
 		fdtdec_get_int(blob, node, "num-cs", FSL_DSPI_MAX_CHIPSELECT);
 
-	addr = devfdt_get_addr(bus);
+	addr = dev_get_addr(bus);
 	if (addr == FDT_ADDR_T_NONE) {
 		debug("DSPI: Can't get base address or size\n");
 		return -ENOMEM;

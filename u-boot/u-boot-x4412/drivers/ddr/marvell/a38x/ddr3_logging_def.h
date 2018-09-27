@@ -1,6 +1,7 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Copyright (C) Marvell International Ltd. and its affiliates
+ *
+ * SPDX-License-Identifier:	GPL-2.0
  */
 
 #ifndef _DDR3_LOGGING_CONFIG_H
@@ -73,14 +74,10 @@
 #endif
 #endif
 
-
 /* Logging defines */
-enum mv_ddr_debug_level {
-	DEBUG_LEVEL_TRACE = 1,
-	DEBUG_LEVEL_INFO = 2,
-	DEBUG_LEVEL_ERROR = 3,
-	DEBUG_LEVEL_LAST
-};
+#define DEBUG_LEVEL_TRACE	1
+#define DEBUG_LEVEL_INFO	2
+#define DEBUG_LEVEL_ERROR	3
 
 enum ddr_lib_debug_block {
 	DEBUG_BLOCK_STATIC,

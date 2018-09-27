@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2013-2014 Freescale Semiconductor, Inc.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -94,9 +95,6 @@ found:
 	popts->ddr_cdr1 = DDR_CDR1_DHC_EN | DDR_CDR1_ODT(DDR_CDR_ODT_80ohm);
 	popts->ddr_cdr2 = DDR_CDR2_ODT(DDR_CDR_ODT_80ohm) |
 			  DDR_CDR2_VREF_OVRD(70);	/* Vref = 70% */
-
-	/* optimize cpo for erratum A-009942 */
-	popts->cpo_sample = 0x69;
 #else
 	popts->ddr_cdr1 = DDR_CDR1_DHC_EN | DDR_CDR1_ODT(DDR_CDR_ODT_75ohm);
 	popts->ddr_cdr2 = DDR_CDR2_ODT(DDR_CDR_ODT_75ohm);
@@ -116,7 +114,7 @@ void board_mem_sleep_setup(void)
 }
 #endif
 
-int dram_init(void)
+phys_size_t initdram(int board_type)
 {
 	phys_size_t dram_size;
 
@@ -133,7 +131,5 @@ int dram_init(void)
 	fsl_dp_resume();
 #endif
 
-	gd->ram_size = dram_size;
-
-	return 0;
+	return dram_size;
 }

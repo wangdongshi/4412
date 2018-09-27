@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Board functions for TI AM335X based rut board
  * (C) Copyright 2013 Siemens Schweiz AG
@@ -8,6 +7,8 @@
  * u-boot:/board/ti/am335x/board.c
  *
  * Copyright (C) 2011, Texas Instruments, Incorporated - http://www.ti.com/
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -33,6 +34,8 @@
 #include "board.h"
 #include "../common/factoryset.h"
 #include "../../../drivers/video/da8xx-fb.h"
+
+DECLARE_GLOBAL_DATA_PTR;
 
 /*
  * Read header information from EEPROM into global structure.
@@ -179,7 +182,7 @@ int board_eth_init(bd_t *bis)
 	int rv;
 
 #ifndef CONFIG_SPL_BUILD
-	factoryset_env_set();
+	factoryset_setenv();
 #endif
 
 	/* Set rgmii mode and enable rmii clock to be sourced from chip */
@@ -477,9 +480,9 @@ int board_late_init(void)
 		sprintf(tmp, "%s_%s", factory_dat.asn,
 			factory_dat.comp_version);
 	else
-		strcpy(tmp, "QMX7.E38_4.0");
+		sprintf(tmp, "QMX7.E38_4.0");
 
-	ret = env_set("boardid", tmp);
+	ret = setenv("boardid", tmp);
 	if (ret)
 		printf("error setting board id\n");
 

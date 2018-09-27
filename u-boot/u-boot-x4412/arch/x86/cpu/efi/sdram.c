@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2015 Google, Inc
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -21,10 +22,8 @@ int dram_init(void)
 	return 0;
 }
 
-int dram_init_banksize(void)
+void dram_init_banksize(void)
 {
 	gd->bd->bi_dram[0].start = efi_get_ram_base();
 	gd->bd->bi_dram[0].size = CONFIG_EFI_RAM_SIZE;
-
-	return 0;
 }

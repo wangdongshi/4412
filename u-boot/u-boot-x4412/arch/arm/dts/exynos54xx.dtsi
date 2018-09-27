@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2013 SAMSUNG Electronics
  * SAMSUNG EXYNOS5420 SoC device tree source
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include "exynos5.dtsi"
@@ -41,14 +42,7 @@
 		xhci1 = "/xhci@12400000";
 	};
 
-	adc@12D10000 {
-		compatible = "samsung,exynos-adc-v2";
-		reg = <0x12D10000 0x100>;
-		interrupts = <0 106 0>;
-		status = "disabled";
-	};
-
-	hsi2c_4: i2c@12CA0000 {
+	i2c@12CA0000 {
 		#address-cells = <1>;
 		#size-cells = <0>;
 		compatible = "samsung,exynos5-hsi2c";
@@ -177,7 +171,7 @@
 		samsung,pwm-out-gpio = <&gpb2 0 GPIO_ACTIVE_HIGH>;
 	};
 
-	dp: dp@145b0000 {
+	dp@145b0000 {
 		samsung,lt-status = <0>;
 
 		samsung,master-mode = <0>;
@@ -194,13 +188,6 @@
 
 	dmc {
 		mem-type = "ddr3";
-	};
-
-	pwm: pwm@12dd0000 {
-		compatible = "samsung,exynos4210-pwm";
-		reg = <0x12dd0000 0x100>;
-		samsung,pwm-outputs = <0>, <1>, <2>, <3>;
-		#pwm-cells = <3>;
 	};
 
 	xhci1: xhci@12400000 {

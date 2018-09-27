@@ -1,12 +1,14 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Copyright (C) Marvell International Ltd. and its affiliates
+ *
+ * SPDX-License-Identifier:	GPL-2.0
  */
 
 #ifndef _SYS_ENV_LIB_H
 #define _SYS_ENV_LIB_H
 
 #include "../../../drivers/ddr/marvell/a38x/ddr3_init.h"
+#include "../../../drivers/ddr/marvell/a38x/ddr3_hws_hw_training.h"
 
 /* Serdes definitions */
 #define COMMON_PHY_BASE_ADDR		0x18300
@@ -71,7 +73,6 @@
 #define RX_REG3				0xa0188
 #define PCIE_REG1			0xa0288
 #define PCIE_REG3			0xa0290
-#define LANE_CFG0_REG			0xa0600
 #define LANE_CFG1_REG			0xa0604
 #define LANE_CFG4_REG			0xa0620
 #define LANE_CFG5_REG			0xa0624
@@ -363,6 +364,8 @@ u8 sys_env_device_rev_get(void);
 u32 sys_env_device_id_get(void);
 u16 sys_env_model_get(void);
 struct dlb_config *sys_env_dlb_config_ptr_get(void);
+u32 sys_env_get_topology_update_info(
+	struct topology_update_info *topology_update_info);
 u32 sys_env_get_cs_ena_from_reg(void);
 
 #endif /* _SYS_ENV_LIB_H */

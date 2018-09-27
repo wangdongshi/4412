@@ -1,9 +1,10 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * composite.c - infrastructure for Composite USB Gadgets
  *
  * Copyright (C) 2006-2008 David Brownell
- * U-Boot porting: Lukasz Majewski <l.majewski@samsung.com>
+ * U-boot porting: Lukasz Majewski <l.majewski@samsung.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 #undef DEBUG
 
@@ -164,7 +165,7 @@ static int config_buf(struct usb_configuration *config,
 	int				len = USB_BUFSIZ - USB_DT_CONFIG_SIZE;
 	void				*next = buf + USB_DT_CONFIG_SIZE;
 	struct usb_descriptor_header    **descriptors;
-	struct usb_config_descriptor	*c;
+	struct usb_config_descriptor	*c = buf;
 	int				status;
 	struct usb_function		*f;
 
@@ -378,7 +379,7 @@ static int set_config(struct usb_composite_dev *cdev,
 			ep = (struct usb_endpoint_descriptor *)*descriptors;
 			addr = ((ep->bEndpointAddress & 0x80) >> 3)
 			     |	(ep->bEndpointAddress & 0x0f);
-			generic_set_bit(addr, f->endpoints);
+			__set_bit(addr, f->endpoints);
 		}
 
 		result = f->set_alt(f, tmp, 0);
@@ -837,9 +838,6 @@ unknown:
 			ctrl->bRequestType, ctrl->bRequest,
 			w_value, w_index, w_length);
 
-		if (!cdev->config)
-			goto done;
-
 		/*
 		 * functions always handle their interfaces and endpoints...
 		 * punt other recipients (other, WUSB, ...) to the current
@@ -884,7 +882,7 @@ unknown:
 			value = f->setup(f, ctrl);
 		else {
 			c = cdev->config;
-			if (c->setup)
+			if (c && c->setup)
 				value = c->setup(c, ctrl);
 		}
 
@@ -1079,8 +1077,6 @@ static struct usb_gadget_driver composite_driver = {
  */
 int usb_composite_register(struct usb_composite_driver *driver)
 {
-	int res;
-
 	if (!driver || !driver->dev || !driver->bind || composite)
 		return -EINVAL;
 
@@ -1088,11 +1084,7 @@ int usb_composite_register(struct usb_composite_driver *driver)
 		driver->name = "composite";
 	composite = driver;
 
-	res = usb_gadget_register_driver(&composite_driver);
-	if (res != 0)
-		composite = NULL;
-
-	return res;
+	return usb_gadget_register_driver(&composite_driver);
 }
 
 /**

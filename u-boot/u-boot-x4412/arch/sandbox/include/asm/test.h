@@ -1,8 +1,9 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Test-related constants for sandbox
  *
  * Copyright (c) 2014 Google, Inc
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __ASM_TEST_H
@@ -17,6 +18,15 @@
 #define SANDBOX_PCI_CLASS_SUB_CODE	PCI_CLASS_SUB_CODE_COMM_SERIAL
 
 #define SANDBOX_CLK_RATE		32768
+
+enum {
+	PERIPH_ID_FIRST = 0,
+	PERIPH_ID_SPI = PERIPH_ID_FIRST,
+	PERIPH_ID_I2C,
+	PERIPH_ID_PCI,
+
+	PERIPH_ID_COUNT,
+};
 
 /* System controller driver data */
 enum {
@@ -75,7 +85,5 @@ long sandbox_i2c_rtc_set_offset(struct udevice *dev, bool use_system_time,
  * @return old base time
  */
 long sandbox_i2c_rtc_get_set_base_time(struct udevice *dev, long base_time);
-
-int sandbox_usb_keyb_add_string(struct udevice *dev, const char *str);
 
 #endif

@@ -5,7 +5,6 @@
  * Licensed under the GPL-2 or later.
  */
 #include <common.h>
-#include <errno.h>
 #include <malloc.h>
 #include <part.h>
 #include <mmc.h>
@@ -92,7 +91,7 @@ static uint mmc_spi_readdata(struct mmc *mmc, void *xbuf,
 			spi_xfer(spi, bsize * 8, NULL, buf, 0);
 			spi_xfer(spi, 2 * 8, NULL, &crc, 0);
 #ifdef CONFIG_MMC_SPI_CRC_ON
-			if (be_to_cpu16(crc16_ccitt(0, buf, bsize)) != crc) {
+			if (be_to_cpu16(cyg_crc16(buf, bsize)) != crc) {
 				debug("%s: CRC error\n", mmc->cfg->name);
 				r1 = R1_SPI_COM_CRC;
 				break;
@@ -121,7 +120,7 @@ static uint mmc_spi_writedata(struct mmc *mmc, const void *xbuf,
 	tok[1] = multi ? SPI_TOKEN_MULTI_WRITE : SPI_TOKEN_SINGLE;
 	while (bcnt--) {
 #ifdef CONFIG_MMC_SPI_CRC_ON
-		crc = cpu_to_be16(crc16_ccitt(0, (u8 *)buf, bsize));
+		crc = cpu_to_be16(cyg_crc16((u8 *)buf, bsize));
 #endif
 		spi_xfer(spi, 2 * 8, tok, NULL, 0);
 		spi_xfer(spi, bsize * 8, buf, NULL, 0);
@@ -183,13 +182,13 @@ static int mmc_spi_request(struct mmc *mmc, struct mmc_cmd *cmd,
 	spi_cs_activate(spi);
 	r1 = mmc_spi_sendcmd(mmc, cmd->cmdidx, cmd->cmdarg);
 	if (r1 == 0xff) { /* no response */
-		ret = -ENOMEDIUM;
+		ret = NO_CARD_ERR;
 		goto done;
 	} else if (r1 & R1_SPI_COM_CRC) {
-		ret = -ECOMM;
+		ret = COMM_ERR;
 		goto done;
 	} else if (r1 & ~R1_SPI_IDLE) { /* other errors */
-		ret = -ETIMEDOUT;
+		ret = TIMEOUT;
 		goto done;
 	} else if (cmd->resp_type == MMC_RSP_R2) {
 		r1 = mmc_spi_readdata(mmc, cmd->response, 1, 16);
@@ -226,9 +225,9 @@ static int mmc_spi_request(struct mmc *mmc, struct mmc_cmd *cmd,
 				data->blocks, data->blocksize,
 				(cmd->cmdidx == MMC_CMD_WRITE_MULTIPLE_BLOCK));
 		if (r1 & R1_SPI_COM_CRC)
-			ret = -ECOMM;
+			ret = COMM_ERR;
 		else if (r1) /* other errors */
-			ret = -ETIMEDOUT;
+			ret = TIMEOUT;
 	}
 done:
 	spi_cs_deactivate(spi);
@@ -236,14 +235,13 @@ done:
 	return ret;
 }
 
-static int mmc_spi_set_ios(struct mmc *mmc)
+static void mmc_spi_set_ios(struct mmc *mmc)
 {
 	struct spi_slave *spi = mmc->priv;
 
 	debug("%s: clock %u\n", __func__, mmc->clock);
 	if (mmc->clock)
 		spi_set_speed(spi, mmc->clock);
-	return 0;
 }
 
 static int mmc_spi_init_p(struct mmc *mmc)

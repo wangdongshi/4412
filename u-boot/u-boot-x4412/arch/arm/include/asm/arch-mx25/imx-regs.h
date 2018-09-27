@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2009, DENX Software Engineering
  * Author: John Rigby <jcrigby@gmail.com
@@ -11,6 +10,8 @@
  *		Sascha Hauer <s.hauer@pengutronix.de>
  *	Copyright (C) 2009 Ilya Yanok,
  *		Emcraft Systems <yanok@emcraft.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef _IMX_REGS_H
@@ -524,5 +525,9 @@ struct cspi_regs {
 	IMX_CSPI1_BASE, \
 	IMX_CSPI2_BASE, \
 	IMX_CSPI3_BASE
+
+#define CHIP_REV_1_0		0x10
+#define CHIP_REV_1_1		0x11
+#define CHIP_REV_1_2		0x12
 
 #endif				/* _IMX_REGS_H */

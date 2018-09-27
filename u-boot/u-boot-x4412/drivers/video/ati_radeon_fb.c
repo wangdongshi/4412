@@ -1,10 +1,11 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * ATI Radeon Video card Framebuffer driver.
  *
  * Copyright 2007 Freescale Semiconductor, Inc.
  * Zhang Wei <wei.zhang@freescale.com>
  * Jason Jin <jason.jin@freescale.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  *
  * Some codes of this file is partly ported from Linux kernel
  * ATI video framebuffer driver.
@@ -21,7 +22,7 @@
 #include <bios_emul.h>
 #include <pci.h>
 #include <asm/processor.h>
-#include <linux/errno.h>
+#include <asm/errno.h>
 #include <asm/io.h>
 #include <malloc.h>
 #include <video_fb.h>
@@ -636,8 +637,7 @@ void *video_hw_init(void)
 
 	videomode = CONFIG_SYS_DEFAULT_VIDEO_MODE;
 	/* get video mode via environment */
-	penv = env_get("videomode");
-	if (penv) {
+	if ((penv = getenv ("videomode")) != NULL) {
 		/* deceide if it is a string */
 		if (penv[0] <= '9') {
 			videomode = (int) simple_strtoul (penv, NULL, 16);

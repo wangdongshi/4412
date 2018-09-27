@@ -1,12 +1,13 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /*
  * (C) Copyright 2012,2015 Stephen Warren
+ *
+ * SPDX-License-Identifier:	GPL-2.0
  */
 
 #ifndef _BCM2835_SDHCI_H_
 #define _BCM2835_SDHCI_H_
 
-#ifndef CONFIG_BCM2835
+#ifdef CONFIG_BCM2836
 #define BCM2835_SDHCI_BASE 0x3f300000
 #else
 #define BCM2835_SDHCI_BASE 0x20300000

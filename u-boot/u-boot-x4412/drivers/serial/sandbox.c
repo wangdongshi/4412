@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2011 The Chromium OS Authors.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /*
@@ -15,7 +16,6 @@
 #include <lcd.h>
 #include <os.h>
 #include <serial.h>
-#include <video.h>
 #include <linux/compiler.h>
 #include <asm/state.h>
 
@@ -24,7 +24,7 @@ DECLARE_GLOBAL_DATA_PTR;
 /*
  *
  *   serial_buf: A buffer that holds keyboard characters for the
- *		 Sandbox U-Boot.
+ *		 Sandbox U-boot.
  *
  * invariants:
  *   serial_buf_write		 == serial_buf_read -> empty buffer
@@ -114,8 +114,8 @@ static int sandbox_serial_pending(struct udevice *dev, bool input)
 		return 0;
 
 	os_usleep(100);
-#ifndef CONFIG_SPL_BUILD
-	video_sync_all();
+#ifdef CONFIG_LCD
+	lcd_sync();
 #endif
 	if (next_index == serial_buf_read)
 		return 1;	/* buffer full */
@@ -151,7 +151,7 @@ static int sandbox_serial_ofdata_to_platdata(struct udevice *dev)
 	int i;
 
 	plat->colour = -1;
-	colour = fdt_getprop(gd->fdt_blob, dev_of_offset(dev),
+	colour = fdt_getprop(gd->fdt_blob, dev->of_offset,
 			     "sandbox,text-colour", NULL);
 	if (colour) {
 		for (i = 0; i < ARRAY_SIZE(ansi_colour); i++) {

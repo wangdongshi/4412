@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2013 Freescale Semiconductor, Inc.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -8,7 +9,7 @@
 #include <asm/arch/imx-regs.h>
 #include <asm/arch/clock.h>
 #include <asm/arch/crm_regs.h>
-#include <asm/mach-imx/sys_proto.h>
+#include <asm/imx-common/sys_proto.h>
 #include <netdev.h>
 #ifdef CONFIG_FSL_ESDHC
 #include <fsl_esdhc.h>
@@ -203,11 +204,6 @@ static u32 get_dspi_clk(void)
 	return get_ipg_clk();
 }
 
-u32 get_lpuart_clk(void)
-{
-	return get_uart_clk();
-}
-
 unsigned int mxc_get_clock(enum mxc_clock clk)
 {
 	switch (clk) {
@@ -326,9 +322,9 @@ int arch_misc_init(void)
 {
 	char soc[6];
 
-	strcpy(soc, "vf");
+	strcat(soc, "vf");
 	strcat(soc, soc_type);
-	env_set("soc", soc);
+	setenv("soc", soc);
 
 	return 0;
 }

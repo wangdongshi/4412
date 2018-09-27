@@ -44,12 +44,11 @@ typedef __INT64_TYPE__ s64;
 typedef __UINT64_TYPE__ u64;
 #endif
 
-#if CONFIG_IS_ENABLED(X86_64)
+#ifdef CONFIG_EFI_STUB_64BIT
 #define BITS_PER_LONG 64
 #else
 #define BITS_PER_LONG 32
 #endif
-
 /* Dma addresses are 32-bits wide.  */
 
 typedef u32 dma_addr_t;

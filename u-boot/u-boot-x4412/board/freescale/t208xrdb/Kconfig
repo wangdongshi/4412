@@ -1,4 +1,4 @@
-if TARGET_T2080RDB
+if TARGET_T208XRDB
 
 config SYS_BOARD
 	default "t208xrdb"
@@ -8,7 +8,5 @@ config SYS_VENDOR
 
 config SYS_CONFIG_NAME
 	default "T208xRDB"
-
-source "board/freescale/common/Kconfig"
 
 endif

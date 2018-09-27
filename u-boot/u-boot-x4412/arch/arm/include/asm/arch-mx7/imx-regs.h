@@ -1,12 +1,15 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2015 Freescale Semiconductor, Inc. All Rights Reserved.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __ASM_ARCH_MX7_IMX_REGS_H__
 #define __ASM_ARCH_MX7_IMX_REGS_H__
 
 #define ARCH_MXC
+
+#define CONFIG_SYS_CACHELINE_SIZE	64
 
 #define ROM_SW_INFO_ADDR                0x000001E8
 #define ROMCP_ARB_BASE_ADDR             0x00000000
@@ -209,21 +212,11 @@
 #define DEBUG_MONITOR_BASE_ADDR IP2APB_AXIMON_IPS_BASE_ADDR
 
 #define USB_BASE_ADDR USBOTG1_IPS_BASE_ADDR
-#define SEMAPHORE1_BASE_ADDR SEMA41_IPS_BASE_ADDR
-#define SEMAPHORE2_BASE_ADDR SEMA42_IPS_BASE_ADDR
-#define RDC_BASE_ADDR RDC_IPS_BASE_ADDR
 
 #define FEC_QUIRK_ENET_MAC
 #define SNVS_LPGPR	0x68
-#define CONFIG_SYS_FSL_SEC_OFFSET       0
-#define CONFIG_SYS_FSL_SEC_ADDR         (CAAM_IPS_BASE_ADDR + \
-					 CONFIG_SYS_FSL_SEC_OFFSET)
-#define CONFIG_SYS_FSL_JR0_OFFSET       0x1000
-#define CONFIG_SYS_FSL_JR0_ADDR         (CONFIG_SYS_FSL_SEC_ADDR + \
-					 CONFIG_SYS_FSL_JR0_OFFSET)
-#define CONFIG_SYS_FSL_MAX_NUM_OF_SEC   1
+
 #if !(defined(__KERNEL_STRICT_NAMES) || defined(__ASSEMBLY__))
-#include <asm/mach-imx/regs-lcdif.h>
 #include <asm/types.h>
 
 extern void imx_get_mac_from_fuse(int dev_id, unsigned char *mac);
@@ -263,17 +256,6 @@ struct src {
 	u32 ddrc_rcr;
 };
 
-#define src_base ((struct src *)SRC_BASE_ADDR)
-
-#define SRC_M4_REG_OFFSET		0xC
-#define SRC_M4C_NON_SCLR_RST_OFFSET	0
-#define SRC_M4C_NON_SCLR_RST_MASK	BIT(0)
-#define SRC_M4_ENABLE_OFFSET		3
-#define SRC_M4_ENABLE_MASK		BIT(3)
-
-#define SRC_DDRC_RCR_DDRC_CORE_RST_OFFSET	1
-#define SRC_DDRC_RCR_DDRC_CORE_RST_MASK		(1 << 1)
-
 /* GPR0 Bit Fields */
 #define IOMUXC_GPR_GPR0_DMAREQ_MUX_SEL0_MASK     0x1u
 #define IOMUXC_GPR_GPR0_DMAREQ_MUX_SEL0_SHIFT    0
@@ -289,8 +271,6 @@ struct src {
 #define IOMUXC_GPR_GPR0_DMAREQ_MUX_SEL5_SHIFT    5
 #define IOMUXC_GPR_GPR0_DMAREQ_MUX_SEL6_MASK     0x40u
 #define IOMUXC_GPR_GPR0_DMAREQ_MUX_SEL6_SHIFT    6
-#define IOMUXC_GPR_GPR0_ENET_MDIO_OPEN_DRAIN_MASK (3 << 7)
-#define IOMUXC_GPR_GPR0_ENET_MDIO_OPEN_DRAIN_SHIFT 7
 /* GPR1 Bit Fields */
 #define IOMUXC_GPR_GPR1_GPR_WEIM_ACT_CS0_MASK    0x1u
 #define IOMUXC_GPR_GPR1_GPR_WEIM_ACT_CS0_SHIFT   0
@@ -886,9 +866,6 @@ struct cspi_regs {
 	ECSPI3_BASE_ADDR, \
 	ECSPI4_BASE_ADDR
 
-#define CSU_INIT_SEC_LEVEL0	0x00FF00FF
-#define CSU_NUM_REGS		64
-
 struct ocotp_regs {
 	u32 ctrl;
 	u32 ctrl_set;
@@ -1052,6 +1029,101 @@ struct rdc_sema_regs {
 	u16	rstgt;		/* Reset Gate */
 };
 
+/* eLCDIF controller registers */
+struct mxs_lcdif_regs {
+	u32	hw_lcdif_ctrl;			/* 0x00 */
+	u32	hw_lcdif_ctrl_set;
+	u32	hw_lcdif_ctrl_clr;
+	u32	hw_lcdif_ctrl_tog;
+	u32	hw_lcdif_ctrl1;			/* 0x10 */
+	u32	hw_lcdif_ctrl1_set;
+	u32	hw_lcdif_ctrl1_clr;
+	u32	hw_lcdif_ctrl1_tog;
+	u32	hw_lcdif_ctrl2;			/* 0x20 */
+	u32	hw_lcdif_ctrl2_set;
+	u32	hw_lcdif_ctrl2_clr;
+	u32	hw_lcdif_ctrl2_tog;
+	u32	hw_lcdif_transfer_count;	/* 0x30 */
+	u32	reserved1[3];
+	u32	hw_lcdif_cur_buf;		/* 0x40 */
+	u32	reserved2[3];
+	u32	hw_lcdif_next_buf;		/* 0x50 */
+	u32	reserved3[3];
+	u32	hw_lcdif_timing;		/* 0x60 */
+	u32	reserved4[3];
+	u32	hw_lcdif_vdctrl0;		/* 0x70 */
+	u32	hw_lcdif_vdctrl0_set;
+	u32	hw_lcdif_vdctrl0_clr;
+	u32	hw_lcdif_vdctrl0_tog;
+	u32	hw_lcdif_vdctrl1;		/* 0x80 */
+	u32	reserved5[3];
+	u32	hw_lcdif_vdctrl2;		/* 0x90 */
+	u32	reserved6[3];
+	u32	hw_lcdif_vdctrl3;		/* 0xa0 */
+	u32	reserved7[3];
+	u32	hw_lcdif_vdctrl4;		/* 0xb0 */
+	u32	reserved8[3];
+	u32	hw_lcdif_dvictrl0;		/* 0xc0 */
+	u32	reserved9[3];
+	u32	hw_lcdif_dvictrl1;		/* 0xd0 */
+	u32	reserved10[3];
+	u32	hw_lcdif_dvictrl2;		/* 0xe0 */
+	u32	reserved11[3];
+	u32	hw_lcdif_dvictrl3;		/* 0xf0 */
+	u32	reserved12[3];
+	u32	hw_lcdif_dvictrl4;		/* 0x100 */
+	u32	reserved13[3];
+	u32	hw_lcdif_csc_coeffctrl0;	/* 0x110 */
+	u32	reserved14[3];
+	u32	hw_lcdif_csc_coeffctrl1;	/* 0x120 */
+	u32	reserved15[3];
+	u32	hw_lcdif_csc_coeffctrl2;	/* 0x130 */
+	u32	reserved16[3];
+	u32	hw_lcdif_csc_coeffctrl3;	/* 0x140 */
+	u32	reserved17[3];
+	u32	hw_lcdif_csc_coeffctrl4;	/* 0x150 */
+	u32	reserved18[3];
+	u32	hw_lcdif_csc_offset;	/* 0x160 */
+	u32	reserved19[3];
+	u32	hw_lcdif_csc_limit;		/* 0x170 */
+	u32	reserved20[3];
+	u32	hw_lcdif_data;			/* 0x180 */
+	u32	reserved21[3];
+	u32	hw_lcdif_bm_error_stat;	/* 0x190 */
+	u32	reserved22[3];
+	u32	hw_lcdif_crc_stat;		/* 0x1a0 */
+	u32	reserved23[3];
+	u32	hw_lcdif_lcdif_stat;	/* 0x1b0 */
+	u32	reserved24[3];
+	u32	hw_lcdif_version;		/* 0x1c0 */
+	u32	reserved25[3];
+	u32	hw_lcdif_debug0;		/* 0x1d0 */
+	u32	reserved26[3];
+	u32	hw_lcdif_debug1;		/* 0x1e0 */
+	u32	reserved27[3];
+	u32	hw_lcdif_debug2;		/* 0x1f0 */
+	u32	reserved28[3];
+	u32	hw_lcdif_thres;			/* 0x200 */
+	u32	reserved29[3];
+	u32	hw_lcdif_as_ctrl;		/* 0x210 */
+	u32	reserved30[3];
+	u32	hw_lcdif_as_buf;		/* 0x220 */
+	u32	reserved31[3];
+	u32	hw_lcdif_as_next_buf;	/* 0x230 */
+	u32	reserved32[3];
+	u32	hw_lcdif_as_clrkeylow;	/* 0x240 */
+	u32	reserved33[3];
+	u32	hw_lcdif_as_clrkeyhigh;	/* 0x250 */
+	u32	reserved34[3];
+	u32	hw_lcdif_as_sync_delay;	/* 0x260 */
+	u32	reserved35[3];
+	u32	hw_lcdif_as_debug3;		/* 0x270 */
+	u32	reserved36[3];
+	u32	hw_lcdif_as_debug4;		/* 0x280 */
+	u32	reserved37[3];
+	u32	hw_lcdif_as_debug5;		/* 0x290 */
+};
+
 #define MXS_LCDIF_BASE ELCDIF1_IPS_BASE_ADDR
 
 #define	LCDIF_CTRL_SFTRST					(1 << 31)
@@ -1210,6 +1282,14 @@ extern void pcie_power_off(void);
 #define	is_boot_from_usb(void) (readl(USBOTG1_IPS_BASE_ADDR + 0x158) || \
 	readl(USBOTG2_IPS_BASE_ADDR + 0x158))
 #define	disconnect_from_pc(void) writel(0x0, USBOTG1_IPS_BASE_ADDR + 0x140)
+
+/* Boot device type */
+#define BOOT_TYPE_SD		0x1
+#define BOOT_TYPE_MMC		0x2
+#define BOOT_TYPE_NAND		0x3
+#define BOOT_TYPE_QSPI		0x4
+#define BOOT_TYPE_WEIM		0x5
+#define BOOT_TYPE_SPINOR	0x6
 
 struct bootrom_sw_info {
 	u8 reserved_1;

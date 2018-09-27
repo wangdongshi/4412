@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2012 Samsung Electronics
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -176,7 +177,7 @@ static void exynos_spi_copy(unsigned int uboot_size, unsigned int uboot_addr)
 #endif
 
 /*
-* Copy U-Boot from mmc to RAM:
+* Copy U-boot from mmc to RAM:
 * COPY_BL2_FNPTR_ADDR: Address in iRAM, which Contains
 * Pointer to API (Data transfer from mmc to ram)
 */
@@ -184,7 +185,6 @@ void copy_uboot_to_ram(void)
 {
 	unsigned int bootmode = BOOT_MODE_OM;
 
-	//u32 (*copy_bl2)(u32 offset, u32 nblock, u32 dst) = NULL;
 	u32 (*copy_uboot)(u32 offset, u32 nblock, u32 dst) = NULL;
 	u32 offset = 0, size = 0;
 #ifdef CONFIG_SPI_BOOTING

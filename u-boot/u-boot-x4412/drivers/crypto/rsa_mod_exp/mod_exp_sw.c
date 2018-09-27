@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2014 Freescale Semiconductor, Inc.
  * Author: Ruchika Gupta <ruchika.gupta@freescale.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <config.h>
@@ -31,7 +32,6 @@ U_BOOT_DRIVER(mod_exp_sw) = {
 	.name	= "mod_exp_sw",
 	.id	= UCLASS_MOD_EXP,
 	.ops	= &mod_exp_ops_sw,
-	.flags	= DM_FLAG_PRE_RELOC,
 };
 
 U_BOOT_DEVICE(mod_exp_sw) = {

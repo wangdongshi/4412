@@ -19,7 +19,6 @@
 #include <asm/arch/mux.h>
 #include <asm/io.h>
 #include <i2c.h>
-#include "../common/board_detect.h"
 #include "board.h"
 
 static struct module_pin_mux uart0_pin_mux[] = {
@@ -66,7 +65,7 @@ static struct module_pin_mux mmc0_pin_mux[] = {
 	{OFFSET(mmc0_clk), (MODE(0) | RXACTIVE | PULLUP_EN)},	/* MMC0_CLK */
 	{OFFSET(mmc0_cmd), (MODE(0) | RXACTIVE | PULLUP_EN)},	/* MMC0_CMD */
 	{OFFSET(mcasp0_aclkr), (MODE(4) | RXACTIVE)},		/* MMC0_WP */
-	{OFFSET(spi0_cs1), (MODE(7) | RXACTIVE | PULLUP_EN)},	/* GPIO0_6 */
+	{OFFSET(spi0_cs1), (MODE(5) | RXACTIVE | PULLUP_EN)},	/* MMC0_CD */
 	{-1},
 };
 
@@ -135,11 +134,6 @@ static struct module_pin_mux gpio0_7_pin_mux[] = {
 	{-1},
 };
 
-static struct module_pin_mux gpio0_18_pin_mux[] = {
-	{OFFSET(usb0_drvvbus), (MODE(7) | PULLUDEN)},	/* GPIO0_18 */
-	{-1},
-};
-
 static struct module_pin_mux rgmii1_pin_mux[] = {
 	{OFFSET(mii1_txen), MODE(2)},			/* RGMII1_TCTL */
 	{OFFSET(mii1_rxdv), MODE(2) | RXACTIVE},	/* RGMII1_RCTL */
@@ -174,20 +168,6 @@ static struct module_pin_mux mii1_pin_mux[] = {
 	{OFFSET(mii1_rxd0), MODE(0) | RXACTIVE},	/* MII1_RXD0 */
 	{OFFSET(mdio_data), MODE(0) | RXACTIVE | PULLUP_EN}, /* MDIO_DATA */
 	{OFFSET(mdio_clk), MODE(0) | PULLUP_EN},	/* MDIO_CLK */
-	{-1},
-};
-
-static struct module_pin_mux rmii1_pin_mux[] = {
-	{OFFSET(mdio_clk), MODE(0) | PULLUP_EN},	/* MDIO_CLK */
-	{OFFSET(mdio_data), MODE(0) | RXACTIVE | PULLUP_EN}, /* MDIO_DATA */
-	{OFFSET(mii1_crs), MODE(1) | RXACTIVE},		/* MII1_CRS */
-	{OFFSET(mii1_rxerr), MODE(1) | RXACTIVE},	/* MII1_RXERR */
-	{OFFSET(mii1_txen), MODE(1)},			/* MII1_TXEN */
-	{OFFSET(mii1_txd1), MODE(1)},			/* MII1_TXD1 */
-	{OFFSET(mii1_txd0), MODE(1)},			/* MII1_TXD0 */
-	{OFFSET(mii1_rxd1), MODE(1) | RXACTIVE},	/* MII1_RXD1 */
-	{OFFSET(mii1_rxd0), MODE(1) | RXACTIVE},	/* MII1_RXD0 */
-	{OFFSET(rmii1_refclk), MODE(0) | RXACTIVE},	/* RMII1_REFCLK */
 	{-1},
 };
 
@@ -255,12 +235,6 @@ static struct module_pin_mux bone_norcape_pin_mux[] = {
 	{-1},
 };
 #endif
-
-static struct module_pin_mux uart3_icev2_pin_mux[] = {
-	{OFFSET(mii1_rxd3), (MODE(1) | PULLUP_EN | RXACTIVE)},	/* UART3_RXD */
-	{OFFSET(mii1_rxd2), MODE(1) | PULLUDEN},		/* UART3_TXD */
-	{-1},
-};
 
 #if defined(CONFIG_NOR_BOOT)
 void enable_norboot_pin_mux(void)
@@ -338,11 +312,12 @@ static unsigned short detect_daughter_board_profile(void)
 	return (1 << (val & PROFILE_MASK));
 }
 
-void enable_board_pin_mux(void)
+void enable_board_pin_mux(struct am335x_baseboard_id *header)
 {
 	/* Do board-specific muxes. */
-	if (board_is_bone()) {
+	if (board_is_bone(header)) {
 		/* Beaglebone pinmux */
+		configure_module_pin_mux(i2c1_pin_mux);
 		configure_module_pin_mux(mii1_pin_mux);
 		configure_module_pin_mux(mmc0_pin_mux);
 #if defined(CONFIG_NAND)
@@ -352,7 +327,7 @@ void enable_board_pin_mux(void)
 #else
 		configure_module_pin_mux(mmc1_pin_mux);
 #endif
-	} else if (board_is_gp_evm()) {
+	} else if (board_is_gp_evm(header)) {
 		/* General Purpose EVM */
 		unsigned short profile = detect_daughter_board_profile();
 		configure_module_pin_mux(rgmii1_pin_mux);
@@ -369,18 +344,19 @@ void enable_board_pin_mux(void)
 			configure_module_pin_mux(mmc1_pin_mux);
 			configure_module_pin_mux(spi0_pin_mux);
 		}
-	} else if (board_is_idk()) {
+	} else if (board_is_idk(header)) {
 		/* Industrial Motor Control (IDK) */
 		configure_module_pin_mux(mii1_pin_mux);
 		configure_module_pin_mux(mmc0_no_cd_pin_mux);
-	} else if (board_is_evm_sk()) {
+	} else if (board_is_evm_sk(header)) {
 		/* Starter Kit EVM */
 		configure_module_pin_mux(i2c1_pin_mux);
 		configure_module_pin_mux(gpio0_7_pin_mux);
 		configure_module_pin_mux(rgmii1_pin_mux);
 		configure_module_pin_mux(mmc0_pin_mux_sk_evm);
-	} else if (board_is_bone_lt()) {
+	} else if (board_is_bone_lt(header)) {
 		/* Beaglebone LT pinmux */
+		configure_module_pin_mux(i2c1_pin_mux);
 		configure_module_pin_mux(mii1_pin_mux);
 		configure_module_pin_mux(mmc0_pin_mux);
 #if defined(CONFIG_NAND) && defined(CONFIG_EMMC_BOOT)
@@ -390,17 +366,8 @@ void enable_board_pin_mux(void)
 #else
 		configure_module_pin_mux(mmc1_pin_mux);
 #endif
-	} else if (board_is_pb()) {
-		configure_module_pin_mux(mii1_pin_mux);
-		configure_module_pin_mux(mmc0_pin_mux);
-	} else if (board_is_icev2()) {
-		configure_module_pin_mux(mmc0_pin_mux);
-		configure_module_pin_mux(gpio0_18_pin_mux);
-		configure_module_pin_mux(uart3_icev2_pin_mux);
-		configure_module_pin_mux(rmii1_pin_mux);
-		configure_module_pin_mux(spi0_pin_mux);
 	} else {
-		/* Unknown board. We might still be able to boot. */
-		puts("Bad EEPROM or unknown board, cannot configure pinmux.");
+		puts("Unknown board, cannot configure pinmux.");
+		hang();
 	}
 }

@@ -1,24 +1,14 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright (C) 2012-2014 Panasonic Corporation
- * Copyright (C) 2015-2016 Socionext Inc.
- *   Author: Masahiro Yamada <yamada.masahiro@socionext.com>
+ * Copyright (C) 2012-2015 Masahiro Yamada <yamada.masahiro@socionext.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <linux/io.h>
-#include <asm/secure.h>
+#include <mach/sc-regs.h>
 
-#include "sc-regs.h"
-
-/* If PSCI is enabled, this is used for SYSTEM_RESET function */
-#ifdef CONFIG_ARMV7_PSCI
-#define __SECURE	__secure
-#else
-#define __SECURE
-#endif
-
-void __SECURE reset_cpu(unsigned long ignored)
+void reset_cpu(unsigned long ignored)
 {
 	u32 tmp;
 

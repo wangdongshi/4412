@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2014 Google, Inc
  * Written by Simon Glass <sjg@chromium.org>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -9,6 +10,9 @@
 #include <fdtdec.h>
 #include <inttypes.h>
 #include <pci.h>
+#include <dm/root.h>
+
+DECLARE_GLOBAL_DATA_PTR;
 
 static int sandbox_pci_write_config(struct udevice *bus, pci_dev_t devfn,
 				    uint offset, ulong value,
@@ -48,6 +52,12 @@ static int sandbox_pci_read_config(struct udevice *bus, pci_dev_t devfn,
 	return ops->read_config(emul, offset, valuep, size);
 }
 
+static int sandbox_pci_child_post_bind(struct udevice *dev)
+{
+	/* Attach an emulator if we can */
+	return dm_scan_fdt_node(dev, gd->fdt_blob, dev->of_offset, false);
+}
+
 static const struct dm_pci_ops sandbox_pci_ops = {
 	.read_config = sandbox_pci_read_config,
 	.write_config = sandbox_pci_write_config,
@@ -63,9 +73,7 @@ U_BOOT_DRIVER(pci_sandbox) = {
 	.id	= UCLASS_PCI,
 	.of_match = sandbox_pci_ids,
 	.ops	= &sandbox_pci_ops,
-
-	/* Attach an emulator if we can */
-	.child_post_bind = dm_scan_fdt_dev,
+	.child_post_bind = sandbox_pci_child_post_bind,
 	.per_child_platdata_auto_alloc_size =
 			sizeof(struct pci_child_platdata),
 };

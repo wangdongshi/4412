@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (C) Marvell International Ltd. and its affiliates
+ *
+ * SPDX-License-Identifier:	GPL-2.0
  */
 
 #include <common.h>
@@ -449,7 +450,7 @@ int ddr3_hw_training(u32 target_freq, u32 ddr_width, int xor_bypass,
 	ddr3_set_performance_params(&dram_info);
 
 	if (dram_info.ecc_ena) {
-		/* Need to SCRUB the DRAM memory area to load U-Boot */
+		/* Need to SCRUB the DRAM memory area to load U-boot */
 		mv_sys_xor_finish();
 		dram_info.num_cs = 1;
 		dram_info.cs_ena = 1;

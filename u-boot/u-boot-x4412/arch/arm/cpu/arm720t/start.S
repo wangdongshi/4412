@@ -1,9 +1,10 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  *  armboot - Startup Code for ARM720 CPU-core
  *
  *  Copyright (c) 2001	Marius Gröger <mag@sysgo.de>
  *  Copyright (c) 2002	Alex Züpke <azu@sysgo.de>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <asm-offsets.h>
@@ -37,8 +38,7 @@ reset:
 	 * we do sys-critical inits only at reboot,
 	 * not when booting from ram!
 	 */
-#if !defined(CONFIG_SKIP_LOWLEVEL_INIT) && \
-		!defined(CONFIG_SKIP_LOWLEVEL_INIT_ONLY)
+#ifndef CONFIG_SKIP_LOWLEVEL_INIT
 	bl	cpu_init_crit
 #endif
 
@@ -62,8 +62,7 @@ c_runtime_cpu_setup:
  *************************************************************************
  */
 
-#if !defined(CONFIG_SKIP_LOWLEVEL_INIT) && \
-		!defined(CONFIG_SKIP_LOWLEVEL_INIT_ONLY)
+#ifndef CONFIG_SKIP_LOWLEVEL_INIT
 cpu_init_crit:
 
 	mov	ip, lr

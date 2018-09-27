@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Most of this source has been derived from the Linux USB
  * project:
@@ -14,6 +13,8 @@
  *
  * Adapted for U-Boot:
  * (C) Copyright 2001 Denis Peter, MPL AG Switzerland
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /*
@@ -36,6 +37,9 @@
 #include <asm/unaligned.h>
 #include <errno.h>
 #include <usb.h>
+#ifdef CONFIG_4xx
+#include <asm/4xx_pci.h>
+#endif
 
 #define USB_BUFSIZ	512
 
@@ -206,7 +210,7 @@ int usb_submit_int_msg(struct usb_device *dev, unsigned long pipe,
  * clear keyboards LEDs). For data transfers, (storage transfers) we don't
  * allow control messages with 0 timeout, by previousely resetting the flag
  * asynch_allowed (usb_disable_asynch(1)).
- * returns the transferred length if OK or -1 if error. The transferred length
+ * returns the transfered length if OK or -1 if error. The transfered length
  * and the current status are stored in the dev->act_len and dev->status.
  */
 int usb_control_msg(struct usb_device *dev, unsigned int pipe,
@@ -436,13 +440,12 @@ static int usb_parse_config(struct usb_device *dev,
 			}
 			break;
 		case USB_DT_ENDPOINT:
-			if (head->bLength != USB_DT_ENDPOINT_SIZE &&
-			    head->bLength != USB_DT_ENDPOINT_AUDIO_SIZE) {
+			if (head->bLength != USB_DT_ENDPOINT_SIZE) {
 				printf("ERROR: Invalid USB EP length (%d)\n",
 					head->bLength);
 				break;
 			}
-			if (index + head->bLength >
+			if (index + USB_DT_ENDPOINT_SIZE >
 			    dev->config.desc.wTotalLength) {
 				puts("USB EP descriptor overflowed buffer!\n");
 				break;
@@ -453,7 +456,7 @@ static int usb_parse_config(struct usb_device *dev,
 			}
 			epno = dev->config.if_desc[ifno].no_of_ep;
 			if_desc = &dev->config.if_desc[ifno];
-			if (epno >= USB_MAXENDPOINTS) {
+			if (epno > USB_MAXENDPOINTS) {
 				printf("Interface %d has too many endpoints!\n",
 					if_desc->desc.bInterfaceNumber);
 				return -EINVAL;
@@ -554,19 +557,22 @@ int usb_clear_halt(struct usb_device *dev, int pipe)
 static int usb_get_descriptor(struct usb_device *dev, unsigned char type,
 			unsigned char index, void *buf, int size)
 {
-	return usb_control_msg(dev, usb_rcvctrlpipe(dev, 0),
-			       USB_REQ_GET_DESCRIPTOR, USB_DIR_IN,
-			       (type << 8) + index, 0, buf, size,
-			       USB_CNTL_TIMEOUT);
+	int res;
+	res = usb_control_msg(dev, usb_rcvctrlpipe(dev, 0),
+			USB_REQ_GET_DESCRIPTOR, USB_DIR_IN,
+			(type << 8) + index, 0,
+			buf, size, USB_CNTL_TIMEOUT);
+	return res;
 }
 
 /**********************************************************************
- * gets len of configuration cfgno
+ * gets configuration cfgno and store it in the buffer
  */
-int usb_get_configuration_len(struct usb_device *dev, int cfgno)
+int usb_get_configuration_no(struct usb_device *dev,
+			     unsigned char *buffer, int cfgno)
 {
 	int result;
-	ALLOC_CACHE_ALIGN_BUFFER(unsigned char, buffer, 9);
+	unsigned int length;
 	struct usb_config_descriptor *config;
 
 	config = (struct usb_config_descriptor *)&buffer[0];
@@ -580,23 +586,17 @@ int usb_get_configuration_len(struct usb_device *dev, int cfgno)
 				"(expected %i, got %i)\n", 9, result);
 		return -EIO;
 	}
-	return le16_to_cpu(config->wTotalLength);
-}
+	length = le16_to_cpu(config->wTotalLength);
 
-/**********************************************************************
- * gets configuration cfgno and store it in the buffer
- */
-int usb_get_configuration_no(struct usb_device *dev, int cfgno,
-			     unsigned char *buffer, int length)
-{
-	int result;
-	struct usb_config_descriptor *config;
+	if (length > USB_BUFSIZ) {
+		printf("%s: failed to get descriptor - too long: %d\n",
+			__func__, length);
+		return -EIO;
+	}
 
-	config = (struct usb_config_descriptor *)&buffer[0];
 	result = usb_get_descriptor(dev, USB_DT_CONFIG, cfgno, buffer, length);
-	debug("get_conf_no %d Result %d, wLength %d\n", cfgno, result,
-	      le16_to_cpu(config->wTotalLength));
-	config->wTotalLength = result; /* validated, with CPU byte order */
+	debug("get_conf_no %d Result %d, wLength %d\n", cfgno, result, length);
+	config->wTotalLength = length; /* validated, with CPU byte order */
 
 	return result;
 }
@@ -607,10 +607,14 @@ int usb_get_configuration_no(struct usb_device *dev, int cfgno,
  */
 static int usb_set_address(struct usb_device *dev)
 {
-	debug("set address %d\n", dev->devnum);
+	int res;
 
-	return usb_control_msg(dev, usb_snddefctrl(dev), USB_REQ_SET_ADDRESS,
-			       0, (dev->devnum), 0, NULL, 0, USB_CNTL_TIMEOUT);
+	debug("set address %d\n", dev->devnum);
+	res = usb_control_msg(dev, usb_snddefctrl(dev),
+				USB_REQ_SET_ADDRESS, 0,
+				(dev->devnum), 0,
+				NULL, 0, USB_CNTL_TIMEOUT);
+	return res;
 }
 
 /********************************************************************
@@ -910,8 +914,19 @@ __weak int usb_alloc_device(struct usb_device *udev)
 
 static int usb_hub_port_reset(struct usb_device *dev, struct usb_device *hub)
 {
-	if (!hub)
+	if (hub) {
+		unsigned short portstatus;
+		int err;
+
+		/* reset the port for the second time */
+		err = legacy_hub_port_reset(hub, dev->portnr - 1, &portstatus);
+		if (err < 0) {
+			printf("\n     Couldn't reset port %i\n", dev->portnr);
+			return err;
+		}
+	} else {
 		usb_reset_root_port(dev);
+	}
 
 	return 0;
 }
@@ -969,24 +984,23 @@ static int usb_setup_descriptor(struct usb_device *dev, bool do_read)
 	dev->epmaxpacketin[0] = dev->descriptor.bMaxPacketSize0;
 	dev->epmaxpacketout[0] = dev->descriptor.bMaxPacketSize0;
 
-	if (do_read && dev->speed == USB_SPEED_FULL) {
+	if (do_read) {
 		int err;
 
 		/*
-		 * Validate we've received only at least 8 bytes, not that
-		 * we've received the entire descriptor. The reasoning is:
-		 * - The code only uses fields in the first 8 bytes, so
-		 *   that's all we need to have fetched at this stage.
-		 * - The smallest maxpacket size is 8 bytes. Before we know
-		 *   the actual maxpacket the device uses, the USB controller
-		 *   may only accept a single packet. Consequently we are only
-		 *   guaranteed to receive 1 packet (at least 8 bytes) even in
-		 *   a non-error case.
+		 * Validate we've received only at least 8 bytes, not that we've
+		 * received the entire descriptor. The reasoning is:
+		 * - The code only uses fields in the first 8 bytes, so that's all we
+		 *   need to have fetched at this stage.
+		 * - The smallest maxpacket size is 8 bytes. Before we know the actual
+		 *   maxpacket the device uses, the USB controller may only accept a
+		 *   single packet. Consequently we are only guaranteed to receive 1
+		 *   packet (at least 8 bytes) even in a non-error case.
 		 *
-		 * At least the DWC2 controller needs to be programmed with
-		 * the number of packets in addition to the number of bytes.
-		 * A request for 64 bytes of data with the maxpacket guessed
-		 * as 64 (above) yields a request for 1 packet.
+		 * At least the DWC2 controller needs to be programmed with the number
+		 * of packets in addition to the number of bytes. A request for 64
+		 * bytes of data with the maxpacket guessed as 64 (above) yields a
+		 * request for 1 packet.
 		 */
 		err = get_descriptor_len(dev, 64, 8);
 		if (err)
@@ -1009,7 +1023,7 @@ static int usb_setup_descriptor(struct usb_device *dev, bool do_read)
 		dev->maxpacketsize = PACKET_SIZE_64;
 		break;
 	default:
-		printf("%s: invalid max packet size\n", __func__);
+		printf("usb_new_device: invalid max packet size\n");
 		return -EIO;
 	}
 
@@ -1051,23 +1065,12 @@ static int usb_prepare_device(struct usb_device *dev, int addr, bool do_read,
 
 	mdelay(10);	/* Let the SET_ADDRESS settle */
 
-	/*
-	 * If we haven't read device descriptor before, read it here
-	 * after device is assigned an address. This is only applicable
-	 * to xHCI so far.
-	 */
-	if (!do_read) {
-		err = usb_setup_descriptor(dev, true);
-		if (err)
-			return err;
-	}
-
 	return 0;
 }
 
 int usb_select_config(struct usb_device *dev)
 {
-	unsigned char *tmpbuf = NULL;
+	ALLOC_CACHE_ALIGN_BUFFER(unsigned char, tmpbuf, USB_BUFSIZ);
 	int err;
 
 	err = get_descriptor_len(dev, USB_DT_DEVICE_SIZE, USB_DT_DEVICE_SIZE);
@@ -1080,32 +1083,15 @@ int usb_select_config(struct usb_device *dev)
 	le16_to_cpus(&dev->descriptor.idProduct);
 	le16_to_cpus(&dev->descriptor.bcdDevice);
 
-	/*
-	 * Kingston DT Ultimate 32GB USB 3.0 seems to be extremely sensitive
-	 * about this first Get Descriptor request. If there are any other
-	 * requests in the first microframe, the stick crashes. Wait about
-	 * one microframe duration here (1mS for USB 1.x , 125uS for USB 2.0).
-	 */
-	mdelay(1);
-
 	/* only support for one config for now */
-	err = usb_get_configuration_len(dev, 0);
-	if (err >= 0) {
-		tmpbuf = (unsigned char *)malloc_cache_aligned(err);
-		if (!tmpbuf)
-			err = -ENOMEM;
-		else
-			err = usb_get_configuration_no(dev, 0, tmpbuf, err);
-	}
+	err = usb_get_configuration_no(dev, tmpbuf, 0);
 	if (err < 0) {
 		printf("usb_new_device: Cannot read configuration, " \
 		       "skipping device %04x:%04x\n",
 		       dev->descriptor.idVendor, dev->descriptor.idProduct);
-		free(tmpbuf);
 		return err;
 	}
 	usb_parse_config(dev, tmpbuf, 0);
-	free(tmpbuf);
 	usb_set_maxpacket(dev);
 	/*
 	 * we set the default configuration here
@@ -1118,14 +1104,6 @@ int usb_select_config(struct usb_device *dev)
 			"len %d, status %lX\n", dev->act_len, dev->status);
 		return err;
 	}
-
-	/*
-	 * Wait until the Set Configuration request gets processed by the
-	 * device. This is required by at least SanDisk Cruzer Pop USB 2.0
-	 * and Kingston DT Ultimate 32GB USB 3.0 on DWC2 OTG controller.
-	 */
-	mdelay(10);
-
 	debug("new device strings: Mfr=%d, Product=%d, SerialNumber=%d\n",
 	      dev->descriptor.iManufacturer, dev->descriptor.iProduct,
 	      dev->descriptor.iSerialNumber);
@@ -1185,7 +1163,7 @@ int usb_new_device(struct usb_device *dev)
 	 * with the device. So a get_descriptor will fail before any
 	 * of that is done for XHCI unlike EHCI.
 	 */
-#ifdef CONFIG_USB_XHCI_HCD
+#ifdef CONFIG_USB_XHCI
 	do_read = false;
 #endif
 	err = usb_setup_device(dev, do_read, dev->parent);
@@ -1221,61 +1199,5 @@ bool usb_device_has_child_on_port(struct usb_device *parent, int port)
 	return parent->children[port] != NULL;
 #endif
 }
-
-#ifdef CONFIG_DM_USB
-void usb_find_usb2_hub_address_port(struct usb_device *udev,
-			       uint8_t *hub_address, uint8_t *hub_port)
-{
-	struct udevice *parent;
-	struct usb_device *uparent, *ttdev;
-
-	/*
-	 * When called from usb-uclass.c: usb_scan_device() udev->dev points
-	 * to the parent udevice, not the actual udevice belonging to the
-	 * udev as the device is not instantiated yet. So when searching
-	 * for the first usb-2 parent start with udev->dev not
-	 * udev->dev->parent .
-	 */
-	ttdev = udev;
-	parent = udev->dev;
-	uparent = dev_get_parent_priv(parent);
-
-	while (uparent->speed != USB_SPEED_HIGH) {
-		struct udevice *dev = parent;
-
-		if (device_get_uclass_id(dev->parent) != UCLASS_USB_HUB) {
-			printf("Error: Cannot find high speed parent of usb-1 device\n");
-			*hub_address = 0;
-			*hub_port = 0;
-			return;
-		}
-
-		ttdev = dev_get_parent_priv(dev);
-		parent = dev->parent;
-		uparent = dev_get_parent_priv(parent);
-	}
-	*hub_address = uparent->devnum;
-	*hub_port = ttdev->portnr;
-}
-#else
-void usb_find_usb2_hub_address_port(struct usb_device *udev,
-			       uint8_t *hub_address, uint8_t *hub_port)
-{
-	/* Find out the nearest parent which is high speed */
-	while (udev->parent->parent != NULL)
-		if (udev->parent->speed != USB_SPEED_HIGH) {
-			udev = udev->parent;
-		} else {
-			*hub_address = udev->parent->devnum;
-			*hub_port = udev->portnr;
-			return;
-		}
-
-	printf("Error: Cannot find high speed parent of usb-1 device\n");
-	*hub_address = 0;
-	*hub_port = 0;
-}
-#endif
-
 
 /* EOF */

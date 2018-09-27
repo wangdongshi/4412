@@ -1,6 +1,7 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2013-2014 Synopsys, Inc. All rights reserved.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <asm-offsets.h>
@@ -23,14 +24,6 @@ ENTRY(_start)
 #endif
 	sr	r5, [ARC_AUX_IC_CTRL]
 
-	mov	r5, 1
-	sr	r5, [ARC_AUX_IC_IVIC]
-	; As per ARC HS databook (see chapter 5.3.3.2)
-	; it is required to add 3 NOPs after each write to IC_IVIC.
-	nop
-	nop
-	nop
-
 1:
 	; Disable/enable D-cache according to configuration
 	lr	r5, [ARC_BCR_DC_BUILD]
@@ -43,10 +36,6 @@ ENTRY(_start)
 	bset	r5, r5, 0		; Disable (+Inv)
 #endif
 	sr	r5, [ARC_AUX_DC_CTRL]
-
-	mov	r5, 1
-	sr	r5, [ARC_AUX_DC_IVDC]
-
 
 1:
 #ifdef CONFIG_ISA_ARCV2
@@ -61,34 +50,21 @@ ENTRY(_start)
 1:
 #endif
 
-	/* Establish C runtime stack and frame */
+	/* Setup stack- and frame-pointers */
 	mov	%sp, CONFIG_SYS_INIT_SP_ADDR
 	mov	%fp, %sp
 
-	/* Allocate reserved area from current top of stack */
+	/* Allocate and zero GD, update SP */
 	mov	%r0, %sp
-	bl	board_init_f_alloc_reserve
-	/* Set stack below reserved area, adjust frame pointer accordingly */
+	bl	board_init_f_mem
+
+	/* Update stack- and frame-pointers */
 	mov	%sp, %r0
 	mov	%fp, %sp
 
-	/* Initialize reserved area - note: r0 already contains address */
-	bl	board_init_f_init_reserve
-
-#ifdef CONFIG_DEBUG_UART
-	/* Earliest point to set up early debug uart */
-	bl	debug_uart_init
-#endif
-
 	/* Zero the one and only argument of "board_init_f" */
 	mov_s	%r0, 0
-	bl	board_init_f
-
-	/* We only get here if relocation is disabled by GD_FLG_SKIP_RELOC */
-	/* Make sure we don't lose GD overwritten by zero new GD */
-	mov	%r0, %r25
-	mov	%r1, 0
-	bl	board_init_r
+	j	board_init_f
 ENDPROC(_start)
 
 /*

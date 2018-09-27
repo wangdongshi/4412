@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (C) Marvell International Ltd. and its affiliates
+ *
+ * SPDX-License-Identifier:	GPL-2.0
  */
 
 #include <common.h>
@@ -12,21 +13,17 @@
 #include "ctrl_pex.h"
 #include "sys_env_lib.h"
 
-__weak void board_pex_config(void)
-{
-	/* nothing in this weak default implementation */
-}
-
-int hws_pex_config(const struct serdes_map *serdes_map, u8 count)
+int hws_pex_config(struct serdes_map *serdes_map)
 {
 	u32 pex_idx, tmp, next_busno, first_busno, temp_pex_reg,
 	    temp_reg, addr, dev_id, ctrl_mode;
 	enum serdes_type serdes_type;
-	u32 idx;
+	u32 idx, max_lane_num;
 
 	DEBUG_INIT_FULL_S("\n### hws_pex_config ###\n");
 
-	for (idx = 0; idx < count; idx++) {
+	max_lane_num = hws_serdes_get_max_lane();
+	for (idx = 0; idx < max_lane_num; idx++) {
 		serdes_type = serdes_map[idx].serdes_type;
 		/* configuration for PEX only */
 		if ((serdes_type != PEX0) && (serdes_type != PEX1) &&
@@ -50,7 +47,7 @@ int hws_pex_config(const struct serdes_map *serdes_map, u8 count)
 	tmp = reg_read(SOC_CTRL_REG);
 	tmp &= ~0x03;
 
-	for (idx = 0; idx < count; idx++) {
+	for (idx = 0; idx < max_lane_num; idx++) {
 		serdes_type = serdes_map[idx].serdes_type;
 		if ((serdes_type != PEX0) &&
 		    ((serdes_map[idx].serdes_mode == PEX_ROOT_COMPLEX_X4) ||
@@ -81,13 +78,10 @@ int hws_pex_config(const struct serdes_map *serdes_map, u8 count)
 
 	/* Support gen1/gen2 */
 	DEBUG_INIT_FULL_S("Support gen1/gen2\n");
-
-	board_pex_config();
-
 	next_busno = 0;
 	mdelay(150);
 
-	for (idx = 0; idx < count; idx++) {
+	for (idx = 0; idx < max_lane_num; idx++) {
 		serdes_type = serdes_map[idx].serdes_type;
 		DEBUG_INIT_FULL_S(" serdes_type=0x");
 		DEBUG_INIT_FULL_D(serdes_type, 8);
@@ -191,13 +185,13 @@ int hws_pex_config(const struct serdes_map *serdes_map, u8 count)
 		DEBUG_INIT_S("PCIe, Idx ");
 		DEBUG_INIT_D(pex_idx, 1);
 		DEBUG_INIT_S
-			(": Link upgraded to Gen2 based on client capabilities\n");
+			(": Link upgraded to Gen2 based on client cpabilities\n");
 	}
 
 	/* Update pex DEVICE ID */
 	ctrl_mode = sys_env_model_get();
 
-	for (idx = 0; idx < count; idx++) {
+	for (idx = 0; idx < max_lane_num; idx++) {
 		serdes_type = serdes_map[idx].serdes_type;
 		/* configuration for PEX only */
 		if ((serdes_type != PEX0) && (serdes_type != PEX1) &&

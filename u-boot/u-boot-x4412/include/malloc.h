@@ -872,7 +872,7 @@ extern Void_t*     sbrk();
 
 #else
 
-#if CONFIG_IS_ENABLED(SYS_MALLOC_SIMPLE)
+#ifdef CONFIG_SYS_MALLOC_SIMPLE
 #define malloc malloc_simple
 #define realloc realloc_simple
 #define memalign memalign_simple
@@ -914,7 +914,6 @@ int initf_malloc(void);
 /* Simple versions which can be used when space is tight */
 void *malloc_simple(size_t size);
 
-#pragma GCC visibility push(hidden)
 # if __STD_C
 
 Void_t* mALLOc(size_t);
@@ -946,7 +945,6 @@ int     mALLOPt();
 struct mallinfo mALLINFo();
 # endif
 #endif
-#pragma GCC visibility pop
 
 /*
  * Begin and End of memory area for malloc(), and current "brk"

@@ -1,6 +1,8 @@
-# SPDX-License-Identifier: GPL-2.0+
 #
 # (C) Copyright 2015
-# Kamil Lulko, <kamil.lulko@gmail.com>
+# Kamil Lulko, <rev13@wp.pl>
+#
+# SPDX-License-Identifier:	GPL-2.0+
+#
 
-PLATFORM_CPPFLAGS += -mno-unaligned-access
+PLATFORM_CPPFLAGS += -march=armv7-m -mthumb

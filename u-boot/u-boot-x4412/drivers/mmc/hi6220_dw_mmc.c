@@ -1,13 +1,14 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2015 Linaro
  * peter.griffin <peter.griffin@linaro.org>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <dwmmc.h>
 #include <malloc.h>
-#include <linux/errno.h>
+#include <asm-generic/errno.h>
 
 #define	DWMMC_MAX_CH_NUM		4
 
@@ -19,7 +20,7 @@
 
 static int hi6220_dwmci_core_init(struct dwmci_host *host, int index)
 {
-	host->name = "Hisilicon DWMMC";
+	host->name = "HiKey DWMMC";
 
 	host->dev_index = index;
 
@@ -43,11 +44,11 @@ int hi6220_dwmci_add_port(int index, u32 regbase, int bus_width)
 
 	host = calloc(1, sizeof(struct dwmci_host));
 	if (!host) {
-		pr_err("dwmci_host calloc failed!\n");
+		error("dwmci_host calloc failed!\n");
 		return -ENOMEM;
 	}
 
-	host->ioaddr = (void *)(ulong)regbase;
+	host->ioaddr = (void *)regbase;
 	host->buswidth = bus_width;
 	host->bus_hz = MMC0_DEFAULT_FREQ;
 

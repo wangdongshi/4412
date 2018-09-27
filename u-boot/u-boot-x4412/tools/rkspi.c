@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2015 Google,  Inc
  * Written by Simon Glass <sjg@chromium.org>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  *
  * See README.rockchip for details of the rkspi format
  */
@@ -13,8 +14,28 @@
 #include "rkcommon.h"
 
 enum {
+	RKSPI_SPL_HDR_START	= RK_CODE1_OFFSET * RK_BLK_SIZE,
+	RKSPI_SPL_START		= RKSPI_SPL_HDR_START + 4,
+	RKSPI_HEADER_LEN	= RKSPI_SPL_START,
 	RKSPI_SECT_LEN		= RK_BLK_SIZE * 4,
 };
+
+static char dummy_hdr[RKSPI_HEADER_LEN];
+
+static int rkspi_check_params(struct image_tool_params *params)
+{
+	return 0;
+}
+
+static int rkspi_verify_header(unsigned char *buf, int size,
+			       struct image_tool_params *params)
+{
+	return 0;
+}
+
+static void rkspi_print_header(const void *buf)
+{
+}
 
 static void rkspi_set_header(void *buf, struct stat *sbuf, int ifd,
 			     struct image_tool_params *params)
@@ -24,13 +45,15 @@ static void rkspi_set_header(void *buf, struct stat *sbuf, int ifd,
 	int ret;
 
 	size = params->orig_file_size;
-	ret = rkcommon_set_header(buf, size, params);
+	ret = rkcommon_set_header(buf, size);
 	debug("size %x\n", size);
 	if (ret) {
 		/* TODO(sjg@chromium.org): This method should return an error */
-		printf("Warning: SPL image is too large (size %#x) and will "
-		       "not boot\n", size);
+		printf("Warning: SPL image is too large (size %#x) and will not boot\n",
+		       size);
 	}
+
+	memcpy(buf + RKSPI_SPL_HDR_START, "RK32", 4);
 
 	/*
 	 * Spread the image out so we only use the first 2KB of each 4KB
@@ -38,13 +61,18 @@ static void rkspi_set_header(void *buf, struct stat *sbuf, int ifd,
 	 * boot ROM. Its rationale is unknown.
 	 */
 	for (sector = size / RKSPI_SECT_LEN - 1; sector >= 0; sector--) {
-		debug("sector %u\n", sector);
+		printf("sector %u\n", sector);
 		memmove(buf + sector * RKSPI_SECT_LEN * 2,
 			buf + sector * RKSPI_SECT_LEN,
 			RKSPI_SECT_LEN);
 		memset(buf + sector * RKSPI_SECT_LEN * 2 + RKSPI_SECT_LEN,
 		       '\0', RKSPI_SECT_LEN);
 	}
+}
+
+static int rkspi_extract_subimage(void *buf, struct image_tool_params *params)
+{
+	return 0;
 }
 
 static int rkspi_check_image_type(uint8_t type)
@@ -55,36 +83,21 @@ static int rkspi_check_image_type(uint8_t type)
 		return EXIT_FAILURE;
 }
 
-/*
- * The SPI payload needs to be padded out to make space for odd half-sector
- * layout used in flash (i.e. only the first 2K of each 4K sector is used).
- */
+/* We pad the file out to a fixed size - this method returns that size */
 static int rkspi_vrec_header(struct image_tool_params *params,
 			     struct image_type_params *tparams)
 {
-	int padding = rkcommon_vrec_header(params, tparams, RK_INIT_SIZE_ALIGN);
-	/*
-	 * The file size has not been adjusted at this point (our caller will
-	 * eventually add the header/padding to the file_size), so we need to
-	 * add up the header_size, file_size and padding ourselves.
-	 */
-	int padded_size = tparams->header_size + params->file_size + padding;
+	int pad_size;
 
-	/*
-	 * We need to store the original file-size (i.e. before padding), as
-	 * imagetool does not set this during its adjustment of file_size.
-	 */
-	params->orig_file_size = padded_size;
+	pad_size = (RK_MAX_CODE1_SIZE + 0x7ff) / 0x800 * 0x800;
+	params->orig_file_size = pad_size;
 
-	/*
-	 * Converting to the SPI format (i.e. splitting each 4K page into two
-	 * 2K subpages and then padding these 2K pages up to take a complete
-	 * 4K sector again) will will double the image size.
-	 *
-	 * Thus we return the padded_size as an additional padding requirement
-	 * (be sure to add this to the padding returned from the common code).
-	 */
-	return padded_size + padding;
+	/* We will double the image size due to the SPI format */
+	pad_size *= 2;
+	pad_size += RKSPI_SPL_HDR_START;
+	debug("pad_size %x\n", pad_size);
+
+	return pad_size - params->file_size;
 }
 
 /*
@@ -93,13 +106,13 @@ static int rkspi_vrec_header(struct image_tool_params *params,
 U_BOOT_IMAGE_TYPE(
 	rkspi,
 	"Rockchip SPI Boot Image support",
-	0,
-	NULL,
-	rkcommon_check_params,
-	rkcommon_verify_header,
-	rkcommon_print_header,
+	RKSPI_HEADER_LEN,
+	dummy_hdr,
+	rkspi_check_params,
+	rkspi_verify_header,
+	rkspi_print_header,
 	rkspi_set_header,
-	NULL,
+	rkspi_extract_subimage,
 	rkspi_check_image_type,
 	NULL,
 	rkspi_vrec_header

@@ -1,9 +1,10 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2013 Google, Inc
  *
  * (C) Copyright 2012
  * Pavel Herrmann <morpheus.ibis@gmail.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -155,15 +156,4 @@ U_BOOT_DRIVER(test_pre_reloc_drv) = {
 	.remove	= test_manual_remove,
 	.unbind	= test_manual_unbind,
 	.flags	= DM_FLAG_PRE_RELOC,
-};
-
-U_BOOT_DRIVER(test_act_dma_drv) = {
-	.name	= "test_act_dma_drv",
-	.id	= UCLASS_TEST,
-	.ops	= &test_manual_ops,
-	.bind	= test_manual_bind,
-	.probe	= test_manual_probe,
-	.remove	= test_manual_remove,
-	.unbind	= test_manual_unbind,
-	.flags	= DM_FLAG_ACTIVE_DMA,
 };

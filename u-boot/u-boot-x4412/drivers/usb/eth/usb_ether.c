@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2011 The Chromium OS Authors.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -18,7 +19,7 @@
 
 int usb_ether_register(struct udevice *dev, struct ueth_data *ueth, int rxsize)
 {
-	struct usb_device *udev = dev_get_parent_priv(dev);
+	struct usb_device *udev = dev_get_parentdata(dev);
 	struct usb_interface_descriptor *iface_desc;
 	bool ep_in_found = false, ep_out_found = false;
 	struct usb_interface *iface;
@@ -72,7 +73,7 @@ int usb_ether_register(struct udevice *dev, struct ueth_data *ueth, int rxsize)
 	}
 
 	ueth->rxsize = rxsize;
-	ueth->rxbuf = memalign(ARCH_DMA_MINALIGN, rxsize);
+	ueth->rxbuf = memalign(rxsize, ARCH_DMA_MINALIGN);
 	if (!ueth->rxbuf)
 		return -ENOMEM;
 
@@ -177,13 +178,6 @@ static const struct usb_eth_prob_dev prob_dev[] = {
 		.before_probe = smsc95xx_eth_before_probe,
 		.probe = smsc95xx_eth_probe,
 		.get_info = smsc95xx_eth_get_info,
-	},
-#endif
-#ifdef CONFIG_USB_ETHER_RTL8152
-	{
-		.before_probe = r8152_eth_before_probe,
-		.probe = r8152_eth_probe,
-		.get_info = r8152_eth_get_info,
 	},
 #endif
 	{ },		/* END */

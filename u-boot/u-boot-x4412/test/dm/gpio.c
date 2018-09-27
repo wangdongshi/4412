@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2013 Google, Inc
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -11,6 +12,8 @@
 #include <dm/util.h>
 #include <asm/gpio.h>
 #include <test/ut.h>
+
+DECLARE_GLOBAL_DATA_PTR;
 
 /* Test that sandbox GPIOs work correctly */
 static int dm_test_gpio(struct unit_test_state *uts)
@@ -71,13 +74,6 @@ static int dm_test_gpio(struct unit_test_state *uts)
 	ut_asserteq_str("b4: output: 0 [x] testing", buf);
 	ut_assertok(ops->set_value(dev, offset, 1));
 	ut_asserteq(1, ops->get_value(dev, offset));
-
-	/* Make it an open drain output, and reset it */
-	ut_asserteq(0, sandbox_gpio_get_open_drain(dev, offset));
-	ut_assertok(ops->set_open_drain(dev, offset, 1));
-	ut_asserteq(1, sandbox_gpio_get_open_drain(dev, offset));
-	ut_assertok(ops->set_open_drain(dev, offset, 0));
-	ut_asserteq(0, sandbox_gpio_get_open_drain(dev, offset));
 
 	/* Make it an input */
 	ut_assertok(ops->direction_input(dev, offset));

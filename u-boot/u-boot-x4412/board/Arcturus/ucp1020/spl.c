@@ -1,15 +1,14 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2013-2015 Arcturus Networks, Inc.
  *           http://www.arcturusnetworks.com/products/ucp1020/
  * based on board/freescale/p1_p2_rdb_pc/spl.c
  * original copyright follows:
  * Copyright 2013 Freescale Semiconductor, Inc.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
-#include <console.h>
-#include <environment.h>
 #include <ns16550.h>
 #include <malloc.h>
 #include <mmc.h>
@@ -83,7 +82,7 @@ void board_init_r(gd_t *gd, ulong dest_addr)
 	bd->bi_memstart = CONFIG_SYS_INIT_L2_ADDR;
 	bd->bi_memsize = CONFIG_SYS_L2_SIZE;
 
-	arch_cpu_init();
+	probecpu();
 	get_clocks();
 	mem_malloc_init(CONFIG_SPL_RELOC_MALLOC_ADDR,
 			CONFIG_SPL_RELOC_MALLOC_SIZE);
@@ -99,7 +98,7 @@ void board_init_r(gd_t *gd, ulong dest_addr)
 	nand_spl_load_image(CONFIG_ENV_OFFSET, CONFIG_ENV_SIZE,
 			    (uchar *)CONFIG_ENV_ADDR);
 	gd->env_addr = (ulong)(CONFIG_ENV_ADDR);
-	gd->env_valid = ENV_VALID;
+	gd->env_valid = 1;
 #else
 	env_relocate();
 #endif
@@ -110,7 +109,7 @@ void board_init_r(gd_t *gd, ulong dest_addr)
 	i2c_init(CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
 #endif
 
-	dram_init();
+	gd->ram_size = initdram(0);
 #ifdef CONFIG_SPL_NAND_BOOT
 	puts("Tertiary program loader running in sram...");
 #else
@@ -119,6 +118,8 @@ void board_init_r(gd_t *gd, ulong dest_addr)
 
 #ifdef CONFIG_SPL_MMC_BOOT
 	mmc_boot();
+#elif defined(CONFIG_SPL_SPI_BOOT)
+	spi_boot();
 #elif defined(CONFIG_SPL_NAND_BOOT)
 	nand_boot();
 #endif

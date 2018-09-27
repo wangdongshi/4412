@@ -1,8 +1,9 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2007-2008
  * Stelian Pop <stelian@popies.net>
  * Lead Tech Design <www.leadtechdesign.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 #ifndef __ASM_ARM_ARCH_HARDWARE_H__
 #define __ASM_ARM_ARCH_HARDWARE_H__
@@ -22,8 +23,6 @@
 # include <asm/arch/at91sam9g45.h>
 #elif defined(CONFIG_AT91SAM9N12) || defined(CONFIG_AT91SAM9X5)
 # include <asm/arch/at91sam9x5.h>
-#elif defined(CONFIG_SAMA5D2)
-# include <asm/arch/sama5d2.h>
 #elif defined(CONFIG_SAMA5D3)
 # include <asm/arch/sama5d3.h>
 #elif defined(CONFIG_SAMA5D4)

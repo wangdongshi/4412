@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2015, Bin Meng <bmeng.cn@gmail.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -25,12 +26,10 @@ int dram_init(void)
 	return 0;
 }
 
-int dram_init_banksize(void)
+void dram_init_banksize(void)
 {
 	gd->bd->bi_dram[0].start = 0;
 	gd->bd->bi_dram[0].size = gd->ram_size;
-
-	return 0;
 }
 
 /*

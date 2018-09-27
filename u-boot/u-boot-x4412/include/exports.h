@@ -19,7 +19,7 @@ int printf(const char* fmt, ...);
 void install_hdlr(int, interrupt_handler_t, void*);
 void free_hdlr(int);
 void *malloc(size_t);
-#if !CONFIG_IS_ENABLED(SYS_MALLOC_SIMPLE)
+#ifndef CONFIG_SYS_MALLOC_SIMPLE
 void free(void*);
 #endif
 void __udelay(unsigned long);
@@ -27,8 +27,8 @@ unsigned long get_timer(unsigned long);
 int vprintf(const char *, va_list);
 unsigned long simple_strtoul(const char *cp, char **endp, unsigned int base);
 int strict_strtoul(const char *cp, unsigned int base, unsigned long *res);
-char *env_get(const char *name);
-int env_set(const char *varname, const char *value);
+char *getenv (const char *name);
+int setenv (const char *varname, const char *varvalue);
 long simple_strtol(const char *cp, char **endp, unsigned int base);
 int strcmp(const char *cs, const char *ct);
 unsigned long ustrtoul(const char *cp, char **endp, unsigned int base);
@@ -57,7 +57,7 @@ struct jt_funcs {
 };
 
 
-#define XF_VERSION	9
+#define XF_VERSION	8
 
 #if defined(CONFIG_X86)
 extern gd_t *global_data;

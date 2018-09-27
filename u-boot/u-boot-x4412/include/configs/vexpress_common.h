@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2011 ARM Limited
  * (C) Copyright 2010 Linaro
@@ -6,6 +5,8 @@
  *
  * Configuration for Versatile Express. Parts were derived from other ARM
  *   configurations.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __VEXPRESS_COMMON_H
@@ -29,6 +30,7 @@
 #define V2M_SERIAL_BUS_PCI	(V2M_PA_CS7 + V2M_PERIPH_OFFSET(2))
 
 #define V2M_BASE		0x60000000
+#define CONFIG_SYS_TEXT_BASE	0x60800000
 #elif defined(CONFIG_VEXPRESS_EXTENDED_MEMORY_MAP)
 /* CS register bases for the extended memory map. */
 #define V2M_PA_CS0		0x08000000
@@ -43,6 +45,7 @@
 #define V2M_SERIAL_BUS_PCI	(V2M_PA_CS7 + V2M_PERIPH_OFFSET(3))
 
 #define V2M_BASE		0x80000000
+#define CONFIG_SYS_TEXT_BASE	0x80800000
 #endif
 
 /*
@@ -52,6 +55,7 @@
 #define V2M_NOR1		(V2M_PA_CS1)
 #define V2M_SRAM		(V2M_PA_CS2)
 #define V2M_VIDEO_SRAM		(V2M_PA_CS3 + 0x00000000)
+#define V2M_LAN9118		(V2M_PA_CS3 + 0x02000000)
 #define V2M_ISP1761		(V2M_PA_CS3 + 0x03000000)
 
 /* Common peripherals relative to CS7. */
@@ -118,6 +122,7 @@
 #define CONFIG_SETUP_MEMORY_TAGS	1
 #define CONFIG_SYS_L2CACHE_OFF		1
 #define CONFIG_INITRD_TAG		1
+#define CONFIG_SYS_GENERIC_BOARD
 
 /* Size of malloc() pool */
 #define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 128 * 1024)
@@ -129,15 +134,26 @@
 #define CONFIG_SYS_TIMER_COUNTER	(V2M_TIMER01 + 0x4)
 #define CONFIG_SYS_TIMER_COUNTS_DOWN
 
+/* SMSC9115 Ethernet from SMSC9118 family */
+#define CONFIG_SMC911X			1
+#define CONFIG_SMC911X_32_BIT		1
+#define CONFIG_SMC911X_BASE		V2M_LAN9118
+
 /* PL011 Serial Configuration */
+#define CONFIG_PL011_SERIAL
 #define CONFIG_PL011_CLOCK		24000000
 #define CONFIG_PL01x_PORTS		{(void *)CONFIG_SYS_SERIAL0, \
 					 (void *)CONFIG_SYS_SERIAL1}
+#define CONFIG_CONS_INDEX		0
 
+#define CONFIG_BAUDRATE			38400
 #define CONFIG_SYS_BAUDRATE_TABLE	{ 9600, 19200, 38400, 57600, 115200 }
 #define CONFIG_SYS_SERIAL0		V2M_UART0
 #define CONFIG_SYS_SERIAL1		V2M_UART1
 
+#define CONFIG_MMC			1
+#define CONFIG_CMD_MMC
+#define CONFIG_GENERIC_MMC
 #define CONFIG_ARM_PL180_MMCI
 #define CONFIG_ARM_PL180_MMCI_BASE	V2M_MMCI
 #define CONFIG_SYS_MMC_MAX_BLK_COUNT	127
@@ -145,10 +161,14 @@
 
 /* BOOTP options */
 #define CONFIG_BOOTP_BOOTFILESIZE
+#define CONFIG_BOOTP_BOOTPATH
+#define CONFIG_BOOTP_GATEWAY
+#define CONFIG_BOOTP_HOSTNAME
 
 /* Miscellaneous configurable options */
 #define CONFIG_SYS_LOAD_ADDR		(V2M_BASE + 0x8000)
 #define LINUX_BOOT_PARAM_ADDR		(V2M_BASE + 0x2000)
+#define CONFIG_BOOTDELAY		2
 
 /* Physical Memory Map */
 #define CONFIG_NR_DRAM_BANKS		2
@@ -165,8 +185,15 @@
 					 CONFIG_SYS_INIT_RAM_SIZE - \
 					 GENERATED_GBL_DATA_SIZE)
 #define CONFIG_SYS_INIT_SP_ADDR		CONFIG_SYS_GBL_DATA_OFFSET
+#define CONFIG_CMD_ECHO
+
+#include <config_distro_defaults.h>
 
 /* Basic environment settings */
+#define CONFIG_BOOTCOMMAND \
+	"run distro_bootcmd; " \
+	"run bootflash; "
+
 #define BOOT_TARGET_DEVICES(func) \
         func(MMC, mmc, 1) \
         func(MMC, mmc, 0) \
@@ -242,6 +269,7 @@
 #define CONFIG_ENV_OVERWRITE		1
 
 /* Store environment at top of flash */
+#define CONFIG_ENV_IS_IN_FLASH		1
 #define CONFIG_ENV_OFFSET		(PHYS_FLASH_SIZE - \
 					(2 * CONFIG_ENV_SECT_SIZE))
 #define CONFIG_ENV_ADDR			(CONFIG_SYS_FLASH_BASE1 + \
@@ -253,5 +281,12 @@
 
 /* Monitor Command Prompt */
 #define CONFIG_SYS_CBSIZE		512	/* Console I/O Buffer Size */
+#define CONFIG_SYS_PBSIZE		(CONFIG_SYS_CBSIZE + \
+					sizeof(CONFIG_SYS_PROMPT) + 16)
+#define CONFIG_SYS_HUSH_PARSER
+
+#define CONFIG_SYS_BARGSIZE		CONFIG_SYS_CBSIZE /* Boot args buffer */
+#define CONFIG_SYS_LONGHELP
+#define CONFIG_SYS_MAXARGS		16	/* max command args */
 
 #endif /* VEXPRESS_COMMON_H */

@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * SPI driver for rockchip
  *
@@ -6,6 +5,8 @@
  *
  * (C) Copyright 2008-2013 Rockchip Electronics
  * Peter, Software Engineering, <superpeter.cai@gmail.com>.
+ *
+ * SPDX-License-Identifier:     GPL-2.0+
  */
 
 #ifndef __RK_SPI_H
@@ -118,13 +119,6 @@ enum {
 };
 
 #define ROCKCHIP_SPI_TIMEOUT_MS		1000
-
-/*
- * We limit the maximum bitrate to 50MBit/s (50MHz) due to an assumed
- * hardware limitation...  the Linux kernel source has the following
- * comment:
- *   "sclk_out: spi master internal logic in rk3x can support 50Mhz"
- */
-#define ROCKCHIP_SPI_MAX_RATE		50000000
+#define ROCKCHIP_SPI_MAX_RATE		48000000
 
 #endif /* __RK_SPI_H */

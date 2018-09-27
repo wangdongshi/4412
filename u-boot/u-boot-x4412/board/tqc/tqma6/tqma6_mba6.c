@@ -1,10 +1,11 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2012 Freescale Semiconductor, Inc.
  * Author: Fabio Estevam <fabio.estevam@freescale.com>
  *
  * Copyright (C) 2013, 2014 TQ Systems (ported SabreSD to TQMa6x)
  * Author: Markus Niebel <markus.niebel@tq-group.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <asm/io.h>
@@ -13,13 +14,13 @@
 #include <asm/arch/imx-regs.h>
 #include <asm/arch/iomux.h>
 #include <asm/arch/sys_proto.h>
-#include <linux/errno.h>
+#include <asm/errno.h>
 #include <asm/gpio.h>
-#include <asm/mach-imx/mxc_i2c.h>
+#include <asm/imx-common/mxc_i2c.h>
 
 #include <common.h>
 #include <fsl_esdhc.h>
-#include <linux/libfdt.h>
+#include <libfdt.h>
 #include <malloc.h>
 #include <i2c.h>
 #include <micrel.h>
@@ -28,6 +29,8 @@
 #include <netdev.h>
 
 #include "tqma6_bb.h"
+
+DECLARE_GLOBAL_DATA_PTR;
 
 #define UART_PAD_CTRL  (PAD_CTL_PUS_100K_UP | PAD_CTL_SPEED_MED | \
 	PAD_CTL_DSE_80ohm   | PAD_CTL_SRE_FAST  | PAD_CTL_HYS)
@@ -48,22 +51,22 @@
 	PAD_CTL_DSE_80ohm | PAD_CTL_SRE_FAST | PAD_CTL_HYS)
 
 #define I2C_PAD_CTRL	(PAD_CTL_PUS_100K_UP | PAD_CTL_SPEED_MED | \
-	PAD_CTL_DSE_80ohm | PAD_CTL_HYS |			\
+	PAD_CTL_DSE_40ohm | PAD_CTL_HYS |			\
 	PAD_CTL_ODE | PAD_CTL_SRE_FAST)
 
-#if defined(CONFIG_TQMA6Q)
+#if defined(CONFIG_MX6Q)
 
 #define IOMUX_SW_PAD_CTRL_GRP_DDR_TYPE_RGMII	0x02e0790
 #define IOMUX_SW_PAD_CTRL_GRP_RGMII_TERM	0x02e07ac
 
-#elif defined(CONFIG_TQMA6S) || defined(CONFIG_TQMA6DL)
+#elif defined(CONFIG_MX6S)
 
 #define IOMUX_SW_PAD_CTRL_GRP_DDR_TYPE_RGMII	0x02e0768
 #define IOMUX_SW_PAD_CTRL_GRP_RGMII_TERM	0x02e0788
 
 #else
 
-#error "need to select module"
+#error "need to define target CPU"
 
 #endif
 
@@ -111,11 +114,6 @@ static iomux_v3_cfg_t const mba6_enet_pads[] = {
 
 static void mba6_setup_iomuxc_enet(void)
 {
-	struct iomuxc *const iomuxc_regs = (struct iomuxc *)IOMUXC_BASE_ADDR;
-
-	/* clear gpr1[ENET_CLK_SEL] for externel clock */
-	clrbits_le32(&iomuxc_regs->gpr[1], IOMUXC_GPR1_ENET_CLK_SEL_MASK);
-
 	__raw_writel(IOMUX_SW_PAD_CTRL_GRP_RGMII_TERM_DISABLE,
 		     (void *)IOMUX_SW_PAD_CTRL_GRP_RGMII_TERM);
 	__raw_writel(IOMUX_SW_PAD_CTRL_GRP_DDR_TYPE_RGMII_1P5V,
@@ -127,7 +125,7 @@ static void mba6_setup_iomuxc_enet(void)
 	/* Reset PHY */
 	gpio_direction_output(ENET_PHY_RESET_GPIO , 0);
 	/* Need delay 10ms after power on according to KSZ9031 spec */
-	mdelay(10);
+	udelay(1000 * 10);
 	gpio_set_value(ENET_PHY_RESET_GPIO, 1);
 	/*
 	 * KSZ9031 manual: 100 usec wait time after reset before communication
@@ -135,7 +133,7 @@ static void mba6_setup_iomuxc_enet(void)
 	 * BUGBUG: hardware has an RC const that needs > 10 msec from 0->1 on
 	 * reset before the phy sees a high level
 	 */
-	mdelay(15);
+	udelay(200);
 }
 
 static iomux_v3_cfg_t const mba6_uart2_pads[] = {
@@ -236,20 +234,39 @@ static void mba6_setup_i2c(void)
 		printf("setup I2C1 failed: %d\n", ret);
 }
 
+
+static iomux_v3_cfg_t const mba6_ecspi1_pads[] = {
+	NEW_PAD_CTRL(MX6_PAD_EIM_D24__GPIO3_IO24, SPI_PAD_CTRL),
+	NEW_PAD_CTRL(MX6_PAD_EIM_D25__GPIO3_IO25, SPI_PAD_CTRL),
+};
+
+static unsigned const mba6_ecspi1_cs[] = {
+	IMX_GPIO_NR(3, 24),
+	IMX_GPIO_NR(3, 25),
+};
+
+static void mba6_setup_iomuxc_spi(void)
+{
+	unsigned i;
+
+	for (i = 0; i < ARRAY_SIZE(mba6_ecspi1_cs); ++i)
+		gpio_direction_output(mba6_ecspi1_cs[i], 1);
+	imx_iomux_v3_setup_multiple_pads(mba6_ecspi1_pads,
+					 ARRAY_SIZE(mba6_ecspi1_pads));
+}
+
 int board_phy_config(struct phy_device *phydev)
 {
 /*
  * optimized pad skew values depends on CPU variant on the TQMa6x module:
- * CONFIG_TQMA6Q: i.MX6Q/D
- * CONFIG_TQMA6S: i.MX6S
- * CONFIG_TQMA6DL: i.MX6DL
+ * i.MX6Q/D or i.MX6DL/S
  */
-#if defined(CONFIG_TQMA6Q)
+#if defined(CONFIG_MX6Q) || defined(CONFIG_MX6Q)
 #define MBA6X_KSZ9031_CTRL_SKEW	0x0032
 #define MBA6X_KSZ9031_CLK_SKEW	0x03ff
 #define MBA6X_KSZ9031_RX_SKEW	0x3333
 #define MBA6X_KSZ9031_TX_SKEW	0x2036
-#elif defined(CONFIG_TQMA6S) || defined(CONFIG_TQMA6DL)
+#elif defined(CONFIG_MX6DL) || defined(CONFIG_MX6S)
 #define MBA6X_KSZ9031_CTRL_SKEW	0x0030
 #define MBA6X_KSZ9031_CLK_SKEW	0x03ff
 #define MBA6X_KSZ9031_RX_SKEW	0x3333
@@ -324,6 +341,7 @@ int tqma6_bb_board_early_init_f(void)
 int tqma6_bb_board_init(void)
 {
 	mba6_setup_i2c();
+	mba6_setup_iomuxc_spi();
 	/* do it here - to have reset completed */
 	mba6_setup_iomuxc_enet();
 

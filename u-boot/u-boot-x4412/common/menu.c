@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2010-2011 Calxeda, Inc.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -194,7 +195,8 @@ static inline int menu_interactive_choice(struct menu *m, void **choice)
 
 		if (!m->item_choice) {
 			readret = cli_readline_into_buffer("Enter choice: ",
-							   cbuf, m->timeout);
+							   cbuf,
+							   m->timeout / 10);
 
 			if (readret >= 0) {
 				choice_item = menu_item_by_key(m, cbuf);
@@ -348,7 +350,7 @@ int menu_item_add(struct menu *m, char *item_key, void *item_data)
  * make it obvious what the key for each entry is.
  *
  * item_choice - If not NULL, will be called when asking the user to choose an
- * item. Returns a key string corresponding to the chosen item or NULL if
+ * item. Returns a key string corresponding to the choosen item or NULL if
  * no item has been selected.
  *
  * item_choice_data - Will be passed as the argument to the item_choice function

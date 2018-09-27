@@ -1,8 +1,9 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Board functions for Sysam AMCORE (MCF5307 based) board
  *
- * (C) Copyright 2016  Angelo Dureghello <angelo@sysam.it>
+ * (C) Copyright 2015  Angelo Dureghello <angelo@sysam.it>
+ *
+ * SPDX-License-Identifier:     GPL-2.0+
  *
  * This file copies memory testdram() from sandburst/common/sb_common.c
  */
@@ -10,10 +11,6 @@
 #include <common.h>
 #include <asm/immap.h>
 #include <asm/io.h>
-#include <dm.h>
-#include <dm/platform_data/serial_coldfire.h>
-
-DECLARE_GLOBAL_DATA_PTR;
 
 void init_lcd(void)
 {
@@ -39,7 +36,7 @@ int checkboard(void)
 }
 
 /*
- * in dram_init we are here executing from flash
+ * in initdram we are here executing from flash
  * case 1:
  * is with no ACR/flash cache enabled
  * nop = 40ns (scope measured)
@@ -50,7 +47,7 @@ void fudelay(int usec)
 		asm volatile ("nop");
 }
 
-int dram_init(void)
+phys_size_t initdram(int board_type)
 {
 	u32 dramsize, RC;
 
@@ -94,25 +91,11 @@ int dram_init(void)
 	out_be32((u32 *)0x00000004, 0xbeaddeed);
 	/* issue AUTOREFRESH */
 	out_be32(&dc->dacr0, 0x0000b304);
-	/* let refresh occur */
+	/* let refresh occour */
 	fudelay(1);
 
 	out_be32(&dc->dacr0, 0x0000b344);
 	out_be32((u32 *)0x00000c00, 0xbeaddeed);
 
-	gd->ram_size = get_ram_size(CONFIG_SYS_SDRAM_BASE,
-				    CONFIG_SYS_SDRAM_SIZE);
-
-	return 0;
+	return get_ram_size(CONFIG_SYS_SDRAM_BASE, CONFIG_SYS_SDRAM_SIZE);
 }
-
-static struct coldfire_serial_platdata mcf5307_serial_plat = {
-	.base = CONFIG_SYS_UART_BASE,
-	.port = 0,
-	.baudrate = CONFIG_BAUDRATE,
-};
-
-U_BOOT_DEVICE(coldfire_serial) = {
-	.name = "serial_coldfire",
-	.platdata = &mcf5307_serial_plat,
-};

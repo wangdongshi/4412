@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * WORK Microwave work_92105 board low level init
  *
@@ -12,6 +11,8 @@
  *
  * This code must run from SRAM so that the clock changes do
  * not prevent it from executing.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 .globl lowlevel_init
@@ -40,5 +41,5 @@ lowlevel_init:
 	orr	r0, #0x00000004
 	str	r0, [r1]
 
-	/* Return to U-Boot via saved link register */
+	/* Return to U-boot via saved link register */
 	mov	pc, lr

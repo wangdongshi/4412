@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  *  Copyright (C) 2012 Altera Corporation <www.altera.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /dts-v1/;
@@ -24,8 +25,6 @@
 			bus-width = <4>;
 			cap-mmc-highspeed;
 			cap-sd-highspeed;
-			drvsel = <3>;
-			smplsel = <0>;
 		};
 
 		sysmgr@ffd08000 {

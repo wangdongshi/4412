@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0
 /*
  *	Copied from Linux Monitor (LiMon) - Networking.
  *
@@ -7,6 +6,7 @@
  *	Copyright 2000 Roland Borde
  *	Copyright 2000 Paolo Scaffardi
  *	Copyright 2000-2002 Wolfgang Denk, wd@denx.de
+ *	SPDX-License-Identifier:	GPL-2.0
  */
 
 /*
@@ -78,24 +78,16 @@
  *			- own IP address
  *	We want:	- network time
  *	Next step:	none
- *
- * WOL:
- *
- *	Prerequisites:	- own ethernet address
- *	We want:	- magic packet or timeout
- *	Next step:	none
  */
 
 
 #include <common.h>
 #include <command.h>
-#include <console.h>
 #include <environment.h>
 #include <errno.h>
 #include <net.h>
-#include <net/fastboot.h>
 #include <net/tftp.h>
-#if defined(CONFIG_LED_STATUS)
+#if defined(CONFIG_STATUS_LED)
 #include <miiphy.h>
 #include <status_led.h>
 #endif
@@ -114,9 +106,8 @@
 #if defined(CONFIG_CMD_SNTP)
 #include "sntp.h"
 #endif
-#if defined(CONFIG_CMD_WOL)
-#include "wol.h"
-#endif
+
+DECLARE_GLOBAL_DATA_PTR;
 
 /** BOOTP EXTENTIONS **/
 
@@ -154,7 +145,7 @@ static unsigned	net_ip_id;
 /* Ethernet bcast address */
 const u8 net_bcast_ethaddr[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 const u8 net_null_ethaddr[6];
-#if defined(CONFIG_API) || defined(CONFIG_EFI_LOADER)
+#ifdef CONFIG_API
 void (*push_packet)(void *, int len) = 0;
 #endif
 /* Network loop state */
@@ -173,9 +164,7 @@ ushort		net_our_vlan = 0xFFFF;
 ushort		net_native_vlan = 0xFFFF;
 
 /* Boot File name */
-char net_boot_file_name[1024];
-/* Indicates whether the file name was specified on the command line */
-bool net_boot_file_name_explicit;
+char net_boot_file_name[128];
 /* The actual transferred size of the bootfile (in bytes) */
 u32 net_boot_file_size;
 /* Boot file size in blocks as reported by the DHCP server */
@@ -329,7 +318,7 @@ U_BOOT_ENV_CALLBACK(dnsip, on_dnsip);
 void net_auto_load(void)
 {
 #if defined(CONFIG_CMD_NFS)
-	const char *s = env_get("autoload");
+	const char *s = getenv("autoload");
 
 	if (s != NULL && strcmp(s, "NFS") == 0) {
 		/*
@@ -339,7 +328,7 @@ void net_auto_load(void)
 		return;
 	}
 #endif
-	if (env_get_yesno("autoload") == 0) {
+	if (getenv_yesno("autoload") == 0) {
 		/*
 		 * Just use BOOTP/RARP to configure system;
 		 * Do not use TFTP to load the bootfile.
@@ -404,7 +393,6 @@ void net_init(void)
 int net_loop(enum proto_t protocol)
 {
 	int ret = -EINVAL;
-	enum net_loop_state prev_net_state = net_state;
 
 	net_restarted = 0;
 	net_dev_exists = 0;
@@ -442,7 +430,6 @@ restart:
 	case 1:
 		/* network not configured */
 		eth_halt();
-		net_set_state(prev_net_state);
 		return -ENODEV;
 
 	case 2:
@@ -463,11 +450,6 @@ restart:
 #ifdef CONFIG_CMD_TFTPSRV
 		case TFTPSRV:
 			tftp_start_server();
-			break;
-#endif
-#ifdef CONFIG_UDP_FUNCTION_FASTBOOT
-		case FASTBOOT:
-			fastboot_start_server();
 			break;
 #endif
 #if defined(CONFIG_CMD_DHCP)
@@ -506,7 +488,7 @@ restart:
 			cdp_start();
 			break;
 #endif
-#if defined(CONFIG_NETCONSOLE) && !defined(CONFIG_SPL_BUILD)
+#if defined(CONFIG_NETCONSOLE) && !(CONFIG_SPL_BUILD)
 		case NETCONS:
 			nc_start();
 			break;
@@ -526,11 +508,6 @@ restart:
 			link_local_start();
 			break;
 #endif
-#if defined(CONFIG_CMD_WOL)
-		case WOL:
-			wol_start();
-			break;
-#endif
 		default:
 			break;
 		}
@@ -540,15 +517,15 @@ restart:
 
 #if defined(CONFIG_MII) || defined(CONFIG_CMD_MII)
 #if	defined(CONFIG_SYS_FAULT_ECHO_LINK_DOWN)	&& \
-	defined(CONFIG_LED_STATUS)			&& \
-	defined(CONFIG_LED_STATUS_RED)
+	defined(CONFIG_STATUS_LED)			&& \
+	defined(STATUS_LED_RED)
 	/*
 	 * Echo the inverted link state to the fault LED.
 	 */
 	if (miiphy_link(eth_get_dev()->name, CONFIG_SYS_FAULT_MII_ADDR))
-		status_led_set(CONFIG_LED_STATUS_RED, CONFIG_LED_STATUS_OFF);
+		status_led_set(STATUS_LED_RED, STATUS_LED_OFF);
 	else
-		status_led_set(CONFIG_LED_STATUS_RED, CONFIG_LED_STATUS_ON);
+		status_led_set(STATUS_LED_RED, STATUS_LED_ON);
 #endif /* CONFIG_SYS_FAULT_ECHO_LINK_DOWN, ... */
 #endif /* CONFIG_MII, ... */
 #ifdef CONFIG_USB_KEYBOARD
@@ -564,9 +541,6 @@ restart:
 #ifdef CONFIG_SHOW_ACTIVITY
 		show_activity(1);
 #endif
-		if (arp_timeout_check() > 0)
-			time_start = get_timer(0);
-
 		/*
 		 *	Check the ethernet for a new packet.  The ethernet
 		 *	receive routine will process it.
@@ -595,6 +569,8 @@ restart:
 			goto done;
 		}
 
+		arp_timeout_check();
+
 		/*
 		 *	Check for a timeout, and run the timeout handler
 		 *	if we have one.
@@ -605,18 +581,16 @@ restart:
 
 #if defined(CONFIG_MII) || defined(CONFIG_CMD_MII)
 #if	defined(CONFIG_SYS_FAULT_ECHO_LINK_DOWN)	&& \
-	defined(CONFIG_LED_STATUS)			&& \
-	defined(CONFIG_LED_STATUS_RED)
+	defined(CONFIG_STATUS_LED)			&& \
+	defined(STATUS_LED_RED)
 			/*
 			 * Echo the inverted link state to the fault LED.
 			 */
 			if (miiphy_link(eth_get_dev()->name,
 					CONFIG_SYS_FAULT_MII_ADDR))
-				status_led_set(CONFIG_LED_STATUS_RED,
-					       CONFIG_LED_STATUS_OFF);
+				status_led_set(STATUS_LED_RED, STATUS_LED_OFF);
 			else
-				status_led_set(CONFIG_LED_STATUS_RED,
-					       CONFIG_LED_STATUS_ON);
+				status_led_set(STATUS_LED_RED, STATUS_LED_ON);
 #endif /* CONFIG_SYS_FAULT_ECHO_LINK_DOWN, ... */
 #endif /* CONFIG_MII, ... */
 			debug_cond(DEBUG_INT_STATE, "--- net_loop timeout\n");
@@ -638,8 +612,8 @@ restart:
 			if (net_boot_file_size > 0) {
 				printf("Bytes transferred = %d (%x hex)\n",
 				       net_boot_file_size, net_boot_file_size);
-				env_set_hex("filesize", net_boot_file_size);
-				env_set_hex("fileaddr", load_addr);
+				setenv_hex("filesize", net_boot_file_size);
+				setenv_hex("fileaddr", load_addr);
 			}
 			if (protocol != NETCONS)
 				eth_halt();
@@ -673,7 +647,6 @@ done:
 	net_set_udp_handler(NULL);
 	net_set_icmp_handler(NULL);
 #endif
-	net_set_state(prev_net_state);
 	return ret;
 }
 
@@ -691,7 +664,7 @@ int net_start_again(void)
 	unsigned long retrycnt = 0;
 	int ret;
 
-	nretry = env_get("netretry");
+	nretry = getenv("netretry");
 	if (nretry) {
 		if (!strcmp(nretry, "yes"))
 			retry_forever = 1;
@@ -706,7 +679,7 @@ int net_start_again(void)
 		retry_forever = 0;
 	}
 
-	if ((!retry_forever) && (net_try_count > retrycnt)) {
+	if ((!retry_forever) && (net_try_count >= retrycnt)) {
 		eth_halt();
 		net_set_state(NETLOOP_FAIL);
 		/*
@@ -859,7 +832,15 @@ int net_send_udp_packet(uchar *ether, struct in_addr dest, int dport, int sport,
 #ifndef CONFIG_NET_MAXDEFRAG
 #define CONFIG_NET_MAXDEFRAG 16384
 #endif
-#define IP_PKTSIZE (CONFIG_NET_MAXDEFRAG)
+/*
+ * MAXDEFRAG, above, is chosen in the config file and  is real data
+ * so we need to add the NFS overhead, which is more than TFTP.
+ * To use sizeof in the internal unnamed structures, we need a real
+ * instance (can't do "sizeof(struct rpc_t.u.reply))", unfortunately).
+ * The compiler doesn't complain nor allocates the actual structure
+ */
+static struct rpc_t rpc_specimen;
+#define IP_PKTSIZE (CONFIG_NET_MAXDEFRAG + sizeof(rpc_specimen.u.reply))
 
 #define IP_MAXUDP (IP_PKTSIZE - IP_HDR_SIZE)
 
@@ -1071,7 +1052,7 @@ void net_process_received_packet(uchar *in_packet, int len)
 	if (len < ETHER_HDR_SIZE)
 		return;
 
-#if defined(CONFIG_API) || defined(CONFIG_EFI_LOADER)
+#ifdef CONFIG_API
 	if (push_packet) {
 		(*push_packet)(in_packet, len);
 		return;
@@ -1281,7 +1262,7 @@ void net_process_received_packet(uchar *in_packet, int len)
 		}
 #endif
 
-#if defined(CONFIG_NETCONSOLE) && !defined(CONFIG_SPL_BUILD)
+#if defined(CONFIG_NETCONSOLE) && !(CONFIG_SPL_BUILD)
 		nc_input_packet((uchar *)ip + IP_UDP_HDR_SIZE,
 				src_ip,
 				ntohs(ip->udp_dst),
@@ -1297,11 +1278,6 @@ void net_process_received_packet(uchar *in_packet, int len)
 				      ntohs(ip->udp_src),
 				      ntohs(ip->udp_len) - UDP_HDR_SIZE);
 		break;
-#ifdef CONFIG_CMD_WOL
-	case PROT_WOL:
-		wol_receive(ip, len);
-		break;
-#endif
 	}
 }
 
@@ -1352,7 +1328,6 @@ common:
 		/* Fall through */
 
 	case NETCONS:
-	case FASTBOOT:
 	case TFTPSRV:
 		if (net_ip.s_addr == 0) {
 			puts("*** ERROR: `ipaddr' not set\n");
@@ -1565,7 +1540,7 @@ ushort string_to_vlan(const char *s)
 	return htons(id);
 }
 
-ushort env_get_vlan(char *var)
+ushort getenv_vlan(char *var)
 {
-	return string_to_vlan(env_get(var));
+	return string_to_vlan(getenv(var));
 }

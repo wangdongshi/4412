@@ -123,7 +123,7 @@
 char *target;
 char *depfile;
 char *cmdline;
-int is_spl_build = 0; /* hack for U-Boot */
+int is_spl_build = 0; /* hack for U-boot */
 
 static void usage(void)
 {
@@ -249,17 +249,10 @@ static void parse_config_file(const char *map, size_t len)
 		if (q - p < 0)
 			continue;
 
-		/*
-		 * U-Boot also handles
-		 *   CONFIG_IS_ENABLED(...)
-		 *   CONFIG_IS_BUILTIN(...)
-		 *   CONFIG_IS_MODULE(...)
-		 *   CONFIG_VAL(...)
-		 */
+		/* U-Boot also handles CONFIG_IS_{ENABLED/BUILTIN/MODULE} */
 		if ((q - p == 10 && !memcmp(p, "IS_ENABLED(", 11)) ||
 		    (q - p == 10 && !memcmp(p, "IS_BUILTIN(", 11)) ||
-		    (q - p == 9 && !memcmp(p, "IS_MODULE(", 10)) ||
-		    (q - p == 3 && !memcmp(p, "VAL(", 4))) {
+		    (q - p == 9 && !memcmp(p, "IS_MODULE(", 10))) {
 			p = q + 1;
 			for (q = p; q < map + len; q++)
 				if (*q == ')')
@@ -303,11 +296,7 @@ static void do_config_file(const char *filename)
 		perror(filename);
 		exit(2);
 	}
-	if (fstat(fd, &st) < 0) {
-		fprintf(stderr, "fixdep: error fstat'ing config file: ");
-		perror(filename);
-		exit(2);
-	}
+	fstat(fd, &st);
 	if (st.st_size == 0) {
 		close(fd);
 		return;
@@ -470,7 +459,7 @@ int main(int argc, char *argv[])
 	target = argv[2];
 	cmdline = argv[3];
 
-	/* hack for U-Boot */
+	/* hack for U-boot */
 	if (!strncmp(target, "spl/", 4) || !strncmp(target, "tpl/", 4))
 		is_spl_build = 1;
 

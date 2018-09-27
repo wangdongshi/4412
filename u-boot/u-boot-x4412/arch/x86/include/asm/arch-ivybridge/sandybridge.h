@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Copyright (c) 2014 Google, Inc
  *
@@ -6,6 +5,8 @@
  *
  * Copyright (C) 2007-2008 coresystems GmbH
  * Copyright (C) 2011 Google Inc.
+ *
+ * SPDX-License-Identifier:	GPL-2.0
  */
 
 #ifndef _ACH_ASM_SANDYBRIDGE_H
@@ -37,6 +38,7 @@
 #define IED_SIZE	0x400000
 
 /* Northbridge BARs */
+#define DEFAULT_MCHBAR		0xfed10000	/* 16 KB */
 #define DEFAULT_DMIBAR		0xfed18000	/* 4 KB */
 #define DEFAULT_EPBAR		0xfed19000	/* 4 KB */
 #define DEFAULT_RCBABASE	0xfed1c000
@@ -95,6 +97,8 @@
 /*
  * MCHBAR
  */
+#define MCHBAR_REG(reg)		(DEFAULT_MCHBAR + (reg))
+
 #define SSKPD		0x5d14	/* 16bit (scratchpad) */
 #define BIOS_RESET_CPL	0x5da8	/* 8bit */
 
@@ -104,12 +108,13 @@
 
 #define DMIBAR_REG(x)	(DEFAULT_DMIBAR + x)
 
-/**
- * bridge_silicon_revision() - Get the Northbridge revision
- *
- * @dev:	Northbridge device
- * @return revision ID (bits 3:0) and bridge ID (bits 7:4)
- */
-int bridge_silicon_revision(struct udevice *dev);
+int bridge_silicon_revision(void);
+
+void northbridge_enable(pci_dev_t dev);
+void northbridge_init(pci_dev_t dev);
+
+void report_platform_info(void);
+
+void sandybridge_early_init(int chipset_type);
 
 #endif

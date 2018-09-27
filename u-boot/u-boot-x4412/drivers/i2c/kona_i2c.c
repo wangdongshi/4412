@@ -1,14 +1,12 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2013 Broadcom Corporation.
  *
- * NOTE: This driver should be converted to driver model before June 2017.
- * Please see doc/driver-model/i2c-howto.txt for instructions.
+ * SPDX-License-Identifier:      GPL-2.0+
  */
 
 #include <common.h>
 #include <asm/io.h>
-#include <linux/errno.h>
+#include <asm/errno.h>
 #include <asm/arch/sysmap.h>
 #include <asm/kona-common/clk.h>
 #include <i2c.h>
@@ -383,7 +381,7 @@ static int bcm_kona_i2c_write_fifo_single(struct bcm_kona_i2c_dev *dev,
 		return -EREMOTEIO;
 	}
 
-	/* Check if a timeout occurred */
+	/* Check if a timeout occured */
 	if (!time_left) {
 		printf("completion timed out\n");
 		return -EREMOTEIO;

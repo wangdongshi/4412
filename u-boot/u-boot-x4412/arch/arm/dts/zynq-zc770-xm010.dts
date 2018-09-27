@@ -1,8 +1,9 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Xilinx ZC770 XM010 board DTS
  *
- * Copyright (C) 2013-2018 Xilinx, Inc.
+ * Copyright (C) 2013 - 2015 Xilinx, Inc.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 /dts-v1/;
 #include "zynq-7000.dtsi"
@@ -15,16 +16,16 @@
 		ethernet0 = &gem0;
 		i2c0 = &i2c0;
 		serial0 = &uart1;
-		spi0 = &qspi;
-		spi1 = &spi1;
+		spi0 = &spi1;
 	};
 
 	chosen {
-		bootargs = "";
-		stdout-path = "serial0:115200n8";
+		bootargs = "console=ttyPS0,115200 root=/dev/ram rw earlyprintk";
+		linux,stdout-path = &uart1;
+		stdout-path = &uart1;
 	};
 
-	memory@0 {
+	memory {
 		device_type = "memory";
 		reg = <0x0 0x40000000>;
 	};
@@ -32,6 +33,23 @@
 	usb_phy0: phy0 {
 		compatible = "usb-nop-xceiv";
 		#phy-cells = <0>;
+	};
+};
+
+&spi1 {
+	status = "okay";
+	num-cs = <4>;
+	is-decoded-cs = <0>;
+	flash@0 {
+		compatible = "sst25wf080";
+		reg = <1>;
+		spi-max-frequency = <1000000>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		partition@test {
+			label = "spi-flash";
+			reg = <0x0 0x100000>;
+		};
 	};
 };
 
@@ -46,7 +64,6 @@
 
 	ethernet_phy: ethernet-phy@7 {
 		reg = <7>;
-		device_type = "ethernet-phy";
 	};
 };
 
@@ -54,43 +71,18 @@
 	status = "okay";
 	clock-frequency = <400000>;
 
-	eeprom: eeprom@52 {
-		compatible = "atmel,24c02";
+	m24c02_eeprom@52 {
+		compatible = "at,24c02";
 		reg = <0x52>;
 	};
 
-};
-
-&qspi {
-	status = "okay";
 };
 
 &sdhci0 {
 	status = "okay";
 };
 
-&spi1 {
-	status = "okay";
-	num-cs = <4>;
-	is-decoded-cs = <0>;
-	flash@0 {
-		compatible = "sst25wf080", "jedec,spi-nor";
-		reg = <1>;
-		spi-max-frequency = <1000000>;
-		partitions {
-			compatible = "fixed-partitions";
-			#address-cells = <1>;
-			#size-cells = <1>;
-			partition@0 {
-				label = "data";
-				reg = <0x0 0x100000>;
-			};
-		};
-	};
-};
-
 &uart1 {
-	u-boot,dm-pre-reloc;
 	status = "okay";
 };
 

@@ -1,9 +1,10 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Configuation settings for the Freescale MCF5329 FireEngine board.
  *
  * Copyright (C) 2004-2007 Freescale Semiconductor, Inc.
  * TsiChung Liew (Tsi-Chung.Liew@freescale.com)
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /*
@@ -20,9 +21,23 @@
 
 #define CONFIG_MCFUART
 #define CONFIG_SYS_UART_PORT		(0)
+#define CONFIG_BAUDRATE		115200
 
 #undef CONFIG_WATCHDOG
 #define CONFIG_WATCHDOG_TIMEOUT	5000	/* timeout in milliseconds, max timeout is 6.71sec */
+
+/* Command line configuration */
+#define CONFIG_CMD_CACHE
+#define CONFIG_CMD_DATE
+#define CONFIG_CMD_ELF
+#define CONFIG_CMD_I2C
+#define CONFIG_CMD_MII
+#define CONFIG_CMD_PING
+#define CONFIG_CMD_REGINFO
+
+#ifdef CONFIG_NANDFLASH_SIZE
+#      define CONFIG_CMD_NAND
+#endif
 
 #define CONFIG_SYS_UNIFY_CACHE
 
@@ -63,6 +78,7 @@
 #define CONFIG_SYS_FSL_I2C_OFFSET	0x58000
 #define CONFIG_SYS_IMMR		CONFIG_SYS_MBAR
 
+#define CONFIG_BOOTDELAY	1	/* autoboot after 5 seconds */
 #define CONFIG_UDP_CHECKSUM
 
 #ifdef CONFIG_MCFFEC
@@ -72,7 +88,7 @@
 #	define CONFIG_GATEWAYIP	192.162.1.1
 #endif				/* FEC_ENET */
 
-#define CONFIG_HOSTNAME		"M5329EVB"
+#define CONFIG_HOSTNAME		M5329EVB
 #define CONFIG_EXTRA_ENV_SETTINGS					\
 	"netdev=eth0\0"			\
 	"loadaddr=40010000\0"	\
@@ -86,7 +102,17 @@
 	""
 
 #define CONFIG_PRAM		512	/* 512 KB */
+#define CONFIG_SYS_LONGHELP		/* undef to save memory */
 
+#ifdef CONFIG_CMD_KGDB
+#	define CONFIG_SYS_CBSIZE	1024	/* Console I/O Buffer Size */
+#else
+#	define CONFIG_SYS_CBSIZE	256	/* Console I/O Buffer Size */
+#endif
+
+#define CONFIG_SYS_PBSIZE			(CONFIG_SYS_CBSIZE+sizeof(CONFIG_SYS_PROMPT)+16)	/* Print Buffer Size */
+#define CONFIG_SYS_MAXARGS		16	/* max number of command args */
+#define CONFIG_SYS_BARGSIZE		CONFIG_SYS_CBSIZE	/* Boot Argument Buffer Size    */
 #define CONFIG_SYS_LOAD_ADDR		0x40010000
 
 #define CONFIG_SYS_CLK			80000000
@@ -172,10 +198,11 @@
  */
 #define CONFIG_ENV_OFFSET		0x4000
 #define CONFIG_ENV_SECT_SIZE	0x2000
+#define CONFIG_ENV_IS_IN_FLASH	1
 
 #define LDS_BOARD_TEXT \
-	. = DEFINED(env_offset) ? env_offset : .; \
-	env/embedded.o(.text*);
+        . = DEFINED(env_offset) ? env_offset : .; \
+        common/env_embedded.o (.text*);
 
 /*-----------------------------------------------------------------------
  * Cache Configuration

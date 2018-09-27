@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2015 Google, Inc
  * Written by Simon Glass <sjg@chromium.org>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -88,7 +89,7 @@ static int i2c_arbitrator_probe(struct udevice *dev)
 {
 	struct i2c_arbitrator_priv *priv = dev_get_priv(dev);
 	const void *blob = gd->fdt_blob;
-	int node = dev_of_offset(dev);
+	int node = dev->of_offset;
 	int ret;
 
 	debug("%s: %s\n", __func__, dev->name);

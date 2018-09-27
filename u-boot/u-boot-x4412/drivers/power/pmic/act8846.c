@@ -1,16 +1,19 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2015 Google, Inc
  * Written by Simon Glass <sjg@chromium.org>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <dm.h>
 #include <errno.h>
 #include <fdtdec.h>
-#include <linux/libfdt.h>
+#include <libfdt.h>
 #include <power/act8846_pmic.h>
 #include <power/pmic.h>
+
+DECLARE_GLOBAL_DATA_PTR;
 
 static const struct pmic_child_info pmic_children_info[] = {
 	{ .prefix = "REG", .driver = "act8846_reg"},
@@ -26,7 +29,7 @@ static int act8846_write(struct udevice *dev, uint reg, const uint8_t *buff,
 			  int len)
 {
 	if (dm_i2c_write(dev, reg, buff, len)) {
-		debug("write error to device: %p register: %#x!\n", dev, reg);
+		debug("write error to device: %p register: %#x!", dev, reg);
 		return -EIO;
 	}
 
@@ -36,7 +39,7 @@ static int act8846_write(struct udevice *dev, uint reg, const uint8_t *buff,
 static int act8846_read(struct udevice *dev, uint reg, uint8_t *buff, int len)
 {
 	if (dm_i2c_read(dev, reg, buff, len)) {
-		debug("read error from device: %p register: %#x!\n", dev, reg);
+		debug("read error from device: %p register: %#x!", dev, reg);
 		return -EIO;
 	}
 
@@ -45,11 +48,13 @@ static int act8846_read(struct udevice *dev, uint reg, uint8_t *buff, int len)
 
 static int act8846_bind(struct udevice *dev)
 {
-	ofnode regulators_node;
+	const void *blob = gd->fdt_blob;
+	int regulators_node;
 	int children;
 
-	regulators_node = dev_read_subnode(dev, "regulators");
-	if (!ofnode_valid(regulators_node)) {
+	regulators_node = fdt_subnode_offset(blob, dev->of_offset,
+					     "regulators");
+	if (regulators_node <= 0) {
 		debug("%s: %s regulators subnode not found!", __func__,
 		      dev->name);
 		return -ENXIO;

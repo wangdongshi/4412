@@ -1,8 +1,9 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2012 Samsung Electronics
  *
  * Author: Donghwa Lee <dh09.lee@samsung.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef _DP_INFO_H
@@ -60,7 +61,7 @@ struct edp_video_info {
 	unsigned int color_depth;
 };
 
-struct exynos_dp_priv {
+struct edp_device_info {
 	struct edp_disp_info disp_info;
 	struct edp_link_train_info lt_info;
 	struct edp_video_info video_info;
@@ -71,7 +72,6 @@ struct exynos_dp_priv {
 	unsigned char dpcd_rev;
 	/*support enhanced frame cap */
 	unsigned char dpcd_efc;
-	struct exynos_dp *regs;
 };
 
 enum analog_power_block {
@@ -185,7 +185,7 @@ enum {
 
 
 struct exynos_dp_platform_data {
-	struct exynos_dp_priv *edp_dev_info;
+	struct edp_device_info *edp_dev_info;
 };
 
 #ifdef CONFIG_EXYNOS_DP

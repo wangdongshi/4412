@@ -1,13 +1,14 @@
-diff -ruN u-boot-2018.07/arch/arm/dts/exynos4412-x4412.dts u-boot-x4412/arch/arm/dts/exynos4412-x4412.dts
---- u-boot-2018.07/arch/arm/dts/exynos4412-x4412.dts	1970-01-01 08:00:00.000000000 +0800
-+++ u-boot-x4412/arch/arm/dts/exynos4412-x4412.dts	2018-09-25 18:52:51.902046210 +0800
-@@ -0,0 +1,252 @@
-+// SPDX-License-Identifier: GPL-2.0+
+diff -ruN u-boot-2015.10/arch/arm/dts/exynos4412-x4412.dts u-boot-x4412/arch/arm/dts/exynos4412-x4412.dts
+--- u-boot-2015.10/arch/arm/dts/exynos4412-x4412.dts	1970-01-01 08:00:00.000000000 +0800
++++ u-boot-x4412/arch/arm/dts/exynos4412-x4412.dts	2018-09-27 10:25:47.128270394 +0800
+@@ -0,0 +1,275 @@
 +/*
-+ * Odroid-U3/X2 board device tree source
++ * X4412 board device tree source
 + *
 + * Copyright (c) 2014 Samsung Electronics Co., Ltd.
 + *		http://www.samsung.com
++ *
++ * SPDX-License-Identifier:	GPL-2.0+
 + */
 +
 +/dts-v1/;
@@ -17,15 +18,247 @@ diff -ruN u-boot-2018.07/arch/arm/dts/exynos4412-x4412.dts u-boot-x4412/arch/arm
 +	model = "X4412 based on Exynos4412";
 +	compatible = "samsung,x4412", "samsung,exynos4412";
 +
++	chosen  {
++		stdout-path = "serial0";
++	};
++
 +	aliases {
++		i2c0 = "/i2c@13860000";
++		i2c1 = "/i2c@13870000";
++		i2c2 = "/i2c@13880000";
++		i2c3 = "/i2c@13890000";
++		i2c4 = "/i2c@138a0000";
++		i2c5 = "/i2c@138b0000";
++		i2c6 = "/i2c@138c0000";
++		i2c7 = "/i2c@138d0000";
 +		serial0 = "/serial@13800000";
-+		console = "/serial@13810000";
-+		mmc0 = &mshc_0;
-+		mmc1 = &sdhci2;
++		console = "/serial@13800000"; /* Add by Wangyu 2018-09-27 */
++		/*console = "/serial@13810000";*/ /* Delete by Wangyu 2018-09-27 */
++		mmc2 = "sdhci@12530000";
++		mmc4 = "dwmmc@12550000";
++	};
++
++	i2c@13860000 {
++		samsung,i2c-sda-delay = <100>;
++		samsung,i2c-slave-addr = <0x10>;
++		samsung,i2c-max-bus-freq = <100000>;
++		status = "okay";
++
++		max77686_pmic@09 {
++			compatible = "maxim,max77686";
++			interrupts = <7 0>;
++			reg = <0x09 0 0>;
++			#clock-cells = <1>;
++
++			voltage-regulators {
++				ldo1_reg: LDO1 {
++					regulator-name = "VDD_ALIVE_1.0V";
++					regulator-min-microvolt = <1000000>;
++					regulator-max-microvolt = <1000000>;
++				};
++
++				ldo2_reg: LDO2 {
++					regulator-name = "VDDQ_VM1M2_1.2V";
++					regulator-min-microvolt = <1200000>;
++					regulator-max-microvolt = <1200000>;
++				};
++
++				ldo3_reg: LDO3 {
++					regulator-name = "VCC_1.8V_AP";
++					regulator-min-microvolt = <1800000>;
++					regulator-max-microvolt = <1800000>;
++				};
++
++				ldo4_reg: LDO4 {
++					regulator-name = "VDDQ_MMC2_2.8V";
++					regulator-min-microvolt = <2800000>;
++					regulator-max-microvolt = <2800000>;
++				};
++
++				ldo5_reg: LDO5 {
++					regulator-name = "VDDQ_MMC0/1/3_1.8V";
++					regulator-min-microvolt = <1800000>;
++					regulator-max-microvolt = <1800000>;
++				};
++
++				ldo6_reg: LDO6 {
++					regulator-name = "VMPLL_1.0V";
++					regulator-min-microvolt = <1100000>;
++					regulator-max-microvolt = <1100000>;
++				};
++
++				ldo7_reg: LDO7 {
++					regulator-name = "VPLL_1.1V";
++					regulator-min-microvolt = <1100000>;
++					regulator-max-microvolt = <1100000>;
++				};
++
++				ldo8_reg: LDO8 {
++					regulator-name = "VDD_MIPI/HDMI_1.0V";
++					regulator-min-microvolt = <1000000>;
++					regulator-max-microvolt = <1000000>;
++				};
++
++				ldo10_reg: LDO10 {
++					regulator-name = "VDD_MIPI/HDMI_1.8V";
++					regulator-min-microvolt = <1800000>;
++					regulator-max-microvolt = <1800000>;
++				};
++
++				ldo11_reg: LDO11 {
++					regulator-name = "VDD_ABB1_1.8V";
++					regulator-min-microvolt = <1800000>;
++					regulator-max-microvolt = <1800000>;
++				};
++
++				ldo12_reg: LDO12 {
++					regulator-name = "VDD_UOTG_3.0V";
++					regulator-min-microvolt = <3000000>;
++					regulator-max-microvolt = <3000000>;
++				};
++
++				ldo13_reg: LDO13 {
++					regulator-name = "VDD_C2C_1.8V";
++					regulator-min-microvolt = <1800000>;
++					regulator-max-microvolt = <1800000>;
++				};
++
++				ldo14_reg: LDO14 {
++					regulator-name = "VDD_ABB02_1.8V";
++					regulator-min-microvolt = <1800000>;
++					regulator-max-microvolt = <1800000>;
++				};
++
++				ldo15_reg: LDO15 {
++					regulator-name = "VDD_HSIC/OTG_1.0V";
++					regulator-min-microvolt = <1000000>;
++					regulator-max-microvolt = <1000000>;
++				};
++
++				ldo16_reg: LDO16 {
++					regulator-name = "VDD_HSIC_1.8V";
++					regulator-min-microvolt = <1800000>;
++					regulator-max-microvolt = <1800000>;
++				};
++
++				ldo17_reg: LDO17 {
++					regulator-name = "VDDQ_CAM_1.2V";
++					regulator-min-microvolt = <1200000>;
++					regulator-max-microvolt = <1200000>;
++				};
++
++				ldo20_reg: LDO20 {
++					regulator-name = "VDDQ_EMMC_1.8V";
++					regulator-min-microvolt = <1800000>;
++					regulator-max-microvolt = <1800000>;
++					regulator-always-on;
++					regulator-boot-on;
++				};
++
++				ldo21_reg: LDO21 {
++					regulator-name = "TFLASH_2.8V";
++					regulator-min-microvolt = <2800000>;
++					regulator-max-microvolt = <2800000>;
++					regulator-always-on;
++					regulator-boot-on;
++				};
++
++				ldo22_reg: LDO22 {
++					regulator-name = "VDDQ_EMMC_2.8V";
++					regulator-min-microvolt = <2800000>;
++					regulator-max-microvolt = <2800000>;
++					regulator-always-on;
++					regulator-boot-on;
++				};
++
++				ldo25_reg: LDO25 {
++					regulator-compatible = "LDO25";
++					regulator-name = "VDDQ_LCD_3.0V";
++					regulator-min-microvolt = <3000000>;
++					regulator-max-microvolt = <3000000>;
++				};
++
++				buck1_reg: BUCK1 {
++					regulator-name = "VDD_MIF_1.0V";
++					regulator-min-microvolt = <8500000>;
++					regulator-max-microvolt = <1100000>;
++				};
++
++				buck2_reg: BUCK2 {
++					regulator-name = "VDD_ARM_1.0V";
++					regulator-min-microvolt = <850000>;
++					regulator-max-microvolt = <1500000>;
++				};
++
++				buck3_reg: BUCK3 {
++					regulator-name = "VDD_INT_1.1V";
++					regulator-min-microvolt = <850000>;
++					regulator-max-microvolt = <1150000>;
++				};
++
++				buck4_reg: BUCK4 {
++					regulator-name = "VDD_G3D_1.0V";
++					regulator-min-microvolt = <850000>;
++					regulator-max-microvolt = <1150000>;
++				};
++
++				buck5_reg: BUCK5 {
++					regulator-name = "VDDQ_AP_1.2V";
++					regulator-min-microvolt = <1200000>;
++					regulator-max-microvolt = <1200000>;
++				};
++
++				buck6_reg: BUCK6 {
++					regulator-name = "VCC_INL1/7_1.35V";
++					regulator-min-microvolt = <1350000>;
++					regulator-max-microvolt = <1350000>;
++				};
++
++				buck7_reg: BUCK7 {
++					regulator-name = "VCC_INL2/3/5_2.0V";
++					regulator-min-microvolt = <2000000>;
++					regulator-max-microvolt = <2000000>;
++				};
++
++				buck8_reg: BUCK8 {
++					regulator-name = "VCC_P3V3_2.85V";
++					regulator-min-microvolt = <2850000>;
++					regulator-max-microvolt = <3300000>;
++				};
++			};
++		};
 +	};
 +
 +	serial@13810000 {
 +		status = "okay";
++	};
++
++	sdhci@12510000 {
++		status = "disabled";
++	};
++
++	sdhci@12520000 {
++		status = "disabled";
++	};
++
++	sdhci@12530000 {
++		samsung,bus-width = <4>;
++		samsung,timing = <1 2 3>;
++		cd-gpios = <&gpk2 2 0>;
++	};
++
++	sdhci@12540000 {
++		status = "disabled";
++	};
++
++	dwmmc@12550000 {
++		samsung,bus-width = <8>;
++		samsung,timing = <2 1 0>;
++		samsung,removable = <0>;
++		fifoth_val = <0x203f0040>;
++		bus_hz = <400000000>;
++		div = <0x3>;
++		index = <4>;
 +	};
 +
 +	ehci@12580000 {
@@ -44,246 +277,35 @@ diff -ruN u-boot-2018.07/arch/arm/dts/exynos4412-x4412.dts u-boot-x4412/arch/arm
 +		reset-gpio = <&gpk1 2 0>;
 +	};
 +};
-+
-+&i2c_0 {
-+	samsung,i2c-sda-delay = <100>;
-+	samsung,i2c-slave-addr = <0x10>;
-+	samsung,i2c-max-bus-freq = <100000>;
-+	status = "okay";
-+
-+	max77686: max77686_pmic@09 {
-+		compatible = "maxim,max77686";
-+		interrupt-parent = <&gpx3>;
-+		interrupts = <7 0>;
-+		reg = <0x09 0 0>;
-+		#clock-cells = <1>;
-+
-+		voltage-regulators {
-+			ldo1_reg: LDO1 {
-+				regulator-name = "VDD_ALIVE_1.0V";
-+				regulator-min-microvolt = <1000000>;
-+				regulator-max-microvolt = <1000000>;
-+			};
-+
-+			ldo2_reg: LDO2 {
-+				regulator-name = "VDDQ_VM1M2_1.2V";
-+				regulator-min-microvolt = <1200000>;
-+				regulator-max-microvolt = <1200000>;
-+			};
-+
-+			ldo3_reg: LDO3 {
-+				regulator-name = "VCC_1.8V_AP";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+			};
-+
-+			ldo4_reg: LDO4 {
-+				regulator-name = "VDDQ_MMC2_2.8V";
-+				regulator-min-microvolt = <2800000>;
-+				regulator-max-microvolt = <2800000>;
-+			};
-+
-+			ldo5_reg: LDO5 {
-+				regulator-name = "VDDQ_MMC0/1/3_1.8V";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+			};
-+
-+			ldo6_reg: LDO6 {
-+				regulator-name = "VMPLL_1.0V";
-+				regulator-min-microvolt = <1100000>;
-+				regulator-max-microvolt = <1100000>;
-+			};
-+
-+			ldo7_reg: LDO7 {
-+				regulator-name = "VPLL_1.1V";
-+				regulator-min-microvolt = <1100000>;
-+				regulator-max-microvolt = <1100000>;
-+			};
-+
-+			ldo8_reg: LDO8 {
-+				regulator-name = "VDD_MIPI/HDMI_1.0V";
-+				regulator-min-microvolt = <1000000>;
-+				regulator-max-microvolt = <1000000>;
-+			};
-+
-+			ldo10_reg: LDO10 {
-+				regulator-name = "VDD_MIPI/HDMI_1.8V";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+			};
-+
-+			ldo11_reg: LDO11 {
-+				regulator-name = "VDD_ABB1_1.8V";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+			};
-+
-+			ldo12_reg: LDO12 {
-+				regulator-name = "VDD_UOTG_3.0V";
-+				regulator-min-microvolt = <3000000>;
-+				regulator-max-microvolt = <3000000>;
-+			};
-+
-+			ldo13_reg: LDO13 {
-+				regulator-name = "VDD_C2C_1.8V";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+			};
-+
-+			ldo14_reg: LDO14 {
-+				regulator-name = "VDD_ABB02_1.8V";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+			};
-+
-+			ldo15_reg: LDO15 {
-+				regulator-name = "VDD_HSIC/OTG_1.0V";
-+				regulator-min-microvolt = <1000000>;
-+				regulator-max-microvolt = <1000000>;
-+			};
-+
-+			ldo16_reg: LDO16 {
-+				regulator-name = "VDD_HSIC_1.8V";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+			};
-+
-+			ldo17_reg: LDO17 {
-+				regulator-name = "VDDQ_CAM_1.2V";
-+				regulator-min-microvolt = <1200000>;
-+				regulator-max-microvolt = <1200000>;
-+			};
-+
-+			ldo20_reg: LDO20 {
-+				regulator-name = "VDDQ_EMMC_1.8V";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+
-+			ldo21_reg: LDO21 {
-+				regulator-name = "TFLASH_2.8V";
-+				regulator-min-microvolt = <2800000>;
-+				regulator-max-microvolt = <2800000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+
-+			ldo22_reg: LDO22 {
-+				regulator-name = "VDDQ_EMMC_2.8V";
-+				regulator-min-microvolt = <2800000>;
-+				regulator-max-microvolt = <2800000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+
-+			ldo25_reg: LDO25 {
-+				regulator-compatible = "LDO25";
-+				regulator-name = "VDDQ_LCD_3.0V";
-+				regulator-min-microvolt = <3000000>;
-+				regulator-max-microvolt = <3000000>;
-+			};
-+
-+			buck1_reg: BUCK1 {
-+				regulator-name = "VDD_MIF_1.0V";
-+				regulator-min-microvolt = <8500000>;
-+				regulator-max-microvolt = <1100000>;
-+			};
-+
-+			buck2_reg: BUCK2 {
-+				regulator-name = "VDD_ARM_1.0V";
-+				regulator-min-microvolt = <850000>;
-+				regulator-max-microvolt = <1500000>;
-+			};
-+
-+			buck3_reg: BUCK3 {
-+				regulator-name = "VDD_INT_1.1V";
-+				regulator-min-microvolt = <850000>;
-+				regulator-max-microvolt = <1150000>;
-+			};
-+
-+			buck4_reg: BUCK4 {
-+				regulator-name = "VDD_G3D_1.0V";
-+				regulator-min-microvolt = <850000>;
-+				regulator-max-microvolt = <1150000>;
-+			};
-+
-+			buck5_reg: BUCK5 {
-+				regulator-name = "VDDQ_AP_1.2V";
-+				regulator-min-microvolt = <1200000>;
-+				regulator-max-microvolt = <1200000>;
-+			};
-+
-+			buck6_reg: BUCK6 {
-+				regulator-name = "VCC_INL1/7_1.35V";
-+				regulator-min-microvolt = <1350000>;
-+				regulator-max-microvolt = <1350000>;
-+			};
-+
-+			buck7_reg: BUCK7 {
-+				regulator-name = "VCC_INL2/3/5_2.0V";
-+				regulator-min-microvolt = <2000000>;
-+				regulator-max-microvolt = <2000000>;
-+			};
-+
-+			buck8_reg: BUCK8 {
-+				regulator-name = "VCC_P3V3_2.85V";
-+				regulator-min-microvolt = <750000>;
-+				regulator-max-microvolt = <3300000>;
-+			};
-+		};
-+	};
-+};
-+
-+&sdhci2 {
-+	samsung,bus-width = <4>;
-+	samsung,timing = <1 2 3>;
-+	cd-gpios = <&gpk2 2 0>;
-+	status = "okay";
-+};
-+
-+&mshc_0 {
-+	samsung,bus-width = <8>;
-+	samsung,timing = <2 1 0>;
-+	samsung,removable = <0>;
-+	fifoth_val = <0x203f0040>;
-+	bus_hz = <400000000>;
-+	div = <0x3>;
-+	index = <4>;
-+	status = "okay";
-+};
-diff -ruN u-boot-2018.07/arch/arm/dts/Makefile u-boot-x4412/arch/arm/dts/Makefile
---- u-boot-2018.07/arch/arm/dts/Makefile	2018-07-09 22:24:14.000000000 +0800
-+++ u-boot-x4412/arch/arm/dts/Makefile	2018-09-25 18:52:51.902046210 +0800
-@@ -12,7 +12,8 @@
+diff -ruN u-boot-2015.10/arch/arm/dts/Makefile u-boot-x4412/arch/arm/dts/Makefile
+--- u-boot-2015.10/arch/arm/dts/Makefile	2015-10-20 07:59:38.000000000 +0800
++++ u-boot-x4412/arch/arm/dts/Makefile	2018-09-27 10:12:54.111526797 +0800
+@@ -5,8 +5,8 @@
  	exynos4210-universal_c210.dtb \
  	exynos4210-trats.dtb \
  	exynos4412-trats2.dtb \
 -	exynos4412-odroid.dtb
+-
 +	exynos4412-odroid.dtb \
 +	exynos4412-x4412.dtb
- 
- dtb-$(CONFIG_TARGET_HIKEY) += hi6220-hikey.dtb
- 
-diff -ruN u-boot-2018.07/arch/arm/include/asm/mach-types.h u-boot-x4412/arch/arm/include/asm/mach-types.h
---- u-boot-2018.07/arch/arm/include/asm/mach-types.h	2018-07-09 22:24:14.000000000 +0800
-+++ u-boot-x4412/arch/arm/include/asm/mach-types.h	2018-09-25 18:52:51.902046210 +0800
-@@ -4550,7 +4550,8 @@
- #define MACH_TYPE_CANISMAJOR           4605
- #define MACH_TYPE_AT91SAM9263MIB       4606
- #define MACH_TYPE_COSINO_9G35          4607
--#define MACH_TYPE_TINY4412             4608
-+//#define MACH_TYPE_TINY4412             4608
-+#define MACH_TYPE_X4412                4608
- #define MACH_TYPE_BALLOON4             4609
- #define MACH_TYPE_PGG                  4610
- #define MACH_TYPE_XXSQ701              4611
-diff -ruN u-boot-2018.07/arch/arm/mach-exynos/clock_init_exynos4.c u-boot-x4412/arch/arm/mach-exynos/clock_init_exynos4.c
---- u-boot-2018.07/arch/arm/mach-exynos/clock_init_exynos4.c	2018-07-09 22:24:14.000000000 +0800
-+++ u-boot-x4412/arch/arm/mach-exynos/clock_init_exynos4.c	2018-09-25 18:52:51.902046210 +0800
-@@ -30,7 +30,11 @@
+ dtb-$(CONFIG_EXYNOS5) += exynos5250-arndale.dtb \
+ 	exynos5250-snow.dtb \
+ 	exynos5250-spring.dtb \
+diff -ruN u-boot-2015.10/arch/arm/include/asm/mach-types.h u-boot-x4412/arch/arm/include/asm/mach-types.h
+--- u-boot-2015.10/arch/arm/include/asm/mach-types.h	2015-10-20 07:59:38.000000000 +0800
++++ u-boot-x4412/arch/arm/include/asm/mach-types.h	2018-09-27 10:14:57.123853828 +0800
+@@ -1062,6 +1062,7 @@
+ #define MACH_TYPE_MONCH                3453
+ #define MACH_TYPE_CURACAO              3454
+ #define MACH_TYPE_ORIGEN               3455
++#define MACH_TYPE_X4412                4608 // Add by Wangyu 2018-09-27
+ #define MACH_TYPE_EPC10                3456
+ #define MACH_TYPE_SGH_I740             3457
+ #define MACH_TYPE_TUNA                 3458
+diff -ruN u-boot-2015.10/arch/arm/mach-exynos/clock_init_exynos4.c u-boot-x4412/arch/arm/mach-exynos/clock_init_exynos4.c
+--- u-boot-2015.10/arch/arm/mach-exynos/clock_init_exynos4.c	2015-10-20 07:59:38.000000000 +0800
++++ u-boot-x4412/arch/arm/mach-exynos/clock_init_exynos4.c	2018-09-27 10:36:14.590449486 +0800
+@@ -30,16 +30,282 @@
  #include <asm/arch/clk.h>
  #include <asm/arch/clock.h>
  #include "common_setup.h"
@@ -291,293 +313,296 @@ diff -ruN u-boot-2018.07/arch/arm/mach-exynos/clock_init_exynos4.c u-boot-x4412/
 +#include "x4412_setup.h"
 +#else
  #include "exynos4_setup.h"
+-
 +#endif
- 
  /*
   * system_clock_init: Initialize core clock and bus clock.
-@@ -38,6 +42,269 @@
+  * void system_clock_init(void)
   */
  void system_clock_init(void)
  {
 +#ifdef CONFIG_X4412
 +	unsigned int set, clr, clr_src_cpu, clr_pll_con0, clr_src_dmc;
 +	struct exynos4x12_clock *clk = (struct exynos4x12_clock *)
-+						samsung_get_base_clock();
-+	
++		samsung_get_base_clock();
++
 +	/*
-+	* CMU_CPU clocks src to MPLL
-+	* Bit values:                 0  ; 1
-+	* MUX_APLL_SEL:        FIN_PLL   ; FOUT_APLL
-+	* MUX_CORE_SEL:        MOUT_APLL ; SCLK_MPLL
-+	* MUX_HPM_SEL:         MOUT_APLL ; SCLK_MPLL_USER_C
-+	* MUX_MPLL_USER_SEL_C: FIN_PLL   ; SCLK_MPLL
++	 * CMU_CPU clocks src to MPLL
++	 * Bit values:	 	0  ; 1
++	 * MUX_APLL_SEL:	FIN_PLL   ; FOUT_APLL
++	 * MUX_CORE_SEL:	MOUT_APLL ; SCLK_MPLL
++	 * MUX_HPM_SEL:		MOUT_APLL ; SCLK_MPLL_USER_C
++	 * MUX_MPLL_USER_SEL_C: FIN_PLL   ; SCLK_MPLL
 +	*/
 +	clr_src_cpu = MUX_APLL_SEL(1) | MUX_CORE_SEL(1) |
-+			MUX_HPM_SEL(1) | MUX_MPLL_USER_SEL_C(1);
++		MUX_HPM_SEL(1) | MUX_MPLL_USER_SEL_C(1);
 +	set = MUX_APLL_SEL(0) | MUX_CORE_SEL(1) | MUX_HPM_SEL(1) |
 +		MUX_MPLL_USER_SEL_C(1);
-+	
-+	clrsetbits_le32(&;clk->src_cpu, clr_src_cpu, set);
-+	
++
++	clrsetbits_le32(&clk->src_cpu, clr_src_cpu, set);
++
 +	/* Wait for mux change */
-+	while (readl(&;clk->mux_stat_cpu) & MUX_STAT_CPU_CHANGING)
++	while (readl(&clk->mux_stat_cpu) & MUX_STAT_CPU_CHANGING)
 +		continue;
-+	
++
 +	/* Set APLL to 1400MHz */
 +	clr_pll_con0 = SDIV(7) | PDIV(63) | MDIV(1023) | FSEL(1);
 +	set = SDIV(0x0) | PDIV(0x3) | MDIV(0xAF) | FSEL(1);
-+	
-+	clrsetbits_le32(&;clk->apll_con0, clr_pll_con0, set);
-+	
++
++	clrsetbits_le32(&clk->apll_con0, clr_pll_con0, set);
++
 +	/* Wait for PLL to be locked */
-+	while (!(readl(&;clk->apll_con0) & PLL_LOCKED_BIT))
++	while (!(readl(&clk->apll_con0) & PLL_LOCKED_BIT))
 +		continue;
-+	
++
 +	/* Set CMU_CPU clocks src to APLL */
 +	set = MUX_APLL_SEL(1) | MUX_CORE_SEL(0) | MUX_HPM_SEL(0) |
 +		MUX_MPLL_USER_SEL_C(1);
 +	clrsetbits_le32(&clk->src_cpu, clr_src_cpu, set);
-+	
++
 +	/* Wait for mux change */
-+	while (readl(&;clk->mux_stat_cpu) & MUX_STAT_CPU_CHANGING)
++	while (readl(&clk->mux_stat_cpu) & MUX_STAT_CPU_CHANGING)
 +		continue;
-+	
++
 +	set = CORE_RATIO(0) | COREM0_RATIO(2) | COREM1_RATIO(5) |
 +		PERIPH_RATIO(0) | ATB_RATIO(4) | PCLK_DBG_RATIO(1) |
 +		APLL_RATIO(0) | CORE2_RATIO(0);
 +	/*
-+	* Set dividers for MOUTcore = 1400 MHz
-+	* coreout =      MOUT / (ratio + 1) = 1400 MHz (0)
-+	* corem0 =     armclk / (ratio + 1) = 466 MHz (2)
-+	* corem1 =     armclk / (ratio + 1) = 233 MHz (5)
-+	* periph =     armclk / (ratio + 1) = 1400 MHz (0)
-+	* atbout =       MOUT / (ratio + 1) = 280 MHz (4)
-+	* pclkdbgout = atbout / (ratio + 1) = 140 MHz (1)
-+	* sclkapll = MOUTapll / (ratio + 1) = 1400 MHz (0)
-+	* core2out = core_out / (ratio + 1) = 1400 MHz (0) (armclk)
++	 * Set dividers for MOUTcore = 1400 MHz
++	 * coreout 	= MOUT / (ratio + 1) = 1400 MHz (0)
++	 * corem0 	= armclk / (ratio + 1) = 466 MHz (2)
++	 * corem1 	= armclk / (ratio + 1) = 233 MHz (5)
++	 * periph 	= armclk / (ratio + 1) = 1400 MHz (0)
++	 * atbout 	= MOUT / (ratio + 1) = 280 MHz (4)
++	 * pclkdbgout 	= atbout / (ratio + 1) = 140 MHz (1)
++	 * sclkapll 	= MOUTapll / (ratio + 1) = 1400 MHz (0)
++	 * core2out 	= core_out / (ratio + 1) = 1400 MHz (0) (armclk)
 +	*/
 +	clr = CORE_RATIO(7) | COREM0_RATIO(7) | COREM1_RATIO(7) |
 +		PERIPH_RATIO(7) | ATB_RATIO(7) | PCLK_DBG_RATIO(7) |
 +		APLL_RATIO(7) | CORE2_RATIO(7);
-+	
-+	clrsetbits_le32(&;clk->div_cpu0, clr, set);
-+	
++
++	clrsetbits_le32(&clk->div_cpu0, clr, set);
++
 +	/* Wait for divider ready status */
-+	while (readl(&;clk->div_stat_cpu0) & DIV_STAT_CPU0_CHANGING)
++	while (readl(&clk->div_stat_cpu0) & DIV_STAT_CPU0_CHANGING)
 +		continue;
-+	
++
 +	/*
-+	* For MOUThpm = 1400 MHz (MOUTapll)
-+	* doutcopy = MOUThpm / (ratio + 1) = 280 (4)
-+	* sclkhpm = doutcopy / (ratio + 1) = 280 (4)
-+	* cores_out = armclk / (ratio + 1) = 280 (4)
-+	*/
++	 * For MOUThpm 	= 1400 MHz (MOUTapll)
++	 * doutcopy 	= MOUThpm / (ratio + 1) = 280 (4)
++	 * sclkhpm 	= doutcopy / (ratio + 1) = 280 (4)
++	 * cores_out 	= armclk / (ratio + 1) = 280 (4)
++	 */
 +	clr = COPY_RATIO(7) | HPM_RATIO(7) | CORES_RATIO(7);
 +	set = COPY_RATIO(4) | HPM_RATIO(4) | CORES_RATIO(4);
-+	
-+	clrsetbits_le32(&;clk->div_cpu1, clr, set);
-+	
++
++	clrsetbits_le32(&clk->div_cpu1, clr, set);
++
 +	/* Wait for divider ready status */
-+	while (readl(&;clk->div_stat_cpu1) & DIV_STAT_CPU1_CHANGING)
++	while (readl(&clk->div_stat_cpu1) & DIV_STAT_CPU1_CHANGING)
 +		continue;
-+	
++
 +	/*
-+	* Set CMU_DMC clocks src to APLL
-+	* Bit values:             0  ; 1
-+	* MUX_C2C_SEL:      SCLKMPLL ; SCLKAPLL
-+	* MUX_DMC_BUS_SEL:  SCLKMPLL ; SCLKAPLL
-+	* MUX_DPHY_SEL:     SCLKMPLL ; SCLKAPLL
-+	* MUX_MPLL_SEL:     FINPLL   ; MOUT_MPLL_FOUT
-+	* MUX_PWI_SEL:      0110 (MPLL); 0111 (EPLL); 1000 (VPLL); 0(XXTI)
-+	* MUX_G2D_ACP0_SEL: SCLKMPLL ; SCLKAPLL
-+	* MUX_G2D_ACP1_SEL: SCLKEPLL ; SCLKVPLL
-+	* MUX_G2D_ACP_SEL:  OUT_ACP0 ; OUT_ACP1
++	 * Set CMU_DMC clocks src to APLL
++	 * Bit values:	 	0  ; 1
++	 * MUX_C2C_SEL:	  	SCLKMPLL ; SCLKAPLL
++	 * MUX_DMC_BUS_SEL:  	SCLKMPLL ; SCLKAPLL
++	 * MUX_DPHY_SEL:	SCLKMPLL ; SCLKAPLL
++	 * MUX_MPLL_SEL:	FINPLL   ; MOUT_MPLL_FOUT
++	 * MUX_PWI_SEL:	  	0110 (MPLL); 0111 (EPLL); 1000 (VPLL); 0(XXTI)
++	 * MUX_G2D_ACP0_SEL: 	SCLKMPLL ; SCLKAPLL
++	 * MUX_G2D_ACP1_SEL: 	SCLKEPLL ; SCLKVPLL
++	 * MUX_G2D_ACP_SEL:  	OUT_ACP0 ; OUT_ACP1
 +	*/
 +	clr_src_dmc = MUX_C2C_SEL(1) | MUX_DMC_BUS_SEL(1) |
-+			MUX_DPHY_SEL(1) | MUX_MPLL_SEL(1) |
-+			MUX_PWI_SEL(15) | MUX_G2D_ACP0_SEL(1) |
-+			MUX_G2D_ACP1_SEL(1) | MUX_G2D_ACP_SEL(1);
++		MUX_DPHY_SEL(1) | MUX_MPLL_SEL(1) |
++		MUX_PWI_SEL(15) | MUX_G2D_ACP0_SEL(1) |
++		MUX_G2D_ACP1_SEL(1) | MUX_G2D_ACP_SEL(1);
 +	set = MUX_C2C_SEL(1) | MUX_DMC_BUS_SEL(1) | MUX_DPHY_SEL(1) |
 +		MUX_MPLL_SEL(0) | MUX_PWI_SEL(0) | MUX_G2D_ACP0_SEL(1) |
 +		MUX_G2D_ACP1_SEL(1) | MUX_G2D_ACP_SEL(1);
-+	
-+	clrsetbits_le32(&;clk->src_dmc, clr_src_dmc, set);
-+	
++
++	clrsetbits_le32(&clk->src_dmc, clr_src_dmc, set);
++
 +	/* Wait for mux change */
-+	while (readl(&;clk->mux_stat_dmc) & MUX_STAT_DMC_CHANGING)
++	while (readl(&clk->mux_stat_dmc) & MUX_STAT_DMC_CHANGING)
 +		continue;
-+	
++
 +	/* Set MPLL to 800MHz */
 +	set = SDIV(0) | PDIV(3) | MDIV(100) | FSEL(0) | PLL_ENABLE(1);
-+	
-+	clrsetbits_le32(&;clk->mpll_con0, clr_pll_con0, set);
-+	
++
++	clrsetbits_le32(&clk->mpll_con0, clr_pll_con0, set);
++
 +	/* Wait for PLL to be locked */
-+	while (!(readl(&;clk->mpll_con0) & PLL_LOCKED_BIT))
++	while (!(readl(&clk->mpll_con0) & PLL_LOCKED_BIT))
 +		continue;
-+	
++
 +	/* Switch back CMU_DMC mux */
 +	set = MUX_C2C_SEL(0) | MUX_DMC_BUS_SEL(0) | MUX_DPHY_SEL(0) |
 +		MUX_MPLL_SEL(1) | MUX_PWI_SEL(6) | MUX_G2D_ACP0_SEL(0) |
 +		MUX_G2D_ACP1_SEL(0) | MUX_G2D_ACP_SEL(0);
-+	
-+	clrsetbits_le32(&;clk->src_dmc, clr_src_dmc, set);
-+	
++
++	clrsetbits_le32(&clk->src_dmc, clr_src_dmc, set);
++
 +	/* Wait for mux change */
-+	while (readl(&;clk->mux_stat_dmc) & MUX_STAT_DMC_CHANGING)
++	while (readl(&clk->mux_stat_dmc) & MUX_STAT_DMC_CHANGING)
 +		continue;
-+	
++
 +	/* CLK_DIV_DMC0 */
 +	clr = ACP_RATIO(7) | ACP_PCLK_RATIO(7) | DPHY_RATIO(7) |
 +		DMC_RATIO(7) | DMCD_RATIO(7) | DMCP_RATIO(7);
 +	/*
-+	* For:
-+	* MOUTdmc = 800 MHz
-+	* MOUTdphy = 800 MHz
-+	*
-+	* aclk_acp = MOUTdmc / (ratio + 1) = 200 (3)
-+	* pclk_acp = aclk_acp / (ratio + 1) = 100 (1)
-+	* sclk_dphy = MOUTdphy / (ratio + 1) = 400 (1)
-+	* sclk_dmc = MOUTdmc / (ratio + 1) = 400 (1)
-+	* aclk_dmcd = sclk_dmc / (ratio + 1) = 200 (1)
-+	* aclk_dmcp = aclk_dmcd / (ratio + 1) = 100 (1)
-+	*/
++	 * For:
++	 * MOUTdmc 	= 800 MHz
++	 * MOUTdphy 	= 800 MHz
++	 *
++	 * aclk_acp 	= MOUTdmc / (ratio + 1) = 200 (3)
++	 * pclk_acp 	= aclk_acp / (ratio + 1) = 100 (1)
++	 * sclk_dphy 	= MOUTdphy / (ratio + 1) = 400 (1)
++	 * sclk_dmc 	= MOUTdmc / (ratio + 1) = 400 (1)
++	 * aclk_dmcd 	= sclk_dmc / (ratio + 1) = 200 (1)
++	 * aclk_dmcp 	= aclk_dmcd / (ratio + 1) = 100 (1)
++	 */
 +	set = ACP_RATIO(3) | ACP_PCLK_RATIO(1) | DPHY_RATIO(1) |
 +		DMC_RATIO(1) | DMCD_RATIO(1) | DMCP_RATIO(1);
-+	
-+	clrsetbits_le32(&;clk->div_dmc0, clr, set);
-+	
++
++	clrsetbits_le32(&clk->div_dmc0, clr, set);
++
 +	/* Wait for divider ready status */
-+	while (readl(&;clk->div_stat_dmc0) & DIV_STAT_DMC0_CHANGING)
++	while (readl(&clk->div_stat_dmc0) & DIV_STAT_DMC0_CHANGING)
 +		continue;
-+	
++
 +	/* CLK_DIV_DMC1 */
 +	clr = G2D_ACP_RATIO(15) | C2C_RATIO(7) | PWI_RATIO(15) |
 +		C2C_ACLK_RATIO(7) | DVSEM_RATIO(127) | DPM_RATIO(127);
 +	/*
-+	* For:
-+	* MOUTg2d = 800 MHz
-+	* MOUTc2c = 800 Mhz
-+	* MOUTpwi = 800 MHz
-+	*
-+	* sclk_g2d_acp = MOUTg2d / (ratio + 1) = 200 (3)
-+	* sclk_c2c = MOUTc2c / (ratio + 1) = 400 (1)
-+	* aclk_c2c = sclk_c2c / (ratio + 1) = 200 (1)
-+	* sclk_pwi = MOUTpwi / (ratio + 1) = 100 (7)
-+	*/
++	 * For:
++	 * MOUTg2d 	= 800 MHz
++	 * MOUTc2c 	= 800 Mhz
++	 * MOUTpwi 	= 800 MHz
++	 *
++	 * sclk_g2d_acp = MOUTg2d / (ratio + 1) = 200 (3)
++	 * sclk_c2c 	= MOUTc2c / (ratio + 1) = 400 (1)
++	 * aclk_c2c 	= sclk_c2c / (ratio + 1) = 200 (1)
++	 * sclk_pwi 	= MOUTpwi / (ratio + 1) = 100 (7)
++	 */
 +	set = G2D_ACP_RATIO(3) | C2C_RATIO(1) | PWI_RATIO(7) |
 +		C2C_ACLK_RATIO(1) | DVSEM_RATIO(1) | DPM_RATIO(1);
-+	
-+	clrsetbits_le32(&;clk->div_dmc1, clr, set);
-+	
++
++	clrsetbits_le32(&clk->div_dmc1, clr, set);
++
 +	/* Wait for divider ready status */
-+	while (readl(&;clk->div_stat_dmc1) & DIV_STAT_DMC1_CHANGING)
++	while (readl(&clk->div_stat_dmc1) & DIV_STAT_DMC1_CHANGING)
 +		continue;
-+	
++
 +	/* CLK_SRC_PERIL0 */
 +	clr = UART0_SEL(15) | UART1_SEL(15) | UART2_SEL(15) |
 +		UART3_SEL(15) | UART4_SEL(15);
 +	/*
-+	* Set CLK_SRC_PERIL0 clocks src to MPLL
-+	* src values: 0(XXTI); 1(XusbXTI); 2(SCLK_HDMI24M); 3(SCLK_USBPHY0);
-+	*             5(SCLK_HDMIPHY); 6(SCLK_MPLL_USER_T); 7(SCLK_EPLL);
-+	*             8(SCLK_VPLL)
-+	*
-+	* Set all to SCLK_MPLL_USER_T
-+	*/
++	 * Set CLK_SRC_PERIL0 clocks src to MPLL
++	 * src values:	0(XXTI); 1(XusbXTI); 2(SCLK_HDMI24M); 3(SCLK_USBPHY0);
++	 *		5(SCLK_HDMIPHY); 6(SCLK_MPLL_USER_T); 7(SCLK_EPLL);
++	 *		8(SCLK_VPLL)
++	 *
++	 * Set all to SCLK_MPLL_USER_T
++	 */
 +	set = UART0_SEL(6) | UART1_SEL(6) | UART2_SEL(6) | UART3_SEL(6) |
 +		UART4_SEL(6);
-+	
-+	clrsetbits_le32(&;clk->src_peril0, clr, set);
-+	
++
++	clrsetbits_le32(&clk->src_peril0, clr, set);
++
 +	/* CLK_DIV_PERIL0 */
 +	clr = UART0_RATIO(15) | UART1_RATIO(15) | UART2_RATIO(15) |
 +		UART3_RATIO(15) | UART4_RATIO(15);
 +	/*
-+	* For MOUTuart0-4: 800MHz
-+	*
-+	* SCLK_UARTx = MOUTuartX / (ratio + 1) = 100 (7)
++	 * For MOUTuart0-4: 800MHz
++	 *
++	 * SCLK_UARTx = MOUTuartX / (ratio + 1) = 100 (7)
 +	*/
 +	set = UART0_RATIO(7) | UART1_RATIO(7) | UART2_RATIO(7) |
 +		UART3_RATIO(7) | UART4_RATIO(7);
-+	
-+	clrsetbits_le32(&;clk->div_peril0, clr, set);
-+	
-+	while (readl(&;clk->div_stat_peril0) & DIV_STAT_PERIL0_CHANGING)
++
++	clrsetbits_le32(&clk->div_peril0, clr, set);
++
++	while (readl(&clk->div_stat_peril0) & DIV_STAT_PERIL0_CHANGING)
 +		continue;
-+	
++
 +	/* CLK_DIV_FSYS1 */
 +	clr = MMC0_RATIO(15) | MMC0_PRE_RATIO(255) | MMC1_RATIO(15) |
 +		MMC1_PRE_RATIO(255);
 +	/*
-+	* For MOUTmmc0-3 = 800 MHz (MPLL)
-+	*
-+	* DOUTmmc1 = MOUTmmc1 / (ratio + 1) = 100 (7)
-+	* sclk_mmc1 = DOUTmmc1 / (ratio + 1) = 50 (1)
-+	* DOUTmmc0 = MOUTmmc0 / (ratio + 1) = 100 (7)
-+	* sclk_mmc0 = DOUTmmc0 / (ratio + 1) = 50 (1)
++	 * For MOUTmmc0-3 = 800 MHz (MPLL)
++	 *
++	 * DOUTmmc1 	= MOUTmmc1 / (ratio + 1) = 100 (7)
++	 * sclk_mmc1 	= DOUTmmc1 / (ratio + 1) = 50 (1)
++	 * DOUTmmc0 	= MOUTmmc0 / (ratio + 1) = 100 (7)
++	 * sclk_mmc0 	= DOUTmmc0 / (ratio + 1) = 50 (1)
 +	*/
 +	set = MMC0_RATIO(7) | MMC0_PRE_RATIO(1) | MMC1_RATIO(7) |
 +		MMC1_PRE_RATIO(1);
-+	
-+	clrsetbits_le32(&;clk->div_fsys1, clr, set);
-+	
++
++	clrsetbits_le32(&clk->div_fsys1, clr, set);
++
 +	/* Wait for divider ready status */
-+	while (readl(&;clk->div_stat_fsys1) & DIV_STAT_FSYS1_CHANGING)
++	while (readl(&clk->div_stat_fsys1) & DIV_STAT_FSYS1_CHANGING)
 +		continue;
-+	
++
 +	/* CLK_DIV_FSYS2 */
 +	clr = MMC2_RATIO(15) | MMC2_PRE_RATIO(255) | MMC3_RATIO(15) |
 +		MMC3_PRE_RATIO(255);
 +	/*
-+	* For MOUTmmc0-3 = 800 MHz (MPLL)
-+	*
-+	* DOUTmmc3 = MOUTmmc3 / (ratio + 1) = 100 (7)
-+	* sclk_mmc3 = DOUTmmc3 / (ratio + 1) = 50 (1)
-+	* DOUTmmc2 = MOUTmmc2 / (ratio + 1) = 100 (7)
-+	* sclk_mmc2 = DOUTmmc2 / (ratio + 1) = 50 (1)
++	 * For MOUTmmc0-3 = 800 MHz (MPLL)
++	 *
++	 * DOUTmmc3 	= MOUTmmc3 / (ratio + 1) = 100 (7)
++	 * sclk_mmc3 	= DOUTmmc3 / (ratio + 1) = 50 (1)
++	 * DOUTmmc2 	= MOUTmmc2 / (ratio + 1) = 100 (7)
++	 * sclk_mmc2 	= DOUTmmc2 / (ratio + 1) = 50 (1)
 +	*/
 +	set = MMC2_RATIO(7) | MMC2_PRE_RATIO(1) | MMC3_RATIO(7) |
 +		MMC3_PRE_RATIO(1);
-+	
-+	clrsetbits_le32(&;clk->div_fsys2, clr, set);
-+	
++
++	clrsetbits_le32(&clk->div_fsys2, clr, set);
++
 +	/* Wait for divider ready status */
-+	while (readl(&;clk->div_stat_fsys2) & DIV_STAT_FSYS2_CHANGING)
++	while (readl(&clk->div_stat_fsys2) & DIV_STAT_FSYS2_CHANGING)
 +		continue;
-+	
++
 +	/* CLK_DIV_FSYS3 */
 +	clr = MMC4_RATIO(15) | MMC4_PRE_RATIO(255);
 +	/*
-+	* For MOUTmmc4 = 800 MHz (MPLL)
-+	*
-+	* DOUTmmc4 = MOUTmmc4 / (ratio + 1) = 100 (7)
-+	* sclk_mmc4 = DOUTmmc4 / (ratio + 1) = 100 (0)
++	 * For MOUTmmc4 = 800 MHz (MPLL)
++	 *
++	 * DOUTmmc4 	= MOUTmmc4 / (ratio + 1) = 100 (7)
++	 * sclk_mmc4 	= DOUTmmc4 / (ratio + 1) = 100 (0)
 +	*/
 +	set = MMC4_RATIO(7) | MMC4_PRE_RATIO(0);
-+	
-+	clrsetbits_le32(&;clk->div_fsys3, clr, set);
-+	
++
++	clrsetbits_le32(&clk->div_fsys3, clr, set);
++
 +	/* Wait for divider ready status */
-+	while (readl(&;clk->div_stat_fsys3) & DIV_STAT_FSYS3_CHANGING)
++	while (readl(&clk->div_stat_fsys3) & DIV_STAT_FSYS3_CHANGING)
 +		continue;
 +#else
  	struct exynos4_clock *clk =
- 			(struct exynos4_clock *)samsung_get_base_clock();
+-			(struct exynos4_clock *)samsung_get_base_clock();
++		(struct exynos4_clock *)samsung_get_base_clock();
  
-@@ -91,4 +358,5 @@
+ 	writel(CLK_SRC_CPU_VAL, &clk->src_cpu);
+ 
+@@ -91,4 +357,5 @@
  	writel(VPLL_CON0_VAL, &clk->vpll_con0);
  
  	sdelay(0x30000);
 +#endif
  }
-diff -ruN u-boot-2018.07/arch/arm/mach-exynos/dmc_init_exynos4.c u-boot-x4412/arch/arm/mach-exynos/dmc_init_exynos4.c
---- u-boot-2018.07/arch/arm/mach-exynos/dmc_init_exynos4.c	2018-07-09 22:24:14.000000000 +0800
-+++ u-boot-x4412/arch/arm/mach-exynos/dmc_init_exynos4.c	2018-09-26 17:51:21.248634886 +0800
-@@ -29,6 +29,27 @@
+diff -ruN u-boot-2015.10/arch/arm/mach-exynos/dmc_init_exynos4.c u-boot-x4412/arch/arm/mach-exynos/dmc_init_exynos4.c
+--- u-boot-2015.10/arch/arm/mach-exynos/dmc_init_exynos4.c	2015-10-20 07:59:38.000000000 +0800
++++ u-boot-x4412/arch/arm/mach-exynos/dmc_init_exynos4.c	2018-09-27 10:53:19.145789897 +0800
+@@ -28,6 +28,28 @@
+ #include "common_setup.h"
  #include "exynos4_setup.h"
  
- struct mem_timings mem = {
 +#ifdef CONFIG_X4412
 +struct mem_timings mem = {
 +	.direct_cmd_msr = {
@@ -598,31 +623,51 @@ diff -ruN u-boot-2018.07/arch/arm/mach-exynos/dmc_init_exynos4.c u-boot-x4412/ar
 +	.memconfig1 = 0x60e01323,
 +	.dll_resync = FORCE_DLL_RESYNC,
 +	.dll_on = DLL_CONTROL_ON,
++};
 +#else
+ struct mem_timings mem = {
  	.direct_cmd_msr = {
  		DIRECT_CMD1, DIRECT_CMD2, DIRECT_CMD3, DIRECT_CMD4
- 	},
-@@ -47,10 +68,16 @@
- 	.memconfig1 = MEMCONFIG1_VAL,
+@@ -48,6 +70,8 @@
  	.dll_resync = FORCE_DLL_RESYNC,
  	.dll_on = DLL_CONTROL_ON,
-+#endif
  };
++#endif
++
  static void phy_control_reset(int ctrl_no, struct exynos4_dmc *dmc)
  {
  	if (ctrl_no) {
+@@ -124,6 +148,10 @@
+ 	writel(mem.memconfig0, &dmc->memconfig0);
+ 	writel(mem.memconfig1, &dmc->memconfig1);
+ 
 +#ifdef CONFIG_X4412
-+		/* Add by Wang.Yu 2018-09-26 */
-+		/* It is copied from Pengdonglin's blog, but it seems different from this U-boot version(2018-07). */
-+		writel(0x8000001F, &dmc->ivcontrol);
++	writel(0x8000001F, &dmc->ivcontrol);
 +#endif
- 		writel((mem.control1 | (1 << mem.dll_resync)),
- 		       &dmc->phycontrol1);
- 		writel((mem.control1 | (0 << mem.dll_resync)),
-diff -ruN u-boot-2018.07/arch/arm/mach-exynos/Kconfig u-boot-x4412/arch/arm/mach-exynos/Kconfig
---- u-boot-2018.07/arch/arm/mach-exynos/Kconfig	2018-07-09 22:24:14.000000000 +0800
-+++ u-boot-x4412/arch/arm/mach-exynos/Kconfig	2018-09-25 18:52:51.902046210 +0800
-@@ -60,6 +60,10 @@
++
+ 	/* Config Precharge Policy */
+ 	writel(mem.prechconfig, &dmc->prechconfig);
+ 	/*
+@@ -175,6 +203,7 @@
+ 	 * 0: full_sync
+ 	 */
+ 	writel(1, ASYNC_CONFIG);
++#ifndef CONFIG_X4412
+ #ifdef CONFIG_ORIGEN
+ 	/* Interleave: 2Bit, Interleave_bit1: 0x15, Interleave_bit0: 0x7 */
+ 	writel(APB_SFR_INTERLEAVE_CONF_VAL, EXYNOS4_MIU_BASE +
+@@ -204,6 +233,7 @@
+ 		ABP_SFR_SLV_ADDRMAP_CONF_OFFSET);
+ #endif
+ #endif
++#endif
+ 	/* DREX0 */
+ 	dmc = (struct exynos4_dmc *)samsung_get_base_dmc_ctrl();
+ 	dmc_init(dmc);
+diff -ruN u-boot-2015.10/arch/arm/mach-exynos/Kconfig u-boot-x4412/arch/arm/mach-exynos/Kconfig
+--- u-boot-2015.10/arch/arm/mach-exynos/Kconfig	2015-10-20 07:59:38.000000000 +0800
++++ u-boot-x4412/arch/arm/mach-exynos/Kconfig	2018-09-27 10:16:21.387242073 +0800
+@@ -19,6 +19,10 @@
  	bool "Exynos4412 Origen board"
  	select SUPPORT_SPL
  
@@ -633,7 +678,7 @@ diff -ruN u-boot-2018.07/arch/arm/mach-exynos/Kconfig u-boot-x4412/arch/arm/mach
  config TARGET_TRATS2
  	bool "Exynos4412 Trat2 board"
  
-@@ -156,6 +160,7 @@
+@@ -76,6 +80,7 @@
  source "board/samsung/trats/Kconfig"
  source "board/samsung/universal_c210/Kconfig"
  source "board/samsung/origen/Kconfig"
@@ -641,34 +686,49 @@ diff -ruN u-boot-2018.07/arch/arm/mach-exynos/Kconfig u-boot-x4412/arch/arm/mach
  source "board/samsung/trats2/Kconfig"
  source "board/samsung/odroid/Kconfig"
  source "board/samsung/arndale/Kconfig"
-diff -ruN u-boot-2018.07/arch/arm/mach-exynos/lowlevel_init.c u-boot-x4412/arch/arm/mach-exynos/lowlevel_init.c
---- u-boot-2018.07/arch/arm/mach-exynos/lowlevel_init.c	2018-07-09 22:24:14.000000000 +0800
-+++ u-boot-x4412/arch/arm/mach-exynos/lowlevel_init.c	2018-09-26 17:53:34.595064840 +0800
-@@ -218,8 +218,9 @@
+diff -ruN u-boot-2015.10/arch/arm/mach-exynos/lowlevel_init.c u-boot-x4412/arch/arm/mach-exynos/lowlevel_init.c
+--- u-boot-2015.10/arch/arm/mach-exynos/lowlevel_init.c	2015-10-20 07:59:38.000000000 +0800
++++ u-boot-x4412/arch/arm/mach-exynos/lowlevel_init.c	2018-09-27 10:54:52.460186520 +0800
+@@ -216,8 +216,10 @@
+ 	if (actions & DO_CLOCKS) {
+ 		system_clock_init();
  #ifdef CONFIG_DEBUG_UART
- #if (defined(CONFIG_SPL_BUILD) && defined(CONFIG_SPL_SERIAL_SUPPORT)) || \
-     !defined(CONFIG_SPL_BUILD)
 -		exynos_pinmux_config(PERIPH_ID_UART3, PINMUX_FLAG_NONE);
++		/*exynos_pinmux_config(PERIPH_ID_UART3, PINMUX_FLAG_NONE);*/
 +		exynos_pinmux_config(PERIPH_ID_UART0, PINMUX_FLAG_NONE);
  		debug_uart_init();
 +		printascii("UART OK!\n\r");
  #endif
- #endif
  		mem_ctrl_init(actions & DO_MEM_RESET);
-diff -ruN u-boot-2018.07/arch/arm/mach-exynos/spl_boot.c u-boot-x4412/arch/arm/mach-exynos/spl_boot.c
---- u-boot-2018.07/arch/arm/mach-exynos/spl_boot.c	2018-07-09 22:24:14.000000000 +0800
-+++ u-boot-x4412/arch/arm/mach-exynos/spl_boot.c	2018-09-26 17:59:39.594383237 +0800
-@@ -184,7 +184,8 @@
+ 		tzpc_init();
+diff -ruN u-boot-2015.10/arch/arm/mach-exynos/Makefile u-boot-x4412/arch/arm/mach-exynos/Makefile
+--- u-boot-2015.10/arch/arm/mach-exynos/Makefile	2015-10-20 07:59:38.000000000 +0800
++++ u-boot-x4412/arch/arm/mach-exynos/Makefile	2018-09-27 14:13:32.789697354 +0800
+@@ -12,7 +12,10 @@
+ ifdef CONFIG_SPL_BUILD
+ obj-$(CONFIG_EXYNOS5)	+= clock_init_exynos5.o
+ obj-$(CONFIG_EXYNOS5)	+= dmc_common.o dmc_init_ddr3.o
+-obj-$(CONFIG_EXYNOS4210)+= dmc_init_exynos4.o clock_init_exynos4.o
++#obj-$(CONFIG_EXYNOS4210)+= dmc_init_exynos4.o clock_init_exynos4.o
++ifneq (,$(filter y, $(CONFIG_EXYNOS4210) $(CONFIG_X4412)))
++obj-y	+= dmc_init_exynos4.o clock_init_exynos4.o
++endif
+ obj-y	+= spl_boot.o
+ obj-y	+= lowlevel_init.o
+ endif
+diff -ruN u-boot-2015.10/arch/arm/mach-exynos/spl_boot.c u-boot-x4412/arch/arm/mach-exynos/spl_boot.c
+--- u-boot-2015.10/arch/arm/mach-exynos/spl_boot.c	2015-10-20 07:59:38.000000000 +0800
++++ u-boot-x4412/arch/arm/mach-exynos/spl_boot.c	2018-09-27 10:58:53.882082104 +0800
+@@ -185,7 +185,7 @@
  {
  	unsigned int bootmode = BOOT_MODE_OM;
  
 -	u32 (*copy_bl2)(u32 offset, u32 nblock, u32 dst) = NULL;
-+	//u32 (*copy_bl2)(u32 offset, u32 nblock, u32 dst) = NULL;
 +	u32 (*copy_uboot)(u32 offset, u32 nblock, u32 dst) = NULL;
  	u32 offset = 0, size = 0;
  #ifdef CONFIG_SPI_BOOTING
  	struct spl_machine_param *param = spl_get_machine_params();
-@@ -221,9 +222,9 @@
+@@ -222,9 +222,9 @@
  		break;
  #endif
  	case BOOT_MODE_SD:
@@ -681,7 +741,7 @@ diff -ruN u-boot-2018.07/arch/arm/mach-exynos/spl_boot.c u-boot-x4412/arch/arm/m
  		break;
  #ifdef CONFIG_SUPPORT_EMMC_BOOT
  	case BOOT_MODE_EMMC:
-@@ -253,8 +254,34 @@
+@@ -254,8 +254,34 @@
  		break;
  	}
  
@@ -718,241 +778,240 @@ diff -ruN u-boot-2018.07/arch/arm/mach-exynos/spl_boot.c u-boot-x4412/arch/arm/m
  }
  
  void memzero(void *s, size_t n)
-diff -ruN u-boot-2018.07/arch/arm/mach-exynos/x4412_setup.h u-boot-x4412/arch/arm/mach-exynos/x4412_setup.h
---- u-boot-2018.07/arch/arm/mach-exynos/x4412_setup.h	1970-01-01 08:00:00.000000000 +0800
-+++ u-boot-x4412/arch/arm/mach-exynos/x4412_setup.h	2018-09-25 18:52:51.902046210 +0800
-@@ -0,0 +1,228 @@
+diff -ruN u-boot-2015.10/arch/arm/mach-exynos/x4412_setup.h u-boot-x4412/arch/arm/mach-exynos/x4412_setup.h
+--- u-boot-2015.10/arch/arm/mach-exynos/x4412_setup.h	1970-01-01 08:00:00.000000000 +0800
++++ u-boot-x4412/arch/arm/mach-exynos/x4412_setup.h	2018-09-27 14:17:58.457969207 +0800
+@@ -0,0 +1,227 @@
 +/*
 + * Copyright (C) 2014 Samsung Electronics
 + * Przemyslaw Marczak <p.marczak@samsung.com>
 + *
-+ * SPDX-License-Identifier:    GPL-2.0+
++ * SPDX-License-Identifier:	GPL-2.0+
 + */
 +
 +#ifndef __X4412_SETUP__
 +#define __X4412_SETUP__
 +
 +/* A/M PLL_CON0 */
-+#define SDIV(x)			((x) &; 0x7)
-+#define PDIV(x)			(((x) &; 0x3f) << 8)
-+#define MDIV(x)			(((x) &; 0x3ff) << 16)
-+#define FSEL(x)			(((x) &; 0x1) << 27)
-+#define PLL_LOCKED_BIT		(0x1 <;< 29)
-+#define PLL_ENABLE(x)		(((x) &; 0x1) << 31)
++#define SDIV(x)			((x) & 0x7)
++#define PDIV(x)			(((x) & 0x3f) << 8)
++#define MDIV(x)			(((x) & 0x3ff) << 16)
++#define FSEL(x)			(((x) & 0x1) << 27)
++#define PLL_LOCKED_BIT		(0x1 << 29)
++#define PLL_ENABLE(x)		(((x) & 0x1) << 31)
 +
 +/* CLK_SRC_CPU */
-+#define MUX_APLL_SEL(x)		((x) &; 0x1)
-+#define MUX_CORE_SEL(x)		(((x) &; 0x1) << 16)
-+#define MUX_HPM_SEL(x)		(((x) &; 0x1) << 20)
-+#define MUX_MPLL_USER_SEL_C(x)	(((x) &; 0x1) << 24)
++#define MUX_APLL_SEL(x)		((x) & 0x1)
++#define MUX_CORE_SEL(x)		(((x) & 0x1) << 16)
++#define MUX_HPM_SEL(x)		(((x) & 0x1) << 20)
++#define MUX_MPLL_USER_SEL_C(x)  (((x) & 0x1) << 24)
 +
 +#define MUX_STAT_CHANGING	0x100
 +
 +/* CLK_MUX_STAT_CPU */
-+#define APLL_SEL(x)		((x) &; 0x7)
-+#define CORE_SEL(x)		(((x) &; 0x7) << 16)
-+#define HPM_SEL(x)		(((x) &; 0x7) << 20)
-+#define MPLL_USER_SEL_C(x)	(((x) &; 0x7) << 24)
-+#define MUX_STAT_CPU_CHANGING	(APLL_SEL(MUX_STAT_CHANGING) | \
-+                CORE_SEL(MUX_STAT_CHANGING) | \
-+                HPM_SEL(MUX_STAT_CHANGING) | \
-+                MPLL_USER_SEL_C(MUX_STAT_CHANGING))
++#define APLL_SEL(x)		((x) & 0x7)
++#define CORE_SEL(x)		(((x) & 0x7) << 16)
++#define HPM_SEL(x)		(((x) & 0x7) << 20)
++#define MPLL_USER_SEL_C(x)	(((x) & 0x7) << 24)
++#define MUX_STAT_CPU_CHANGING   (APLL_SEL(MUX_STAT_CHANGING) | \
++				CORE_SEL(MUX_STAT_CHANGING) | \
++				HPM_SEL(MUX_STAT_CHANGING) | \
++				MPLL_USER_SEL_C(MUX_STAT_CHANGING))
 +
 +/* CLK_DIV_CPU0 */
-+#define CORE_RATIO(x)		((x) &; 0x7)
-+#define COREM0_RATIO(x)		(((x) &; 0x7) << 4)
-+#define COREM1_RATIO(x)		(((x) &; 0x7) << 8)
-+#define PERIPH_RATIO(x)		(((x) &; 0x7) << 12)
-+#define ATB_RATIO(x)		(((x) &; 0x7) << 16)
-+#define PCLK_DBG_RATIO(x)	(((x) &; 0x7) << 20)
-+#define APLL_RATIO(x)		(((x) &; 0x7) << 24)
-+#define CORE2_RATIO(x)		(((x) &; 0x7) << 28)
++#define CORE_RATIO(x)		((x) & 0x7)
++#define COREM0_RATIO(x)		(((x) & 0x7) << 4)
++#define COREM1_RATIO(x)		(((x) & 0x7) << 8)
++#define PERIPH_RATIO(x)		(((x) & 0x7) << 12)
++#define ATB_RATIO(x)		(((x) & 0x7) << 16)
++#define PCLK_DBG_RATIO(x)	(((x) & 0x7) << 20)
++#define APLL_RATIO(x)		(((x) & 0x7) << 24)
++#define CORE2_RATIO(x)		(((x) & 0x7) << 28)
 +
 +/* CLK_DIV_STAT_CPU0 */
-+#define DIV_CORE(x)		((x) &; 0x1)
-+#define DIV_COREM0(x)		(((x) &; 0x1) << 4)
-+#define DIV_COREM1(x)		(((x) &; 0x1) << 8)
-+#define DIV_PERIPH(x)		(((x) &; 0x1) << 12)
-+#define DIV_ATB(x)		(((x) &; 0x1) << 16)
-+#define DIV_PCLK_DBG(x)		(((x) &; 0x1) << 20)
-+#define DIV_APLL(x)		(((x) &; 0x1) << 24)
-+#define DIV_CORE2(x)		(((x) &; 0x1) << 28)
++#define DIV_CORE(x)		((x) & 0x1)
++#define DIV_COREM0(x)		(((x) & 0x1) << 4)
++#define DIV_COREM1(x)		(((x) & 0x1) << 8)
++#define DIV_PERIPH(x)		(((x) & 0x1) << 12)
++#define DIV_ATB(x)		(((x) & 0x1) << 16)
++#define DIV_PCLK_DBG(x)		(((x) & 0x1) << 20)
++#define DIV_APLL(x)		(((x) & 0x1) << 24)
++#define DIV_CORE2(x)		(((x) & 0x1) << 28)
 +
-+#define DIV_STAT_CHANGING       0x1
++#define DIV_STAT_CHANGING	0x1
 +#define DIV_STAT_CPU0_CHANGING  (DIV_CORE(DIV_STAT_CHANGING) | \
-+                DIV_COREM0(DIV_STAT_CHANGING) | \
-+                DIV_COREM1(DIV_STAT_CHANGING) | \
-+                DIV_PERIPH(DIV_STAT_CHANGING) | \
-+                DIV_ATB(DIV_STAT_CHANGING) | \
-+                DIV_PCLK_DBG(DIV_STAT_CHANGING) | \
-+                DIV_APLL(DIV_STAT_CHANGING) | \
-+                DIV_CORE2(DIV_STAT_CHANGING))
++				DIV_COREM0(DIV_STAT_CHANGING) | \
++				DIV_COREM1(DIV_STAT_CHANGING) | \
++				DIV_PERIPH(DIV_STAT_CHANGING) | \
++				DIV_ATB(DIV_STAT_CHANGING) | \
++				DIV_PCLK_DBG(DIV_STAT_CHANGING) | \
++				DIV_APLL(DIV_STAT_CHANGING) | \
++				DIV_CORE2(DIV_STAT_CHANGING))
 +
 +/* CLK_DIV_CPU1 */
-+#define COPY_RATIO(x)           ((x) &; 0x7)
-+#define HPM_RATIO(x)            (((x) &; 0x7) << 4)
-+#define CORES_RATIO(x)		(((x) &; 0x7) << 8)
++#define COPY_RATIO(x)		((x) & 0x7)
++#define HPM_RATIO(x)		(((x) & 0x7) << 4)
++#define CORES_RATIO(x)		(((x) & 0x7) << 8)
 +
 +/* CLK_DIV_STAT_CPU1 */
-+#define DIV_COPY(x)		((x) &; 0x7)
-+#define DIV_HPM(x)		(((x) &; 0x1) << 4)
-+#define DIV_CORES(x)		(((x) &; 0x1) << 8)
++#define DIV_COPY(x)		((x) & 0x7)
++#define DIV_HPM(x)		(((x) & 0x1) << 4)
++#define DIV_CORES(x)		(((x) & 0x1) << 8)
 +
-+#define DIV_STAT_CPU1_CHANGING    (DIV_COPY(DIV_STAT_CHANGING) | \
-+                DIV_HPM(DIV_STAT_CHANGING) | \
-+                DIV_CORES(DIV_STAT_CHANGING))
++#define DIV_STAT_CPU1_CHANGING	(DIV_COPY(DIV_STAT_CHANGING) | \
++				DIV_HPM(DIV_STAT_CHANGING) | \
++				DIV_CORES(DIV_STAT_CHANGING))
 +
 +/* CLK_SRC_DMC */
-+#define MUX_C2C_SEL(x)		((x) &; 0x1)
-+#define MUX_DMC_BUS_SEL(x)	(((x) &; 0x1) << 4)
-+#define MUX_DPHY_SEL(x)		(((x) &; 0x1) << 8)
-+#define MUX_MPLL_SEL(x)		(((x) &; 0x1) << 12)
-+#define MUX_PWI_SEL(x)		(((x) &; 0xf) << 16)
-+#define MUX_G2D_ACP0_SEL(x)	(((x) &; 0x1) << 20)
-+#define MUX_G2D_ACP1_SEL(x)	(((x) &; 0x1) << 24)
-+#define MUX_G2D_ACP_SEL(x)	(((x) &; 0x1) << 28)
++#define MUX_C2C_SEL(x)		((x) & 0x1)
++#define MUX_DMC_BUS_SEL(x)	(((x) & 0x1) << 4)
++#define MUX_DPHY_SEL(x)		(((x) & 0x1) << 8)
++#define MUX_MPLL_SEL(x)		(((x) & 0x1) << 12)
++#define MUX_PWI_SEL(x)		(((x) & 0xf) << 16)
++#define MUX_G2D_ACP0_SEL(x)	(((x) & 0x1) << 20)
++#define MUX_G2D_ACP1_SEL(x)	(((x) & 0x1) << 24)
++#define MUX_G2D_ACP_SEL(x)	(((x) & 0x1) << 28)
 +
 +/* CLK_MUX_STAT_DMC */
-+#define C2C_SEL(x)        	(((x)) &; 0x7)
-+#define DMC_BUS_SEL(x)        	(((x) &; 0x7) << 4)
-+#define DPHY_SEL(x)        	(((x) &; 0x7) << 8)
-+#define MPLL_SEL(x)        	(((x) &; 0x7) << 12)
-+/* #define PWI_SEL(x)        	   (((x) &; 0xf) << 16)  - Reserved */
-+#define G2D_ACP0_SEL(x)		(((x) &; 0x7) << 20)
-+#define G2D_ACP1_SEL(x)		(((x) &; 0x7) << 24)
-+#define G2D_ACP_SEL(x)		(((x) &; 0x7) << 28)
++#define C2C_SEL(x)		(((x)) & 0x7)
++#define DMC_BUS_SEL(x)		(((x) & 0x7) << 4)
++#define DPHY_SEL(x)		(((x) & 0x7) << 8)
++#define MPLL_SEL(x)		(((x) & 0x7) << 12)
++/* #define PWI_SEL(x)		(((x) & 0xf) << 16)  - Reserved */
++#define G2D_ACP0_SEL(x)		(((x) & 0x7) << 20)
++#define G2D_ACP1_SEL(x)		(((x) & 0x7) << 24)
++#define G2D_ACP_SEL(x)		(((x) & 0x7) << 28)
 +
-+#define MUX_STAT_DMC_CHANGING    (C2C_SEL(MUX_STAT_CHANGING) | \
-+                DMC_BUS_SEL(MUX_STAT_CHANGING) | \
-+                DPHY_SEL(MUX_STAT_CHANGING) | \
-+                MPLL_SEL(MUX_STAT_CHANGING) |\
-+                G2D_ACP0_SEL(MUX_STAT_CHANGING) | \
-+                G2D_ACP1_SEL(MUX_STAT_CHANGING) | \
-+                G2D_ACP_SEL(MUX_STAT_CHANGING))
++#define MUX_STAT_DMC_CHANGING	(C2C_SEL(MUX_STAT_CHANGING) | \
++				DMC_BUS_SEL(MUX_STAT_CHANGING) | \
++				DPHY_SEL(MUX_STAT_CHANGING) | \
++				MPLL_SEL(MUX_STAT_CHANGING) |\
++				G2D_ACP0_SEL(MUX_STAT_CHANGING) | \
++				G2D_ACP1_SEL(MUX_STAT_CHANGING) | \
++				G2D_ACP_SEL(MUX_STAT_CHANGING))
 +
 +/* CLK_DIV_DMC0 */
-+#define ACP_RATIO(x)		((x) &; 0x7)
-+#define ACP_PCLK_RATIO(x)	(((x) &; 0x7) << 4)
-+#define DPHY_RATIO(x)		(((x) &; 0x7) << 8)
-+#define DMC_RATIO(x)		(((x) &; 0x7) << 12)
-+#define DMCD_RATIO(x)		(((x) &; 0x7) << 16)
-+#define DMCP_RATIO(x)		(((x) &; 0x7) << 20)
++#define ACP_RATIO(x)		((x) & 0x7)
++#define ACP_PCLK_RATIO(x)	(((x) & 0x7) << 4)
++#define DPHY_RATIO(x)		(((x) & 0x7) << 8)
++#define DMC_RATIO(x)		(((x) & 0x7) << 12)
++#define DMCD_RATIO(x)		(((x) & 0x7) << 16)
++#define DMCP_RATIO(x)		(((x) & 0x7) << 20)
 +
 +/* CLK_DIV_STAT_DMC0 */
-+#define DIV_ACP(x)		((x) &; 0x1)
-+#define DIV_ACP_PCLK(x)		(((x) &; 0x1) << 4)
-+#define DIV_DPHY(x)		(((x) &; 0x1) << 8)
-+#define DIV_DMC(x)		(((x) &; 0x1) << 12)
-+#define DIV_DMCD(x)		(((x) &; 0x1) << 16)
-+#define DIV_DMCP(x)		(((x) &; 0x1) << 20)
++#define DIV_ACP(x)		((x) & 0x1)
++#define DIV_ACP_PCLK(x)		(((x) & 0x1) << 4)
++#define DIV_DPHY(x)		(((x) & 0x1) << 8)
++#define DIV_DMC(x)		(((x) & 0x1) << 12)
++#define DIV_DMCD(x)		(((x) & 0x1) << 16)
++#define DIV_DMCP(x)		(((x) & 0x1) << 20)
 +
-+#define DIV_STAT_DMC0_CHANGING    (DIV_ACP(DIV_STAT_CHANGING) | \
-+                DIV_ACP_PCLK(DIV_STAT_CHANGING) | \
-+                DIV_DPHY(DIV_STAT_CHANGING) | \
-+                DIV_DMC(DIV_STAT_CHANGING) | \
-+                DIV_DMCD(DIV_STAT_CHANGING) | \
-+                DIV_DMCP(DIV_STAT_CHANGING))
++#define DIV_STAT_DMC0_CHANGING	(DIV_ACP(DIV_STAT_CHANGING) | \
++				DIV_ACP_PCLK(DIV_STAT_CHANGING) | \
++				DIV_DPHY(DIV_STAT_CHANGING) | \
++				DIV_DMC(DIV_STAT_CHANGING) | \
++				DIV_DMCD(DIV_STAT_CHANGING) | \
++				DIV_DMCP(DIV_STAT_CHANGING))
 +
 +/* CLK_DIV_DMC1 */
-+#define G2D_ACP_RATIO(x) 	((x) &; 0xf)
-+#define C2C_RATIO(x)		(((x) &; 0x7) << 4)
-+#define PWI_RATIO(x)		(((x) &; 0xf) << 8)
-+#define C2C_ACLK_RATIO(x)	(((x) &; 0x7) << 12)
-+#define DVSEM_RATIO(x)		(((x) &; 0x7f) << 16)
-+#define DPM_RATIO(x)		(((x) &; 0x7f) << 24)
++#define G2D_ACP_RATIO(x)	((x) & 0xf)
++#define C2C_RATIO(x)		(((x) & 0x7) << 4)
++#define PWI_RATIO(x)		(((x) & 0xf) << 8)
++#define C2C_ACLK_RATIO(x)	(((x) & 0x7) << 12)
++#define DVSEM_RATIO(x)		(((x) & 0x7f) << 16)
++#define DPM_RATIO(x)		(((x) & 0x7f) << 24)
 +
 +/* CLK_DIV_STAT_DMC1 */
-+#define DIV_G2D_ACP(x)		((x) &; 0x1)
-+#define DIV_C2C(x)		(((x) &; 0x1) << 4)
-+#define DIV_PWI(x)		(((x) &; 0x1) << 8)
-+#define DIV_C2C_ACLK(x)		(((x) &; 0x1) << 12)
-+#define DIV_DVSEM(x)		(((x) &; 0x1) << 16)
-+#define DIV_DPM(x)		(((x) &; 0x1) << 24)
++#define DIV_G2D_ACP(x)		((x) & 0x1)
++#define DIV_C2C(x)		(((x) & 0x1) << 4)
++#define DIV_PWI(x)		(((x) & 0x1) << 8)
++#define DIV_C2C_ACLK(x)		(((x) & 0x1) << 12)
++#define DIV_DVSEM(x)		(((x) & 0x1) << 16)
++#define DIV_DPM(x)		(((x) & 0x1) << 24)
 +
-+#define DIV_STAT_DMC1_CHANGING    (DIV_G2D_ACP(DIV_STAT_CHANGING) | \
-+                DIV_C2C(DIV_STAT_CHANGING) | \
-+                DIV_PWI(DIV_STAT_CHANGING) | \
-+                DIV_C2C_ACLK(DIV_STAT_CHANGING) | \
-+                DIV_DVSEM(DIV_STAT_CHANGING) | \
-+                DIV_DPM(DIV_STAT_CHANGING))
++#define DIV_STAT_DMC1_CHANGING	(DIV_G2D_ACP(DIV_STAT_CHANGING) | \
++				DIV_C2C(DIV_STAT_CHANGING) | \
++				DIV_PWI(DIV_STAT_CHANGING) | \
++				DIV_C2C_ACLK(DIV_STAT_CHANGING) | \
++				DIV_DVSEM(DIV_STAT_CHANGING) | \
++				DIV_DPM(DIV_STAT_CHANGING))
 +
 +/* Set CLK_SRC_PERIL0 */
-+#define UART4_SEL(x)		(((x) &; 0xf) << 16)
-+#define UART3_SEL(x)		(((x) &; 0xf) << 12)
-+#define UART2_SEL(x)		(((x) &; 0xf) << 8)
-+#define UART1_SEL(x)		(((x) &; 0xf) << 4)
-+#define UART0_SEL(x)		((x) &; 0xf)
++#define UART4_SEL(x)		(((x) & 0xf) << 16)
++#define UART3_SEL(x)		(((x) & 0xf) << 12)
++#define UART2_SEL(x)		(((x) & 0xf) << 8)
++#define UART1_SEL(x)		(((x) & 0xf) << 4)
++#define UART0_SEL(x)		((x) & 0xf)
 +
 +/* Set CLK_DIV_PERIL0 */
-+#define UART4_RATIO(x)		(((x) &; 0xf) << 16)
-+#define UART3_RATIO(x)		(((x) &; 0xf) << 12)
-+#define UART2_RATIO(x)		(((x) &; 0xf) << 8)
-+#define UART1_RATIO(x)		(((x) &; 0xf) << 4)
-+#define UART0_RATIO(x)		((x) &; 0xf)
++#define UART4_RATIO(x)		(((x) & 0xf) << 16)
++#define UART3_RATIO(x)		(((x) & 0xf) << 12)
++#define UART2_RATIO(x)		(((x) & 0xf) << 8)
++#define UART1_RATIO(x)		(((x) & 0xf) << 4)
++#define UART0_RATIO(x)		((x) & 0xf)
 +
 +/* Set CLK_DIV_STAT_PERIL0 */
-+#define DIV_UART4(x)		(((x) &; 0x1) << 16)
-+#define DIV_UART3(x)		(((x) &; 0x1) << 12)
-+#define DIV_UART2(x)		(((x) &; 0x1) << 8)
-+#define DIV_UART1(x)		(((x) &; 0x1) << 4)
-+#define DIV_UART0(x)		((x) &; 0x1)
++#define DIV_UART4(x)		(((x) & 0x1) << 16)
++#define DIV_UART3(x)		(((x) & 0x1) << 12)
++#define DIV_UART2(x)		(((x) & 0x1) << 8)
++#define DIV_UART1(x)		(((x) & 0x1) << 4)
++#define DIV_UART0(x)		((x) & 0x1)
 +
-+#define DIV_STAT_PERIL0_CHANGING    (DIV_UART4(DIV_STAT_CHANGING) | \
-+                    DIV_UART3(DIV_STAT_CHANGING) | \
-+                    DIV_UART2(DIV_STAT_CHANGING) | \
-+                    DIV_UART1(DIV_STAT_CHANGING) | \
-+                    DIV_UART0(DIV_STAT_CHANGING))
++#define DIV_STAT_PERIL0_CHANGING	(DIV_UART4(DIV_STAT_CHANGING) | \
++					DIV_UART3(DIV_STAT_CHANGING) | \
++					DIV_UART2(DIV_STAT_CHANGING) | \
++					DIV_UART1(DIV_STAT_CHANGING) | \
++					DIV_UART0(DIV_STAT_CHANGING))
 +
 +/* CLK_DIV_FSYS1 */
-+#define MMC0_RATIO(x)		((x) &; 0xf)
-+#define MMC0_PRE_RATIO(x)	(((x) &; 0xff) << 8)
-+#define MMC1_RATIO(x)		(((x) &; 0xf) << 16)
-+#define MMC1_PRE_RATIO(x)	(((x) &; 0xff) << 24)
++#define MMC0_RATIO(x)		((x) & 0xf)
++#define MMC0_PRE_RATIO(x)	(((x) & 0xff) << 8)
++#define MMC1_RATIO(x)		(((x) & 0xf) << 16)
++#define MMC1_PRE_RATIO(x)	(((x) & 0xff) << 24)
 +
 +/* CLK_DIV_STAT_FSYS1 */
-+#define DIV_MMC0(x)		((x) &; 1)
-+#define DIV_MMC0_PRE(x)		(((x) &; 1) << 8)
-+#define DIV_MMC1(x)		(((x) &; 1) << 16)
-+#define DIV_MMC1_PRE(x)		(((x) &; 1) << 24)
++#define DIV_MMC0(x)		((x) & 1)
++#define DIV_MMC0_PRE(x)		(((x) & 1) << 8)
++#define DIV_MMC1(x)		(((x) & 1) << 16)
++#define DIV_MMC1_PRE(x)		(((x) & 1) << 24)
 +
-+#define DIV_STAT_FSYS1_CHANGING        (DIV_MMC0(DIV_STAT_CHANGING) | \
-+                    DIV_MMC0_PRE(DIV_STAT_CHANGING) | \
-+                    DIV_MMC1(DIV_STAT_CHANGING) | \
-+                    DIV_MMC1_PRE(DIV_STAT_CHANGING))
++#define DIV_STAT_FSYS1_CHANGING	(DIV_MMC0(DIV_STAT_CHANGING) | \
++				DIV_MMC0_PRE(DIV_STAT_CHANGING) | \
++				DIV_MMC1(DIV_STAT_CHANGING) | \
++				DIV_MMC1_PRE(DIV_STAT_CHANGING))
 +
 +/* CLK_DIV_FSYS2 */
-+#define MMC2_RATIO(x)		((x) &; 0xf)
-+#define MMC2_PRE_RATIO(x)	(((x) &; 0xff) << 8)
-+#define MMC3_RATIO(x)		(((x) &; 0xf) << 16)
-+#define MMC3_PRE_RATIO(x)	(((x) &; 0xff) << 24)
++#define MMC2_RATIO(x)		((x) & 0xf)
++#define MMC2_PRE_RATIO(x)	(((x) & 0xff) << 8)
++#define MMC3_RATIO(x)		(((x) & 0xf) << 16)
++#define MMC3_PRE_RATIO(x)	(((x) & 0xff) << 24)
 +
 +/* CLK_DIV_STAT_FSYS2 */
-+#define DIV_MMC2(x)		((x) &; 0x1)
-+#define DIV_MMC2_PRE(x)		(((x) &; 0x1) << 8)
-+#define DIV_MMC3(x)		(((x) &; 0x1) << 16)
-+#define DIV_MMC3_PRE(x)		(((x) &; 0x1) << 24)
++#define DIV_MMC2(x)		((x) & 0x1)
++#define DIV_MMC2_PRE(x)		(((x) & 0x1) << 8)
++#define DIV_MMC3(x)		(((x) & 0x1) << 16)
++#define DIV_MMC3_PRE(x)		(((x) & 0x1) << 24)
 +
-+#define DIV_STAT_FSYS2_CHANGING        (DIV_MMC2(DIV_STAT_CHANGING) | \
-+                    DIV_MMC2_PRE(DIV_STAT_CHANGING) | \
-+                    DIV_MMC3(DIV_STAT_CHANGING) | \
-+                    DIV_MMC3_PRE(DIV_STAT_CHANGING))
++#define DIV_STAT_FSYS2_CHANGING	(DIV_MMC2(DIV_STAT_CHANGING) | \
++				DIV_MMC2_PRE(DIV_STAT_CHANGING) | \
++				DIV_MMC3(DIV_STAT_CHANGING) | \
++				DIV_MMC3_PRE(DIV_STAT_CHANGING))
 +
 +/* CLK_DIV_FSYS3 */
-+#define MMC4_RATIO(x)		((x) &; 0x7)
-+#define MMC4_PRE_RATIO(x)	(((x) &; 0xff) << 8)
++#define MMC4_RATIO(x)		((x) & 0x7)
++#define MMC4_PRE_RATIO(x)	(((x) & 0xff) << 8)
 +
 +/* CLK_DIV_STAT_FSYS3 */
-+#define DIV_MMC4(x)		((x) &; 0x1)
-+#define DIV_MMC4_PRE(x)		(((x) &; 0x1) << 8)
++#define DIV_MMC4(x)		((x) & 0x1)
++#define DIV_MMC4_PRE(x)		(((x) & 0x1) << 8)
 +
-+#define DIV_STAT_FSYS3_CHANGING        (DIV_MMC4(DIV_STAT_CHANGING) | \
-+                    DIV_MMC4_PRE(DIV_STAT_CHANGING))
++#define DIV_STAT_FSYS3_CHANGING	(DIV_MMC4(DIV_STAT_CHANGING) | \
++				DIV_MMC4_PRE(DIV_STAT_CHANGING))
 +
-+#endif /* __X4412_SETUP__ */
-+
-diff -ruN u-boot-2018.07/board/samsung/x4412/Kconfig u-boot-x4412/board/samsung/x4412/Kconfig
---- u-boot-2018.07/board/samsung/x4412/Kconfig	1970-01-01 08:00:00.000000000 +0800
-+++ u-boot-x4412/board/samsung/x4412/Kconfig	2018-09-26 20:06:17.105557086 +0800
++#endif /*__X4412_SETUP__ */
+diff -ruN u-boot-2015.10/board/samsung/x4412/Kconfig u-boot-x4412/board/samsung/x4412/Kconfig
+--- u-boot-2015.10/board/samsung/x4412/Kconfig	1970-01-01 08:00:00.000000000 +0800
++++ u-boot-x4412/board/samsung/x4412/Kconfig	2018-09-27 10:17:01.347416386 +0800
 @@ -0,0 +1,12 @@
 +if TARGET_X4412
 +
@@ -966,9 +1025,9 @@ diff -ruN u-boot-2018.07/board/samsung/x4412/Kconfig u-boot-x4412/board/samsung/
 +	default "x4412"
 +
 +endif
-diff -ruN u-boot-2018.07/board/samsung/x4412/MAINTAINERS u-boot-x4412/board/samsung/x4412/MAINTAINERS
---- u-boot-2018.07/board/samsung/x4412/MAINTAINERS	1970-01-01 08:00:00.000000000 +0800
-+++ u-boot-x4412/board/samsung/x4412/MAINTAINERS	2018-07-09 22:24:14.000000000 +0800
+diff -ruN u-boot-2015.10/board/samsung/x4412/MAINTAINERS u-boot-x4412/board/samsung/x4412/MAINTAINERS
+--- u-boot-2015.10/board/samsung/x4412/MAINTAINERS	1970-01-01 08:00:00.000000000 +0800
++++ u-boot-x4412/board/samsung/x4412/MAINTAINERS	2018-09-27 10:09:14.747616278 +0800
 @@ -0,0 +1,6 @@
 +ORIGEN BOARD
 +M:	Chander Kashyap <k.chander@samsung.com>
@@ -976,15 +1035,15 @@ diff -ruN u-boot-2018.07/board/samsung/x4412/MAINTAINERS u-boot-x4412/board/sams
 +F:	board/samsung/origen/
 +F:	include/configs/origen.h
 +F:	configs/origen_defconfig
-diff -ruN u-boot-2018.07/board/samsung/x4412/Makefile u-boot-x4412/board/samsung/x4412/Makefile
---- u-boot-2018.07/board/samsung/x4412/Makefile	1970-01-01 08:00:00.000000000 +0800
-+++ u-boot-x4412/board/samsung/x4412/Makefile	2018-09-25 18:18:12.000000000 +0800
+diff -ruN u-boot-2015.10/board/samsung/x4412/Makefile u-boot-x4412/board/samsung/x4412/Makefile
+--- u-boot-2015.10/board/samsung/x4412/Makefile	1970-01-01 08:00:00.000000000 +0800
++++ u-boot-x4412/board/samsung/x4412/Makefile	2018-09-27 10:18:35.934630643 +0800
 @@ -0,0 +1,22 @@
-+# SPDX-License-Identifier: GPL-2.0+
 +#
 +# Copyright (C) 2011 Samsung Electronics
 +#
-+# Add by Wang.Yu 2018-09-25. Copy from samsung origen board.
++# SPDX-License-Identifier:	GPL-2.0+
++#
 +
 +ifdef CONFIG_SPL_BUILD
 +# necessary to create built-in.o
@@ -1002,14 +1061,14 @@ diff -ruN u-boot-2018.07/board/samsung/x4412/Makefile u-boot-x4412/board/samsung
 +else
 +obj-y	+= x4412.o
 +endif
-diff -ruN u-boot-2018.07/board/samsung/x4412/tools/mkx4412spl.c u-boot-x4412/board/samsung/x4412/tools/mkx4412spl.c
---- u-boot-2018.07/board/samsung/x4412/tools/mkx4412spl.c	1970-01-01 08:00:00.000000000 +0800
-+++ u-boot-x4412/board/samsung/x4412/tools/mkx4412spl.c	2018-09-25 18:18:46.000000000 +0800
+diff -ruN u-boot-2015.10/board/samsung/x4412/tools/mkx4412spl.c u-boot-x4412/board/samsung/x4412/tools/mkx4412spl.c
+--- u-boot-2015.10/board/samsung/x4412/tools/mkx4412spl.c	1970-01-01 08:00:00.000000000 +0800
++++ u-boot-x4412/board/samsung/x4412/tools/mkx4412spl.c	2018-09-27 10:09:14.747616278 +0800
 @@ -0,0 +1,110 @@
-+// SPDX-License-Identifier: GPL-2.0+
 +/*
 + * Copyright (C) 2011 Samsung Electronics
-+ * Add by Wang.Yu 2018-09-25. Copy from samsung origen board.
++ *
++ * SPDX-License-Identifier:	GPL-2.0+
 + */
 +
 +#include <stdio.h>
@@ -1060,7 +1119,7 @@ diff -ruN u-boot-2018.07/board/samsung/x4412/tools/mkx4412spl.c u-boot-x4412/boa
 +	}
 +
 +	ofd = open(argv[2], O_WRONLY | O_CREAT | O_TRUNC, FILE_PERM);
-+	if (ofd < 0) {
++	if (ifd < 0) {
 +		fprintf(stderr, "%s: Can't open %s: %s\n",
 +			argv[0], argv[2], strerror(errno));
 +		if (ifd)
@@ -1091,8 +1150,8 @@ diff -ruN u-boot-2018.07/board/samsung/x4412/tools/mkx4412spl.c u-boot-x4412/boa
 +	for (i = 0; i < IMG_SIZE - SPL_HEADER_SIZE; i++)
 +		checksum += buffer[i+16];
 +
-+	*(unsigned long *)buffer ^= 0x1f;
-+	*(unsigned long *)(buffer+4) ^= checksum;
++	*(ulong *)buffer ^= 0x1f;
++	*(ulong *)(buffer+4) ^= checksum;
 +
 +	for (i = 1; i < SPL_HEADER_SIZE; i++)
 +		buffer[i] ^= buffer[i-1];
@@ -1116,14 +1175,14 @@ diff -ruN u-boot-2018.07/board/samsung/x4412/tools/mkx4412spl.c u-boot-x4412/boa
 +
 +	return EXIT_SUCCESS;
 +}
-diff -ruN u-boot-2018.07/board/samsung/x4412/x4412.c u-boot-x4412/board/samsung/x4412/x4412.c
---- u-boot-2018.07/board/samsung/x4412/x4412.c	1970-01-01 08:00:00.000000000 +0800
-+++ u-boot-x4412/board/samsung/x4412/x4412.c	2018-09-25 18:18:13.000000000 +0800
-@@ -0,0 +1,36 @@
-+// SPDX-License-Identifier: GPL-2.0+
+diff -ruN u-boot-2015.10/board/samsung/x4412/x4412.c u-boot-x4412/board/samsung/x4412/x4412.c
+--- u-boot-2015.10/board/samsung/x4412/x4412.c	1970-01-01 08:00:00.000000000 +0800
++++ u-boot-x4412/board/samsung/x4412/x4412.c	2018-09-27 10:09:14.747616278 +0800
+@@ -0,0 +1,38 @@
 +/*
 + * Copyright (C) 2011 Samsung Electronics
-+ * Add by Wang.Yu 2018-09-25. Copy from samsung origen board.
++ *
++ * SPDX-License-Identifier:	GPL-2.0+
 + */
 +
 +#include <common.h>
@@ -1134,6 +1193,8 @@ diff -ruN u-boot-2018.07/board/samsung/x4412/x4412.c u-boot-x4412/board/samsung/
 +#include <asm/arch/periph.h>
 +#include <asm/arch/pinmux.h>
 +#include <usb.h>
++
++DECLARE_GLOBAL_DATA_PTR;
 +
 +u32 get_board_rev(void)
 +{
@@ -1156,28 +1217,28 @@ diff -ruN u-boot-2018.07/board/samsung/x4412/x4412.c u-boot-x4412/board/samsung/
 +	return 0;
 +}
 +#endif
-diff -ruN u-boot-2018.07/common/board_f.c u-boot-x4412/common/board_f.c
---- u-boot-2018.07/common/board_f.c	2018-07-09 22:24:14.000000000 +0800
-+++ u-boot-x4412/common/board_f.c	2018-09-26 18:02:30.102898104 +0800
-@@ -38,6 +38,7 @@
- #include <asm/sections.h>
+diff -ruN u-boot-2015.10/common/board_f.c u-boot-x4412/common/board_f.c
+--- u-boot-2015.10/common/board_f.c	2015-10-20 07:59:38.000000000 +0800
++++ u-boot-x4412/common/board_f.c	2018-09-27 11:01:26.158682508 +0800
+@@ -58,6 +58,7 @@
+ #endif
  #include <dm/root.h>
- #include <linux/errno.h>
+ #include <linux/compiler.h>
 +#include <debug_uart.h>
  
  /*
   * Pointer to initial global data area
-@@ -894,6 +895,7 @@
+@@ -977,6 +978,7 @@
+ 	zero_global_data();
+ #endif
  
- void board_init_f(ulong boot_flags)
- {
 +	printascii("Uboot running.\r\n");
  	gd->flags = boot_flags;
  	gd->have_console = 0;
  
-diff -ruN u-boot-2018.07/configs/x4412_defconfig u-boot-x4412/configs/x4412_defconfig
---- u-boot-2018.07/configs/x4412_defconfig	1970-01-01 08:00:00.000000000 +0800
-+++ u-boot-x4412/configs/x4412_defconfig	2018-09-26 18:05:44.512507997 +0800
+diff -ruN u-boot-2015.10/configs/x4412_defconfig u-boot-x4412/configs/x4412_defconfig
+--- u-boot-2015.10/configs/x4412_defconfig	1970-01-01 08:00:00.000000000 +0800
++++ u-boot-x4412/configs/x4412_defconfig	2018-09-27 13:19:37.181235246 +0800
 @@ -0,0 +1,15 @@
 +CONFIG_ARM=y
 +CONFIG_ARCH_EXYNOS=y
@@ -1194,29 +1255,29 @@ diff -ruN u-boot-2018.07/configs/x4412_defconfig u-boot-x4412/configs/x4412_defc
 +CONFIG_OF_CONTROL=y
 +CONFIG_USB=y
 +CONFIG_DM_USB=y
-diff -ruN u-boot-2018.07/drivers/serial/serial_s5p.c u-boot-x4412/drivers/serial/serial_s5p.c
---- u-boot-2018.07/drivers/serial/serial_s5p.c	2018-07-09 22:24:14.000000000 +0800
-+++ u-boot-x4412/drivers/serial/serial_s5p.c	2018-09-26 18:06:56.996225157 +0800
+diff -ruN u-boot-2015.10/drivers/serial/serial_s5p.c u-boot-x4412/drivers/serial/serial_s5p.c
+--- u-boot-2015.10/drivers/serial/serial_s5p.c	2015-10-20 07:59:38.000000000 +0800
++++ u-boot-x4412/drivers/serial/serial_s5p.c	2018-09-27 11:05:36.758806835 +0800
 @@ -62,12 +62,14 @@
  static void __maybe_unused s5p_serial_init(struct s5p_uart *uart)
  {
  	/* enable FIFOs, auto clear Rx FIFO */
 -	writel(0x3, &uart->ufcon);
-+	//writel(0x3, &uart->ufcon);
++	/*writel(0x3, &uart->ufcon);*/
 +	writel(0x111, &uart->ufcon);
  	writel(0, &uart->umcon);
  	/* 8N1 */
  	writel(0x3, &uart->ulcon);
  	/* No interrupts, no DMA, pure polling */
 -	writel(0x245, &uart->ucon);
-+	//writel(0x245, &uart->ucon);
++	/*writel(0x245, &uart->ucon);*/
 +	writel(0x3c5, &uart->ucon);
  }
  
  static void __maybe_unused s5p_serial_baud(struct s5p_uart *uart, uint uclk,
-diff -ruN u-boot-2018.07/include/configs/x4412.h u-boot-x4412/include/configs/x4412.h
---- u-boot-2018.07/include/configs/x4412.h	1970-01-01 08:00:00.000000000 +0800
-+++ u-boot-x4412/include/configs/x4412.h	2018-09-26 20:07:03.392302311 +0800
+diff -ruN u-boot-2015.10/include/configs/x4412.h u-boot-x4412/include/configs/x4412.h
+--- u-boot-2015.10/include/configs/x4412.h	1970-01-01 08:00:00.000000000 +0800
++++ u-boot-x4412/include/configs/x4412.h	2018-09-27 13:25:17.817947955 +0800
 @@ -0,0 +1,137 @@
 +/* Copyright (C) 2011 Samsung Electronics
 + *
@@ -1243,7 +1304,7 @@ diff -ruN u-boot-2018.07/include/configs/x4412.h u-boot-x4412/include/configs/x4
 +
 +#define CONFIG_SYS_DCACHE_OFF		1
 +
-+/* ORIGEN has 4 bank of DRAM */
++/* X4412 has 4 bank of DRAM */
 +#define CONFIG_NR_DRAM_BANKS		4
 +#define CONFIG_SYS_SDRAM_BASE		0x40000000
 +#define PHYS_SDRAM_1			CONFIG_SYS_SDRAM_BASE
@@ -1355,40 +1416,45 @@ diff -ruN u-boot-2018.07/include/configs/x4412.h u-boot-x4412/include/configs/x4
 +/* #define UBOOT_DEBUG_20151226 */
 +
 +#endif	/* __CONFIG_H */
-diff -ruN u-boot-2018.07/Makefile u-boot-x4412/Makefile
---- u-boot-2018.07/Makefile	2018-07-09 22:24:14.000000000 +0800
-+++ u-boot-x4412/Makefile	2018-09-26 18:22:33.266589044 +0800
-@@ -241,7 +241,7 @@
+diff -ruN u-boot-2015.10/Makefile u-boot-x4412/Makefile
+--- u-boot-2015.10/Makefile	2015-10-20 07:59:38.000000000 +0800
++++ u-boot-x4412/Makefile	2018-09-27 13:51:43.336470593 +0800
+@@ -238,8 +238,8 @@
+ #########################################################################
  
  # set default to nothing for native builds
- ifeq ($(HOSTARCH),$(ARCH))
+-ifeq ($(HOSTARCH),$(ARCH))
 -CROSS_COMPILE ?=
-+CROSS_COMPILE = arm-linux-
++ifneq ($(HOSTARCH),$(ARCH))
++CROSS_COMPILE ?= arm-linux-
  endif
  
  KCONFIG_CONFIG	?= .config
-diff -ruN u-boot-2018.07/X4412.config u-boot-x4412/X4412.config
---- u-boot-2018.07/X4412.config	1970-01-01 08:00:00.000000000 +0800
-+++ u-boot-x4412/X4412.config	2018-09-26 20:14:43.551971980 +0800
-@@ -0,0 +1,1086 @@
+diff -ruN u-boot-2015.10/x4412.config u-boot-x4412/x4412.config
+--- u-boot-2015.10/x4412.config	1970-01-01 08:00:00.000000000 +0800
++++ u-boot-x4412/x4412.config	2018-09-27 13:59:51.072847266 +0800
+@@ -0,0 +1,519 @@
 +#
 +# Automatically generated file; DO NOT EDIT.
-+# U-Boot 2018.07 Configuration
++# U-Boot 2015.10 Configuration
 +#
 +CONFIG_CREATE_ARCH_SYMLINK=y
++CONFIG_HAVE_GENERIC_BOARD=y
 +# CONFIG_ARC is not set
 +CONFIG_ARM=y
++# CONFIG_AVR32 is not set
++# CONFIG_BLACKFIN is not set
 +# CONFIG_M68K is not set
 +# CONFIG_MICROBLAZE is not set
 +# CONFIG_MIPS is not set
 +# CONFIG_NDS32 is not set
 +# CONFIG_NIOS2 is not set
++# CONFIG_OPENRISC is not set
 +# CONFIG_PPC is not set
-+# CONFIG_RISCV is not set
 +# CONFIG_SANDBOX is not set
 +# CONFIG_SH is not set
++# CONFIG_SPARC is not set
 +# CONFIG_X86 is not set
-+# CONFIG_XTENSA is not set
 +CONFIG_SYS_ARCH="arm"
 +CONFIG_SYS_CPU="armv7"
 +CONFIG_SYS_SOC="exynos"
@@ -1400,37 +1466,34 @@ diff -ruN u-boot-2018.07/X4412.config u-boot-x4412/X4412.config
 +# ARM architecture
 +#
 +CONFIG_HAS_VBAR=y
-+CONFIG_HAS_THUMB2=y
-+CONFIG_ARM_ASM_UNIFIED=y
-+# CONFIG_SYS_ARM_CACHE_CP15 is not set
-+# CONFIG_SYS_ARM_MMU is not set
-+# CONFIG_SYS_ARM_MPU is not set
-+CONFIG_CPU_V7A=y
-+CONFIG_SYS_ARM_ARCH=7
-+CONFIG_SYS_CACHE_SHIFT_6=y
-+CONFIG_SYS_CACHELINE_SIZE=64
-+# CONFIG_SYS_ARCH_TIMER is not set
-+# CONFIG_ARM_SMCCC is not set
++CONFIG_CPU_V7=y
 +# CONFIG_SEMIHOSTING is not set
-+# CONFIG_SYS_THUMB_BUILD is not set
-+# CONFIG_SPL_SYS_THUMB_BUILD is not set
 +# CONFIG_SYS_L2CACHE_OFF is not set
-+# CONFIG_ENABLE_ARM_SOC_BOOT0_HOOK is not set
-+CONFIG_USE_ARCH_MEMCPY=y
-+CONFIG_SPL_USE_ARCH_MEMCPY=y
-+CONFIG_USE_ARCH_MEMSET=y
-+CONFIG_SPL_USE_ARCH_MEMSET=y
-+# CONFIG_ARM64_SUPPORT_AARCH32 is not set
 +# CONFIG_ARCH_AT91 is not set
 +# CONFIG_TARGET_EDB93XX is not set
++# CONFIG_TARGET_VCMA9 is not set
++# CONFIG_TARGET_SMDK2410 is not set
 +# CONFIG_TARGET_ASPENITE is not set
 +# CONFIG_TARGET_GPLUGD is not set
 +# CONFIG_ARCH_DAVINCI is not set
 +# CONFIG_KIRKWOOD is not set
-+# CONFIG_ARCH_MVEBU is not set
++# CONFIG_TARGET_DB_88F6820_GP is not set
++# CONFIG_TARGET_DB_MV784MP_GP is not set
++# CONFIG_TARGET_MAXBCM is not set
 +# CONFIG_TARGET_DEVKIT3250 is not set
 +# CONFIG_TARGET_WORK_92105 is not set
++# CONFIG_TARGET_MX25PDK is not set
++# CONFIG_TARGET_ZMX25 is not set
 +# CONFIG_TARGET_APF27 is not set
++# CONFIG_TARGET_APX4DEVKIT is not set
++# CONFIG_TARGET_XFI3 is not set
++# CONFIG_TARGET_M28EVK is not set
++# CONFIG_TARGET_MX23EVK is not set
++# CONFIG_TARGET_MX28EVK is not set
++# CONFIG_TARGET_MX23_OLINUXINO is not set
++# CONFIG_TARGET_BG0900 is not set
++# CONFIG_TARGET_SANSA_FUZE_PLUS is not set
++# CONFIG_TARGET_SC_SPS_1 is not set
 +# CONFIG_ORION5X is not set
 +# CONFIG_TARGET_SPEAR300 is not set
 +# CONFIG_TARGET_SPEAR310 is not set
@@ -1438,6 +1501,9 @@ diff -ruN u-boot-2018.07/X4412.config u-boot-x4412/X4412.config
 +# CONFIG_TARGET_SPEAR600 is not set
 +# CONFIG_TARGET_STV0991 is not set
 +# CONFIG_TARGET_X600 is not set
++# CONFIG_TARGET_IMX31_PHYCORE is not set
++# CONFIG_TARGET_MX31ADS is not set
++# CONFIG_TARGET_MX31PDK is not set
 +# CONFIG_TARGET_WOODBURN is not set
 +# CONFIG_TARGET_WOODBURN_SD is not set
 +# CONFIG_TARGET_FLEA3 is not set
@@ -1446,78 +1512,72 @@ diff -ruN u-boot-2018.07/X4412.config u-boot-x4412/X4412.config
 +# CONFIG_TARGET_VEXPRESS_CA15_TC2 is not set
 +# CONFIG_TARGET_VEXPRESS_CA5X2 is not set
 +# CONFIG_TARGET_VEXPRESS_CA9X4 is not set
-+# CONFIG_TARGET_BCM23550_W1D is not set
++# CONFIG_TARGET_KWB is not set
++# CONFIG_TARGET_TSERIES is not set
++# CONFIG_TARGET_CM_T335 is not set
++# CONFIG_TARGET_PEPPER is not set
++# CONFIG_TARGET_AM335X_IGEP0033 is not set
++# CONFIG_TARGET_PCM051 is not set
++# CONFIG_TARGET_DRACO is not set
++# CONFIG_TARGET_THUBAN is not set
++# CONFIG_TARGET_RASTABAN is not set
++# CONFIG_TARGET_PXM2 is not set
++# CONFIG_TARGET_RUT is not set
++# CONFIG_TARGET_PENGWYN is not set
++# CONFIG_TARGET_AM335X_BALTOS is not set
++# CONFIG_TARGET_AM335X_EVM is not set
++# CONFIG_TARGET_AM335X_SL50 is not set
++# CONFIG_TARGET_AM43XX_EVM is not set
++# CONFIG_TARGET_BAV335X is not set
++# CONFIG_TARGET_TI814X_EVM is not set
++# CONFIG_TARGET_TI816X_EVM is not set
 +# CONFIG_TARGET_BCM28155_AP is not set
 +# CONFIG_TARGET_BCMCYGNUS is not set
 +# CONFIG_TARGET_BCMNSP is not set
-+# CONFIG_TARGET_BCMNS2 is not set
 +CONFIG_ARCH_EXYNOS=y
 +# CONFIG_ARCH_S5PC1XX is not set
 +# CONFIG_ARCH_HIGHBANK is not set
 +# CONFIG_ARCH_INTEGRATOR is not set
 +# CONFIG_ARCH_KEYSTONE is not set
-+# CONFIG_ARCH_OMAP2PLUS is not set
-+# CONFIG_ARCH_MESON is not set
-+# CONFIG_ARCH_MX8M is not set
-+# CONFIG_ARCH_MX23 is not set
-+# CONFIG_ARCH_MX25 is not set
-+# CONFIG_ARCH_MX28 is not set
-+# CONFIG_ARCH_MX31 is not set
-+# CONFIG_ARCH_MX7ULP is not set
 +# CONFIG_ARCH_MX7 is not set
 +# CONFIG_ARCH_MX6 is not set
-+CONFIG_SPL_LDSCRIPT="board/samsung/common/exynos-uboot-spl.lds"
 +# CONFIG_ARCH_MX5 is not set
-+# CONFIG_ARCH_QEMU is not set
-+# CONFIG_ARCH_RMOBILE is not set
-+# CONFIG_TARGET_S32V234EVB is not set
-+# CONFIG_ARCH_SNAPDRAGON is not set
++# CONFIG_TARGET_M53EVK is not set
++# CONFIG_TARGET_MX51EVK is not set
++# CONFIG_TARGET_MX53ARD is not set
++# CONFIG_TARGET_MX53EVK is not set
++# CONFIG_TARGET_MX53LOCO is not set
++# CONFIG_TARGET_MX53SMD is not set
++# CONFIG_OMAP34XX is not set
++# CONFIG_OMAP44XX is not set
++# CONFIG_OMAP54XX is not set
++# CONFIG_RMOBILE is not set
 +# CONFIG_ARCH_SOCFPGA is not set
++# CONFIG_TARGET_CM_T43 is not set
 +# CONFIG_ARCH_SUNXI is not set
-+# CONFIG_ARCH_VF610 is not set
++# CONFIG_TARGET_TS4800 is not set
++# CONFIG_TARGET_VF610TWR is not set
++# CONFIG_TARGET_COLIBRI_VF is not set
++# CONFIG_TARGET_PCM052 is not set
 +# CONFIG_ARCH_ZYNQ is not set
-+# CONFIG_ARCH_ZYNQMP_R5 is not set
 +# CONFIG_ARCH_ZYNQMP is not set
 +# CONFIG_TEGRA is not set
 +# CONFIG_TARGET_VEXPRESS64_AEMV8A is not set
 +# CONFIG_TARGET_VEXPRESS64_BASE_FVP is not set
 +# CONFIG_TARGET_VEXPRESS64_BASE_FVP_DRAM is not set
 +# CONFIG_TARGET_VEXPRESS64_JUNO is not set
-+# CONFIG_TARGET_LS2080A_EMU is not set
-+# CONFIG_TARGET_LS2080A_SIMU is not set
-+# CONFIG_TARGET_LS1088AQDS is not set
-+# CONFIG_TARGET_LS2080AQDS is not set
-+# CONFIG_TARGET_LS2080ARDB is not set
-+# CONFIG_TARGET_LS2081ARDB is not set
++# CONFIG_TARGET_LS2085A_EMU is not set
++# CONFIG_TARGET_LS2085A_SIMU is not set
++# CONFIG_TARGET_LS2085AQDS is not set
++# CONFIG_TARGET_LS2085ARDB is not set
 +# CONFIG_TARGET_HIKEY is not set
-+# CONFIG_TARGET_POPLAR is not set
-+# CONFIG_TARGET_LS1012AQDS is not set
-+# CONFIG_TARGET_LS1012ARDB is not set
-+# CONFIG_TARGET_LS1012A2G5RDB is not set
-+# CONFIG_TARGET_LS1012AFRWY is not set
-+# CONFIG_TARGET_LS1012AFRDM is not set
-+# CONFIG_TARGET_LS1088ARDB is not set
 +# CONFIG_TARGET_LS1021AQDS is not set
 +# CONFIG_TARGET_LS1021ATWR is not set
-+# CONFIG_TARGET_LS1021AIOT is not set
-+# CONFIG_TARGET_LS1043AQDS is not set
-+# CONFIG_TARGET_LS1043ARDB is not set
-+# CONFIG_TARGET_LS1046AQDS is not set
-+# CONFIG_TARGET_LS1046ARDB is not set
 +# CONFIG_TARGET_H2200 is not set
-+# CONFIG_TARGET_ZIPITZ2 is not set
 +# CONFIG_TARGET_COLIBRI_PXA270 is not set
 +# CONFIG_ARCH_UNIPHIER is not set
-+# CONFIG_STM32 is not set
-+# CONFIG_ARCH_STI is not set
-+# CONFIG_ARCH_STM32MP is not set
++# CONFIG_TARGET_STM32F429_DISCOVERY is not set
 +# CONFIG_ARCH_ROCKCHIP is not set
-+# CONFIG_TARGET_THUNDERX_88XX is not set
-+# CONFIG_ARCH_ASPEED is not set
-+CONFIG_SYS_TEXT_BASE=0x43e00000
-+CONFIG_ARCH_EXYNOS4=y
-+# CONFIG_ARCH_EXYNOS5 is not set
-+# CONFIG_ARCH_EXYNOS7 is not set
 +# CONFIG_TARGET_SMDKV310 is not set
 +# CONFIG_TARGET_TRATS is not set
 +# CONFIG_TARGET_S5PC210_UNIVERSAL is not set
@@ -1525,32 +1585,28 @@ diff -ruN u-boot-2018.07/X4412.config u-boot-x4412/X4412.config
 +CONFIG_TARGET_X4412=y
 +# CONFIG_TARGET_TRATS2 is not set
 +# CONFIG_TARGET_ODROID is not set
-+# CONFIG_SPL_GPIO_SUPPORT is not set
-+# CONFIG_SPL_LIBCOMMON_SUPPORT is not set
-+# CONFIG_SPL_LIBGENERIC_SUPPORT is not set
++# CONFIG_TARGET_ODROID_XU3 is not set
++# CONFIG_TARGET_ARNDALE is not set
++# CONFIG_TARGET_SMDK5250 is not set
++# CONFIG_TARGET_SNOW is not set
++# CONFIG_TARGET_SPRING is not set
++# CONFIG_TARGET_SMDK5420 is not set
++# CONFIG_TARGET_PEACH_PI is not set
++# CONFIG_TARGET_PEACH_PIT is not set
 +CONFIG_SYS_MALLOC_F_LEN=0x400
-+# CONFIG_SPL_MMC_SUPPORT is not set
-+# CONFIG_SPL_SERIAL_SUPPORT is not set
-+# CONFIG_SPL_DRIVERS_MISC_SUPPORT is not set
-+CONFIG_SPL_SYS_MALLOC_F_LEN=0x400
-+CONFIG_SPL=y
-+CONFIG_IDENT_STRING=""
-+# CONFIG_SPL_FAT_SUPPORT is not set
-+# CONFIG_SPL_LIBDISK_SUPPORT is not set
-+# CONFIG_SPL_SPI_FLASH_SUPPORT is not set
-+# CONFIG_SPL_SPI_SUPPORT is not set
-+# CONFIG_ARMV7_LPAE is not set
-+# CONFIG_CMD_DEKBLOB is not set
-+# CONFIG_CMD_HDMIDETECT is not set
++CONFIG_SYS_MALLOC_F=y
++# CONFIG_SPL_DM is not set
++CONFIG_DM_SERIAL=y
++CONFIG_DM_SPI=y
++CONFIG_DM_SPI_FLASH=y
++# CONFIG_DM_I2C is not set
++CONFIG_DM_GPIO=y
 +
 +#
 +# ARM debug
 +#
 +# CONFIG_DEBUG_LL is not set
 +CONFIG_DEFAULT_DEVICE_TREE="exynos4412-x4412"
-+CONFIG_SMBIOS_PRODUCT_NAME=""
-+# CONFIG_DEBUG_UART is not set
-+# CONFIG_AHCI is not set
 +
 +#
 +# General setup
@@ -1558,164 +1614,27 @@ diff -ruN u-boot-2018.07/X4412.config u-boot-x4412/X4412.config
 +CONFIG_LOCALVERSION=""
 +CONFIG_LOCALVERSION_AUTO=y
 +CONFIG_CC_OPTIMIZE_FOR_SIZE=y
-+# CONFIG_DISTRO_DEFAULTS is not set
-+# CONFIG_ENV_VARS_UBOOT_CONFIG is not set
-+# CONFIG_SYS_BOOT_GET_CMDLINE is not set
-+# CONFIG_SYS_BOOT_GET_KBD is not set
-+CONFIG_SYS_MALLOC_F=y
-+CONFIG_TPL_SYS_MALLOC_F_LEN=0x400
 +CONFIG_EXPERT=y
 +CONFIG_SYS_MALLOC_CLEAR_ON_INIT=y
-+# CONFIG_TOOLS_DEBUG is not set
-+# CONFIG_PHYS_64BIT is not set
 +
 +#
 +# Boot images
 +#
-+# CONFIG_ANDROID_BOOT_IMAGE is not set
-+# CONFIG_FIT is not set
-+CONFIG_IMAGE_FORMAT_LEGACY=y
-+# CONFIG_OF_BOARD_SETUP is not set
-+# CONFIG_OF_SYSTEM_SETUP is not set
-+# CONFIG_OF_STDOUT_VIA_ALIAS is not set
-+CONFIG_SYS_EXTRA_OPTIONS=""
-+CONFIG_ARCH_FIXUP_FDT_MEMORY=y
-+
-+#
-+# API
-+#
-+# CONFIG_API is not set
-+
-+#
-+# Boot timing
-+#
-+# CONFIG_BOOTSTAGE is not set
-+CONFIG_BOOTSTAGE_RECORD_COUNT=30
-+CONFIG_SPL_BOOTSTAGE_RECORD_COUNT=5
-+CONFIG_BOOTSTAGE_STASH_ADDR=0
-+CONFIG_BOOTSTAGE_STASH_SIZE=0x1000
-+
-+#
-+# Boot media
-+#
-+# CONFIG_NAND_BOOT is not set
-+# CONFIG_ONENAND_BOOT is not set
-+# CONFIG_QSPI_BOOT is not set
-+# CONFIG_SATA_BOOT is not set
-+CONFIG_SD_BOOT=y
-+# CONFIG_SPI_BOOT is not set
-+CONFIG_BOOTDELAY=2
-+# CONFIG_USE_BOOTARGS is not set
-+# CONFIG_USE_BOOTCOMMAND is not set
-+
-+#
-+# Console
-+#
-+# CONFIG_CONSOLE_RECORD is not set
-+CONFIG_LOGLEVEL=4
-+CONFIG_SPL_LOGLEVEL=4
-+# CONFIG_SILENT_CONSOLE is not set
-+# CONFIG_PRE_CONSOLE_BUFFER is not set
-+# CONFIG_CONSOLE_MUX is not set
-+# CONFIG_SYS_CONSOLE_IS_IN_ENV is not set
-+# CONFIG_SYS_CONSOLE_OVERWRITE_ROUTINE is not set
-+# CONFIG_SYS_CONSOLE_ENV_OVERWRITE is not set
-+# CONFIG_SYS_CONSOLE_INFO_QUIET is not set
-+# CONFIG_SYS_STDIO_DEREGISTER is not set
-+
-+#
-+# Logging
-+#
-+# CONFIG_LOG is not set
-+# CONFIG_SPL_LOG is not set
-+# CONFIG_SUPPORT_RAW_INITRD is not set
-+CONFIG_DEFAULT_FDT_FILE=""
-+# CONFIG_VERSION_VARIABLE is not set
-+CONFIG_DISPLAY_CPUINFO=y
-+CONFIG_DISPLAY_BOARDINFO=y
-+# CONFIG_DISPLAY_BOARDINFO_LATE is not set
-+
-+#
-+# Start-up hooks
-+#
-+# CONFIG_ARCH_EARLY_INIT_R is not set
-+# CONFIG_ARCH_MISC_INIT is not set
-+CONFIG_BOARD_EARLY_INIT_F=y
-+# CONFIG_BOARD_EARLY_INIT_R is not set
-+# CONFIG_LAST_STAGE_INIT is not set
-+
-+#
-+# Security support
-+#
-+CONFIG_HASH=y
-+
-+#
-+# Update support
-+#
-+
-+#
-+# SPL / TPL
-+#
 +CONFIG_SUPPORT_SPL=y
-+CONFIG_SPL_FRAMEWORK=y
-+# CONFIG_SPL_BOARD_INIT is not set
-+# CONFIG_SPL_BOOTROM_SUPPORT is not set
-+CONFIG_SPL_RAW_IMAGE_SUPPORT=y
-+CONFIG_SPL_LEGACY_IMAGE_SUPPORT=y
-+# CONFIG_SPL_SYS_MALLOC_SIMPLE is not set
-+# CONFIG_TPL_SYS_MALLOC_SIMPLE is not set
++CONFIG_SPL=y
 +# CONFIG_SPL_STACK_R is not set
-+# CONFIG_SPL_SEPARATE_BSS is not set
-+# CONFIG_SPL_DISABLE_BANNER_PRINT is not set
-+# CONFIG_SPL_DISPLAY_PRINT is not set
-+# CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_USE_SECTOR is not set
-+# CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_USE_PARTITION is not set
-+# CONFIG_SPL_CPU_SUPPORT is not set
-+# CONFIG_SPL_CRYPTO_SUPPORT is not set
-+# CONFIG_SPL_HASH_SUPPORT is not set
-+# CONFIG_SPL_DMA_SUPPORT is not set
-+# CONFIG_SPL_ENV_SUPPORT is not set
-+# CONFIG_SPL_EXT_SUPPORT is not set
-+# CONFIG_SPL_FPGA_SUPPORT is not set
-+# CONFIG_SPL_I2C_SUPPORT is not set
-+# CONFIG_SPL_MPC8XXX_INIT_DDR_SUPPORT is not set
-+# CONFIG_SPL_MTD_SUPPORT is not set
-+# CONFIG_SPL_MUSB_NEW_SUPPORT is not set
-+# CONFIG_SPL_NAND_SUPPORT is not set
-+# CONFIG_SPL_NET_SUPPORT is not set
-+# CONFIG_SPL_NO_CPU_SUPPORT is not set
-+# CONFIG_SPL_NOR_SUPPORT is not set
-+# CONFIG_SPL_XIP_SUPPORT is not set
-+# CONFIG_SPL_ONENAND_SUPPORT is not set
-+# CONFIG_SPL_OS_BOOT is not set
-+# CONFIG_SPL_PCI_SUPPORT is not set
-+# CONFIG_SPL_PCH_SUPPORT is not set
-+# CONFIG_SPL_POST_MEM_SUPPORT is not set
-+# CONFIG_SPL_RESET_SUPPORT is not set
-+# CONFIG_SPL_POWER_SUPPORT is not set
-+# CONFIG_SPL_RAM_SUPPORT is not set
-+# CONFIG_SPL_RTC_SUPPORT is not set
-+# CONFIG_SPL_SATA_SUPPORT is not set
-+# CONFIG_SPL_THERMAL is not set
-+# CONFIG_SPL_USB_HOST_SUPPORT is not set
-+# CONFIG_SPL_USB_GADGET_SUPPORT is not set
-+# CONFIG_SPL_WATCHDOG_SUPPORT is not set
-+# CONFIG_SPL_AM33XX_ENABLE_RTC32K_OSC is not set
++# CONFIG_FIT is not set
++CONFIG_SYS_EXTRA_OPTIONS=""
 +
 +#
 +# Command line interface
 +#
-+CONFIG_CMDLINE=y
 +# CONFIG_HUSH_PARSER is not set
-+CONFIG_CMDLINE_EDITING=y
-+CONFIG_AUTO_COMPLETE=y
-+CONFIG_SYS_LONGHELP=y
 +CONFIG_SYS_PROMPT="X4412 # "
 +
 +#
 +# Autoboot options
 +#
-+CONFIG_AUTOBOOT=y
 +# CONFIG_AUTOBOOT_KEYED is not set
 +
 +#
@@ -1726,7 +1645,6 @@ diff -ruN u-boot-2018.07/X4412.config u-boot-x4412/X4412.config
 +# Info commands
 +#
 +CONFIG_CMD_BDI=y
-+# CONFIG_CMD_CONFIG is not set
 +CONFIG_CMD_CONSOLE=y
 +# CONFIG_CMD_CPU is not set
 +# CONFIG_CMD_LICENSE is not set
@@ -1736,103 +1654,45 @@ diff -ruN u-boot-2018.07/X4412.config u-boot-x4412/X4412.config
 +#
 +CONFIG_CMD_BOOTD=y
 +CONFIG_CMD_BOOTM=y
-+# CONFIG_CMD_BOOTZ is not set
-+CONFIG_CMD_BOOTEFI=y
-+CONFIG_CMD_BOOTEFI_HELLO_COMPILE=y
-+# CONFIG_CMD_BOOTEFI_HELLO is not set
-+# CONFIG_CMD_BOOTEFI_SELFTEST is not set
-+# CONFIG_CMD_BOOTMENU is not set
-+CONFIG_CMD_ELF=y
-+CONFIG_CMD_FDT=y
 +CONFIG_CMD_GO=y
 +CONFIG_CMD_RUN=y
 +CONFIG_CMD_IMI=y
 +# CONFIG_CMD_IMLS is not set
 +# CONFIG_CMD_XIMG is not set
-+# CONFIG_CMD_POWEROFF is not set
-+# CONFIG_CMD_SPL is not set
-+# CONFIG_CMD_FITUPD is not set
-+# CONFIG_CMD_THOR_DOWNLOAD is not set
-+# CONFIG_CMD_ZBOOT is not set
 +
 +#
 +# Environment commands
 +#
-+# CONFIG_CMD_ASKENV is not set
 +CONFIG_CMD_EXPORTENV=y
 +CONFIG_CMD_IMPORTENV=y
 +CONFIG_CMD_EDITENV=y
-+# CONFIG_CMD_GREPENV is not set
 +CONFIG_CMD_SAVEENV=y
 +CONFIG_CMD_ENV_EXISTS=y
-+# CONFIG_CMD_ENV_CALLBACK is not set
-+# CONFIG_CMD_ENV_FLAGS is not set
 +
 +#
 +# Memory commands
 +#
-+# CONFIG_CMD_BINOP is not set
-+CONFIG_CMD_CRC32=y
-+# CONFIG_CRC32_VERIFY is not set
-+# CONFIG_CMD_EEPROM is not set
-+# CONFIG_LOOPW is not set
-+# CONFIG_CMD_MD5SUM is not set
-+# CONFIG_CMD_MEMINFO is not set
 +CONFIG_CMD_MEMORY=y
++CONFIG_CMD_CRC32=y
++# CONFIG_LOOPW is not set
 +# CONFIG_CMD_MEMTEST is not set
 +# CONFIG_CMD_MX_CYCLIC is not set
-+# CONFIG_CMD_SHA1SUM is not set
-+# CONFIG_CMD_STRINGS is not set
-+
-+#
-+# Compression commands
-+#
-+# CONFIG_CMD_LZMADEC is not set
-+# CONFIG_CMD_UNZIP is not set
-+# CONFIG_CMD_ZIP is not set
++# CONFIG_CMD_MEMINFO is not set
 +
 +#
 +# Device access commands
 +#
-+# CONFIG_CMD_ARMFLASH is not set
-+# CONFIG_CMD_ADC is not set
-+# CONFIG_CMD_CLK is not set
-+# CONFIG_CMD_DEMO is not set
-+# CONFIG_CMD_DFU is not set
 +CONFIG_CMD_DM=y
-+# CONFIG_CMD_FDC is not set
-+CONFIG_CMD_FLASH=y
-+# CONFIG_CMD_FPGAD is not set
-+# CONFIG_CMD_FUSE is not set
-+# CONFIG_CMD_GPIO is not set
-+# CONFIG_CMD_GPT is not set
-+# CONFIG_RANDOM_UUID is not set
-+# CONFIG_CMD_IDE is not set
-+# CONFIG_CMD_IO is not set
-+# CONFIG_CMD_IOTRACE is not set
-+# CONFIG_CMD_I2C is not set
++# CONFIG_CMD_DEMO is not set
 +CONFIG_CMD_LOADB=y
 +CONFIG_CMD_LOADS=y
-+# CONFIG_CMD_MMC is not set
++CONFIG_CMD_FLASH=y
 +# CONFIG_CMD_NAND is not set
-+# CONFIG_CMD_MMC_SPI is not set
-+# CONFIG_CMD_ONENAND is not set
-+# CONFIG_CMD_PART is not set
-+# CONFIG_CMD_PCI is not set
-+# CONFIG_CMD_PCMCIA is not set
-+# CONFIG_CMD_READ is not set
-+# CONFIG_CMD_SATA is not set
-+# CONFIG_CMD_SAVES is not set
-+# CONFIG_CMD_SCSI is not set
-+# CONFIG_CMD_SDRAM is not set
 +# CONFIG_CMD_SF is not set
-+# CONFIG_CMD_SF_TEST is not set
 +# CONFIG_CMD_SPI is not set
-+# CONFIG_CMD_TSI148 is not set
-+# CONFIG_CMD_UNIVERSE is not set
++# CONFIG_CMD_I2C is not set
 +# CONFIG_CMD_USB is not set
-+# CONFIG_CMD_USB_SDP is not set
-+# CONFIG_CMD_USB_MASS_STORAGE is not set
++# CONFIG_CMD_FPGA is not set
 +
 +#
 +# Shell scripting commands
@@ -1841,31 +1701,36 @@ diff -ruN u-boot-2018.07/X4412.config u-boot-x4412/X4412.config
 +CONFIG_CMD_ITEST=y
 +CONFIG_CMD_SOURCE=y
 +CONFIG_CMD_SETEXPR=y
++
++#
++# Network commands
++#
 +# CONFIG_CMD_NET is not set
-+# CONFIG_CMD_ETHSW is not set
-+# CONFIG_CMD_PXE is not set
-+# CONFIG_CMD_WOL is not set
++# CONFIG_CMD_TFTPPUT is not set
++# CONFIG_CMD_TFTPSRV is not set
++# CONFIG_CMD_RARP is not set
++# CONFIG_CMD_DHCP is not set
++# CONFIG_CMD_NFS is not set
++# CONFIG_CMD_PING is not set
++# CONFIG_CMD_CDP is not set
++# CONFIG_CMD_SNTP is not set
++# CONFIG_CMD_DNS is not set
++# CONFIG_CMD_LINK_LOCAL is not set
 +
 +#
 +# Misc commands
 +#
-+# CONFIG_CMD_BSP is not set
-+# CONFIG_CMD_CACHE is not set
-+# CONFIG_CMD_DISPLAY is not set
-+# CONFIG_CMD_LED is not set
-+# CONFIG_CMD_DATE is not set
 +# CONFIG_CMD_TIME is not set
-+# CONFIG_CMD_GETTIME is not set
 +# CONFIG_CMD_MISC is not set
 +# CONFIG_CMD_TIMER is not set
-+# CONFIG_CMD_QFW is not set
-+# CONFIG_CMD_TERMINAL is not set
-+# CONFIG_CMD_UUID is not set
 +
 +#
-+# TI specific command line interface
++# Boot timing
 +#
-+# CONFIG_CMD_DDR3 is not set
++# CONFIG_BOOTSTAGE is not set
++CONFIG_BOOTSTAGE_USER_COUNT=20
++CONFIG_BOOTSTAGE_STASH_ADDR=0
++CONFIG_BOOTSTAGE_STASH_SIZE=4096
 +
 +#
 +# Power commands
@@ -1874,92 +1739,16 @@ diff -ruN u-boot-2018.07/X4412.config u-boot-x4412/X4412.config
 +#
 +# Security commands
 +#
-+# CONFIG_CMD_AES is not set
-+# CONFIG_CMD_BLOB is not set
-+# CONFIG_CMD_HASH is not set
-+
-+#
-+# Firmware commands
-+#
-+
-+#
-+# Filesystem commands
-+#
-+# CONFIG_CMD_BTRFS is not set
-+# CONFIG_CMD_EXT2 is not set
-+# CONFIG_CMD_EXT4 is not set
-+# CONFIG_CMD_FAT is not set
-+# CONFIG_CMD_FS_GENERIC is not set
-+# CONFIG_CMD_FS_UUID is not set
-+# CONFIG_CMD_JFFS2 is not set
-+# CONFIG_CMD_MTDPARTS is not set
-+CONFIG_MTDIDS_DEFAULT=""
-+CONFIG_MTDPARTS_DEFAULT=""
-+# CONFIG_CMD_REISER is not set
-+# CONFIG_CMD_ZFS is not set
-+
-+#
-+# Debug commands
-+#
-+# CONFIG_CMD_BEDBUG is not set
-+# CONFIG_CMD_DIAG is not set
-+# CONFIG_CMD_KGDB is not set
-+# CONFIG_CMD_LOG is not set
-+# CONFIG_CMD_TRACE is not set
-+# CONFIG_CMD_UBI is not set
-+
-+#
-+# Partition Types
-+#
-+CONFIG_PARTITIONS=y
-+# CONFIG_MAC_PARTITION is not set
-+# CONFIG_SPL_MAC_PARTITION is not set
-+# CONFIG_DOS_PARTITION is not set
-+# CONFIG_SPL_DOS_PARTITION is not set
-+# CONFIG_ISO_PARTITION is not set
-+# CONFIG_SPL_ISO_PARTITION is not set
-+# CONFIG_AMIGA_PARTITION is not set
-+# CONFIG_SPL_AMIGA_PARTITION is not set
-+# CONFIG_EFI_PARTITION is not set
-+# CONFIG_SPL_EFI_PARTITION is not set
-+# CONFIG_PARTITION_UUIDS is not set
-+# CONFIG_SPL_PARTITION_UUIDS is not set
 +CONFIG_SUPPORT_OF_CONTROL=y
-+CONFIG_DTC=y
 +
 +#
 +# Device Tree Control
 +#
 +CONFIG_OF_CONTROL=y
-+# CONFIG_OF_BOARD_FIXUP is not set
 +# CONFIG_SPL_OF_CONTROL is not set
-+# CONFIG_OF_LIVE is not set
 +CONFIG_OF_SEPARATE=y
 +# CONFIG_OF_EMBED is not set
-+# CONFIG_OF_BOARD is not set
-+# CONFIG_MULTI_DTB_FIT is not set
-+CONFIG_MKIMAGE_DTC_PATH="dtc"
-+
-+#
-+# Environment
-+#
-+CONFIG_ENV_IS_NOWHERE=y
-+# CONFIG_ENV_IS_IN_EEPROM is not set
-+# CONFIG_ENV_IS_IN_FAT is not set
-+# CONFIG_ENV_IS_IN_EXT4 is not set
-+# CONFIG_ENV_IS_IN_FLASH is not set
-+# CONFIG_ENV_IS_IN_MMC is not set
-+# CONFIG_ENV_IS_IN_NAND is not set
-+# CONFIG_ENV_IS_IN_NVRAM is not set
-+# CONFIG_ENV_IS_IN_ONENAND is not set
-+# CONFIG_ENV_IS_IN_REMOTE is not set
-+# CONFIG_ENV_IS_IN_SPI_FLASH is not set
-+# CONFIG_ENV_IS_IN_UBI is not set
-+# CONFIG_USE_DEFAULT_ENV_FILE is not set
-+# CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG is not set
-+CONFIG_NET=y
-+# CONFIG_NET_RANDOM_ETHADDR is not set
-+# CONFIG_NETCONSOLE is not set
++# CONFIG_NET is not set
 +
 +#
 +# Device Drivers
@@ -1969,43 +1758,13 @@ diff -ruN u-boot-2018.07/X4412.config u-boot-x4412/X4412.config
 +# Generic Driver Options
 +#
 +CONFIG_DM=y
-+# CONFIG_SPL_DM is not set
 +CONFIG_DM_WARN=y
-+# CONFIG_DM_DEBUG is not set
 +CONFIG_DM_DEVICE_REMOVE=y
 +CONFIG_DM_STDIO=y
 +CONFIG_DM_SEQ_ALIAS=y
-+# CONFIG_SPL_DM_SEQ_ALIAS is not set
 +# CONFIG_REGMAP is not set
 +# CONFIG_DEVRES is not set
 +CONFIG_SIMPLE_BUS=y
-+CONFIG_OF_TRANSLATE=y
-+CONFIG_DM_DEV_READ_INLINE=y
-+# CONFIG_ADC is not set
-+# CONFIG_ADC_EXYNOS is not set
-+# CONFIG_ADC_SANDBOX is not set
-+# CONFIG_SARADC_MESON is not set
-+# CONFIG_SARADC_ROCKCHIP is not set
-+# CONFIG_SATA is not set
-+# CONFIG_SCSI_AHCI is not set
-+
-+#
-+# SATA/SCSI device support
-+#
-+# CONFIG_DWC_AHSATA is not set
-+# CONFIG_FSL_SATA is not set
-+# CONFIG_MVSATA_IDE is not set
-+# CONFIG_SATA_MV is not set
-+# CONFIG_SATA_SIL is not set
-+# CONFIG_SATA_SIL3114 is not set
-+# CONFIG_BLK is not set
-+CONFIG_HAVE_BLOCK_DEVICE=y
-+# CONFIG_IDE is not set
-+# CONFIG_BOOTCOUNT_LIMIT is not set
-+
-+#
-+# Clock
-+#
 +# CONFIG_CLK is not set
 +# CONFIG_CPU is not set
 +
@@ -2013,8 +1772,6 @@ diff -ruN u-boot-2018.07/X4412.config u-boot-x4412/X4412.config
 +# Hardware crypto devices
 +#
 +# CONFIG_FSL_CAAM is not set
-+# CONFIG_SYS_FSL_SEC_BE is not set
-+# CONFIG_SYS_FSL_SEC_LE is not set
 +
 +#
 +# Demo for driver model
@@ -2024,161 +1781,63 @@ diff -ruN u-boot-2018.07/X4412.config u-boot-x4412/X4412.config
 +#
 +# DFU support
 +#
-+
-+#
-+# DMA Support
-+#
-+# CONFIG_DMA is not set
-+# CONFIG_TI_EDMA3 is not set
-+
-+#
-+# Fastboot support
-+#
-+# CONFIG_UDP_FUNCTION_FASTBOOT is not set
-+
-+#
-+# FPGA support
-+#
-+# CONFIG_FPGA_ALTERA is not set
-+# CONFIG_FPGA_SOCFPGA is not set
-+# CONFIG_FPGA_XILINX is not set
-+# CONFIG_FPGA_SPARTAN3 is not set
++# CONFIG_DFU_TFTP is not set
 +
 +#
 +# GPIO Support
 +#
-+CONFIG_DM_GPIO=y
-+# CONFIG_ALTERA_PIO is not set
 +# CONFIG_DWAPB_GPIO is not set
-+# CONFIG_AT91_GPIO is not set
-+# CONFIG_ATMEL_PIO4 is not set
-+# CONFIG_INTEL_BROADWELL_GPIO is not set
-+# CONFIG_INTEL_ICH6_GPIO is not set
-+# CONFIG_IMX_RGPIO2P is not set
-+# CONFIG_HSDK_CREG_GPIO is not set
 +# CONFIG_LPC32XX_GPIO is not set
-+# CONFIG_MSM_GPIO is not set
-+# CONFIG_MXC_GPIO is not set
-+# CONFIG_CMD_PCA953X is not set
-+# CONFIG_PCF8575_GPIO is not set
 +# CONFIG_ROCKCHIP_GPIO is not set
-+# CONFIG_XILINX_GPIO is not set
-+# CONFIG_CMD_TCA642X is not set
-+# CONFIG_TEGRA_GPIO is not set
-+# CONFIG_TEGRA186_GPIO is not set
 +# CONFIG_VYBRID_GPIO is not set
-+# CONFIG_DM_74X164 is not set
-+# CONFIG_DM_PCA953X is not set
-+# CONFIG_MPC8XXX_GPIO is not set
 +
 +#
 +# I2C support
 +#
-+CONFIG_DM_I2C=y
 +# CONFIG_DM_I2C_COMPAT is not set
-+# CONFIG_I2C_SET_DEFAULT_BUS_NUM is not set
-+# CONFIG_DM_I2C_GPIO is not set
-+# CONFIG_SYS_I2C_FSL is not set
-+# CONFIG_SYS_I2C_DW is not set
-+# CONFIG_SYS_I2C_INTEL is not set
-+# CONFIG_SYS_I2C_IMX_LPI2C is not set
-+# CONFIG_SYS_I2C_MXC is not set
-+# CONFIG_SYS_I2C_ROCKCHIP is not set
-+# CONFIG_SYS_I2C_S3C24X0 is not set
-+# CONFIG_SYS_I2C_MVTWSI is not set
-+# CONFIG_SYS_I2C_IHS is not set
-+# CONFIG_I2C_MUX is not set
-+CONFIG_DM_KEYBOARD=y
 +# CONFIG_CROS_EC_KEYB is not set
-+# CONFIG_I8042_KEYB is not set
 +
 +#
 +# LED Support
 +#
 +# CONFIG_LED is not set
-+# CONFIG_LED_STATUS is not set
-+
-+#
-+# Mailbox Controller Support
-+#
-+# CONFIG_DM_MAILBOX is not set
-+
-+#
-+# Memory Controller drivers
-+#
 +
 +#
 +# Multifunction device drivers
 +#
-+# CONFIG_MISC is not set
 +# CONFIG_CROS_EC is not set
-+# CONFIG_DS4510 is not set
 +# CONFIG_FSL_SEC_MON is not set
-+# CONFIG_MXC_OCOTP is not set
-+# CONFIG_NUVOTON_NCT6102D is not set
-+# CONFIG_PWRSEQ is not set
 +# CONFIG_PCA9551_LED is not set
-+# CONFIG_WINBOND_W83627 is not set
-+CONFIG_ZYNQ_GEM_I2C_MAC_OFFSET=0x0
++# CONFIG_RESET is not set
 +
 +#
 +# MMC Host controller Support
 +#
-+CONFIG_MMC=y
-+CONFIG_MMC_WRITE=y
-+# CONFIG_MMC_BROKEN_CD is not set
 +# CONFIG_DM_MMC is not set
-+CONFIG_MMC_QUIRKS=y
-+CONFIG_MMC_HW_PARTITIONING=y
-+# CONFIG_SUPPORT_EMMC_RPMB is not set
-+# CONFIG_MMC_IO_VOLTAGE is not set
-+# CONFIG_SPL_MMC_IO_VOLTAGE is not set
-+# CONFIG_MMC_HS200_SUPPORT is not set
-+# CONFIG_SPL_MMC_HS200_SUPPORT is not set
-+CONFIG_MMC_VERBOSE=y
-+# CONFIG_MMC_TRACE is not set
-+# CONFIG_SPL_MMC_TINY is not set
-+# CONFIG_MMC_DW is not set
-+# CONFIG_MMC_MXC is not set
-+# CONFIG_MMC_PCI is not set
-+# CONFIG_MMC_OMAP_HS is not set
-+# CONFIG_MMC_SDHCI is not set
-+# CONFIG_FTSDC010 is not set
-+# CONFIG_FSL_ESDHC is not set
 +
 +#
-+# MTD Support
++# NAND Device Support
 +#
-+# CONFIG_MTD is not set
-+# CONFIG_MTD_NOR_FLASH is not set
-+# CONFIG_NAND is not set
++# CONFIG_NAND_DENALI is not set
++# CONFIG_NAND_VF610_NFC is not set
++# CONFIG_NAND_PXA3XX is not set
++
++#
++# Generic NAND options
++#
++# CONFIG_SPL_NAND_DENALI is not set
 +
 +#
 +# SPI Flash Support
 +#
-+CONFIG_DM_SPI_FLASH=y
 +# CONFIG_SPI_FLASH is not set
-+
-+#
-+# UBI support
-+#
-+# CONFIG_CONFIG_UBI_SILENCE_MSG is not set
-+# CONFIG_MTD_UBI is not set
-+# CONFIG_BITBANGMII is not set
-+# CONFIG_MV88E6352_SWITCH is not set
-+# CONFIG_PHYLIB is not set
-+# CONFIG_FSL_PFE is not set
 +# CONFIG_DM_ETH is not set
-+# CONFIG_DRIVER_TI_CPSW is not set
-+# CONFIG_NETDEVICES is not set
-+# CONFIG_PCI is not set
++# CONFIG_PHYLIB is not set
 +
 +#
-+# PHY Subsystem
++# PCI
 +#
-+# CONFIG_PHY is not set
-+# CONFIG_SPL_PHY is not set
-+# CONFIG_MVEBU_COMPHY_SUPPORT is not set
++# CONFIG_DM_PCI is not set
 +
 +#
 +# Pin controllers
@@ -2188,113 +1847,43 @@ diff -ruN u-boot-2018.07/X4412.config u-boot-x4412/X4412.config
 +#
 +# Power
 +#
-+
-+#
-+# Power Domain Support
-+#
-+# CONFIG_POWER_DOMAIN is not set
 +# CONFIG_DM_PMIC is not set
-+# CONFIG_PMIC_AS3722 is not set
-+# CONFIG_POWER_MC34VR500 is not set
 +# CONFIG_DM_REGULATOR is not set
-+# CONFIG_DM_PWM is not set
-+# CONFIG_PWM_SANDBOX is not set
 +# CONFIG_RAM is not set
-+
-+#
-+# Remote Processor drivers
-+#
-+
-+#
-+# Reset Controller Support
-+#
-+# CONFIG_DM_RESET is not set
 +
 +#
 +# Real Time Clock
 +#
 +# CONFIG_DM_RTC is not set
-+# CONFIG_RTC_S35392A is not set
-+# CONFIG_SCSI is not set
 +
 +#
 +# Serial drivers
 +#
-+CONFIG_BAUDRATE=115200
 +CONFIG_REQUIRE_SERIAL_CONSOLE=y
-+# CONFIG_SPECIFY_CONSOLE_INDEX is not set
-+CONFIG_SERIAL_PRESENT=y
-+CONFIG_SPL_SERIAL_PRESENT=y
-+CONFIG_DM_SERIAL=y
-+# CONFIG_SERIAL_RX_BUFFER is not set
-+# CONFIG_SERIAL_SEARCH_ALL is not set
-+# CONFIG_TPL_DM_SERIAL is not set
-+# CONFIG_DEBUG_UART_SKIP_INIT is not set
-+# CONFIG_ALTERA_JTAG_UART is not set
-+# CONFIG_ALTERA_UART is not set
-+# CONFIG_ARC_SERIAL is not set
-+# CONFIG_ATMEL_USART is not set
-+# CONFIG_FSL_LINFLEXUART is not set
-+# CONFIG_FSL_LPUART is not set
-+# CONFIG_MVEBU_A3700_UART is not set
-+# CONFIG_NULLDEV_SERIAL is not set
-+# CONFIG_SYS_NS16550 is not set
-+# CONFIG_PL01X_SERIAL is not set
-+# CONFIG_MSM_SERIAL is not set
-+# CONFIG_PXA_SERIAL is not set
++# CONFIG_DEBUG_UART is not set
 +
 +#
 +# Sound support
 +#
 +# CONFIG_SOUND is not set
-+CONFIG_SPI=y
-+CONFIG_DM_SPI=y
-+# CONFIG_ALTERA_SPI is not set
-+# CONFIG_ATCSPI200_SPI is not set
-+# CONFIG_ATMEL_SPI is not set
++
++#
++# SPI Support
++#
 +# CONFIG_CADENCE_QSPI is not set
 +# CONFIG_DESIGNWARE_SPI is not set
 +# CONFIG_EXYNOS_SPI is not set
 +# CONFIG_FSL_DSPI is not set
++# CONFIG_FSL_QSPI is not set
 +# CONFIG_ICH_SPI is not set
-+# CONFIG_MVEBU_A3700_SPI is not set
 +# CONFIG_ROCKCHIP_SPI is not set
 +# CONFIG_TEGRA114_SPI is not set
 +# CONFIG_TEGRA20_SFLASH is not set
 +# CONFIG_TEGRA20_SLINK is not set
-+# CONFIG_TEGRA210_QSPI is not set
 +# CONFIG_XILINX_SPI is not set
-+# CONFIG_SOFT_SPI is not set
-+# CONFIG_CF_SPI is not set
 +# CONFIG_FSL_ESPI is not set
-+# CONFIG_FSL_QSPI is not set
-+# CONFIG_SH_SPI is not set
-+# CONFIG_SH_QSPI is not set
 +# CONFIG_TI_QSPI is not set
-+# CONFIG_KIRKWOOD_SPI is not set
-+# CONFIG_LPC32XX_SSP is not set
-+# CONFIG_MPC8XXX_SPI is not set
-+# CONFIG_MXC_SPI is not set
-+# CONFIG_MXS_SPI is not set
-+# CONFIG_OMAP3_SPI is not set
-+
-+#
-+# SPMI support
-+#
-+# CONFIG_SPMI is not set
-+
-+#
-+# System reset device drivers
-+#
-+# CONFIG_SYSRESET is not set
-+# CONFIG_SYSRESET_SYSCON is not set
-+# CONFIG_SYSRESET_WATCHDOG is not set
 +# CONFIG_DM_THERMAL is not set
-+
-+#
-+# Timer Support
-+#
-+# CONFIG_TIMER is not set
 +
 +#
 +# TPM support
@@ -2306,124 +1895,50 @@ diff -ruN u-boot-2018.07/X4412.config u-boot-x4412/X4412.config
 +# USB Host Controller Drivers
 +#
 +# CONFIG_USB_XHCI_HCD is not set
++# CONFIG_USB_XHCI is not set
 +# CONFIG_USB_EHCI_HCD is not set
-+# CONFIG_USB_OHCI_HCD is not set
-+# CONFIG_USB_UHCI_HCD is not set
-+# CONFIG_USB_DWC2 is not set
-+
-+#
-+# Legacy MUSB Support
-+#
-+# CONFIG_USB_MUSB_HCD is not set
-+# CONFIG_USB_MUSB_UDC is not set
-+# CONFIG_USB_DAVINCI is not set
++# CONFIG_USB_EHCI is not set
 +
 +#
 +# MUSB Controller Driver
 +#
 +# CONFIG_USB_MUSB_HOST is not set
 +# CONFIG_USB_MUSB_GADGET is not set
-+# CONFIG_USB_MUSB_TI is not set
-+# CONFIG_USB_MUSB_AM35X is not set
-+# CONFIG_USB_MUSB_DSPS is not set
-+# CONFIG_USB_MUSB_PIO_ONLY is not set
-+
-+#
-+# USB Phy
-+#
-+# CONFIG_TWL4030_USB is not set
-+# CONFIG_OMAP_USB_PHY is not set
-+# CONFIG_ROCKCHIP_USB2_PHY is not set
-+
-+#
-+# ULPI drivers
-+#
 +
 +#
 +# USB peripherals
 +#
 +# CONFIG_USB_STORAGE is not set
 +# CONFIG_USB_KEYBOARD is not set
-+# CONFIG_USB_GADGET is not set
-+# CONFIG_USB_HOST_ETHER is not set
 +
 +#
 +# Graphics support
 +#
-+# CONFIG_DM_VIDEO is not set
-+CONFIG_SYS_WHITE_ON_BLACK=y
-+# CONFIG_NO_FB_CLEAR is not set
-+
-+#
-+# TrueType Fonts
-+#
 +# CONFIG_VIDEO_VESA is not set
 +# CONFIG_VIDEO_LCD_ANX9804 is not set
 +# CONFIG_VIDEO_LCD_SSD2828 is not set
-+# CONFIG_VIDEO_MVEBU is not set
-+# CONFIG_I2C_EDID is not set
-+# CONFIG_DISPLAY is not set
-+# CONFIG_VIDEO_TEGRA20 is not set
++# CONFIG_DISPLAY_PORT is not set
++# CONFIG_VIDEO_TEGRA124 is not set
 +# CONFIG_VIDEO_BRIDGE is not set
-+# CONFIG_VIDEO is not set
-+# CONFIG_LCD is not set
-+# CONFIG_VIDEO_SIMPLE is not set
-+# CONFIG_VIDEO_DT_SIMPLEFB is not set
-+
-+#
-+# Watchdog Timer Support
-+#
-+# CONFIG_WATCHDOG is not set
-+# CONFIG_BCM2835_WDT is not set
-+# CONFIG_ULP_WATCHDOG is not set
-+# CONFIG_WDT is not set
 +# CONFIG_PHYS_TO_BUS is not set
 +
 +#
 +# File systems
 +#
-+# CONFIG_FS_BTRFS is not set
-+# CONFIG_FS_CBFS is not set
-+# CONFIG_FS_EXT4 is not set
-+# CONFIG_FS_FAT is not set
-+# CONFIG_FS_JFFS2 is not set
-+# CONFIG_UBIFS_SILENCE_MSG is not set
-+# CONFIG_FS_CRAMFS is not set
-+# CONFIG_YAFFS2 is not set
 +
 +#
 +# Library routines
 +#
-+# CONFIG_BCH is not set
 +# CONFIG_CC_OPTIMIZE_LIBS_FOR_SPEED is not set
-+# CONFIG_DYNAMIC_CRC_TABLE is not set
 +CONFIG_HAVE_PRIVATE_LIBGCC=y
-+CONFIG_LIB_UUID=y
-+CONFIG_PRINTF=y
-+CONFIG_SPRINTF=y
-+CONFIG_SPL_SPRINTF=y
-+CONFIG_STRTO=y
-+CONFIG_SPL_STRTO=y
-+CONFIG_USE_PRIVATE_LIBGCC=y
++# CONFIG_USE_PRIVATE_LIBGCC is not set
 +CONFIG_SYS_HZ=1000
-+# CONFIG_USE_TINY_PRINTF is not set
-+# CONFIG_PANIC_HANG is not set
-+CONFIG_REGEX=y
-+# CONFIG_SPL_TINY_MEMSET is not set
-+# CONFIG_TPL_TINY_MEMSET is not set
-+# CONFIG_BITREVERSE is not set
++# CONFIG_SYS_VSNPRINTF is not set
++# CONFIG_REGEX is not set
++# CONFIG_LIB_RAND is not set
 +# CONFIG_CMD_DHRYSTONE is not set
-+
-+#
-+# Security support
-+#
-+# CONFIG_AES is not set
 +# CONFIG_RSA is not set
 +# CONFIG_TPM is not set
-+
-+#
-+# Android Verified Boot
-+#
 +
 +#
 +# Hashing Support
@@ -2436,24 +1951,5 @@ diff -ruN u-boot-2018.07/X4412.config u-boot-x4412/X4412.config
 +# Compression Support
 +#
 +# CONFIG_LZ4 is not set
-+# CONFIG_LZMA is not set
-+# CONFIG_LZO is not set
-+# CONFIG_SPL_LZO is not set
-+# CONFIG_SPL_GZIP is not set
 +# CONFIG_ERRNO_STR is not set
-+# CONFIG_HEXDUMP is not set
-+CONFIG_OF_LIBFDT=y
-+# CONFIG_OF_LIBFDT_OVERLAY is not set
-+# CONFIG_SPL_OF_LIBFDT is not set
-+# CONFIG_FDT_FIXUP_PARTITIONS is not set
-+
-+#
-+# System tables
-+#
-+CONFIG_GENERATE_SMBIOS_TABLE=y
-+CONFIG_SMBIOS_MANUFACTURER=""
-+CONFIG_EFI_LOADER=y
-+# CONFIG_OPTEE is not set
-+CONFIG_OPTEE_LOAD_ADDR=0x00000000
-+# CONFIG_BOOTM_OPTEE is not set
 +# CONFIG_UNIT_TEST is not set

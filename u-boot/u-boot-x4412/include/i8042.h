@@ -1,7 +1,8 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2002 ELTEC Elektronik AG
  * Frank Gottschling <fgottschling@eltec.de>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /* i8042.h - Intel 8042 keyboard driver header */
@@ -34,7 +35,6 @@
 #define CMD_KBD_DIS	0xad	/* keyboard disable */
 #define CMD_KBD_EN	0xae	/* keyboard enable */
 #define CMD_SET_KBD_LED	0xed	/* set keyboard led */
-#define CMD_DRAIN_OUTPUT 0xf4   /* drain output buffer */
 #define CMD_RESET_KBD	0xff	/* reset keyboard */
 
 /* i8042 command result */
@@ -86,5 +86,11 @@ void i8042_flush(void);
  * @return 0 if ok, -1 if keyboard input was found while disabling
  */
 int i8042_disable(void);
+
+struct stdio_dev;
+
+int i8042_kbd_init(void);
+int i8042_tstc(struct stdio_dev *dev);
+int i8042_getc(struct stdio_dev *dev);
 
 #endif /* _I8042_H_ */

@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2015 Freescale Semiconductor, Inc.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <asm/arch/clock.h>
@@ -11,9 +12,9 @@
 #include <asm/arch/mx6-pins.h>
 #include <asm/arch/sys_proto.h>
 #include <asm/gpio.h>
-#include <asm/mach-imx/iomux-v3.h>
-#include <asm/mach-imx/boot_mode.h>
-#include <asm/mach-imx/mxc_i2c.h>
+#include <asm/imx-common/iomux-v3.h>
+#include <asm/imx-common/boot_mode.h>
+#include <asm/imx-common/mxc_i2c.h>
 #include <asm/io.h>
 #include <common.h>
 #include <fsl_esdhc.h>
@@ -26,7 +27,7 @@
 #include <power/pfuze3000_pmic.h>
 #include "../common/pfuze.h"
 #include <usb.h>
-#include <usb/ehci-ci.h>
+#include <usb/ehci-fsl.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -51,18 +52,18 @@ DECLARE_GLOBAL_DATA_PTR;
 	PAD_CTL_SPEED_HIGH   |                                  \
 	PAD_CTL_DSE_48ohm   | PAD_CTL_SRE_FAST)
 
-#define LCD_PAD_CTRL    (PAD_CTL_HYS | PAD_CTL_PUS_100K_UP | PAD_CTL_PUE | \
-	PAD_CTL_PKE | PAD_CTL_SPEED_MED | PAD_CTL_DSE_40ohm)
-
 #define MDIO_PAD_CTRL  (PAD_CTL_PUS_100K_UP | PAD_CTL_PUE |     \
 	PAD_CTL_DSE_48ohm   | PAD_CTL_SRE_FAST | PAD_CTL_ODE)
 
 #define ENET_CLK_PAD_CTRL  (PAD_CTL_DSE_40ohm   | PAD_CTL_SRE_FAST)
 
+#define ENET_RX_PAD_CTRL  (PAD_CTL_PKE | PAD_CTL_PUE |          \
+	PAD_CTL_SPEED_HIGH   | PAD_CTL_SRE_FAST)
+
 #define IOX_SDI IMX_GPIO_NR(5, 10)
 #define IOX_STCP IMX_GPIO_NR(5, 7)
 #define IOX_SHCP IMX_GPIO_NR(5, 11)
-#define IOX_OE IMX_GPIO_NR(5, 8)
+#define IOX_OE IMX_GPIO_NR(5, 18)
 
 static iomux_v3_cfg_t const iox_pads[] = {
 	/* IOX_SDI */
@@ -113,7 +114,7 @@ static enum qn_level seq[3][2] = {
 
 static enum qn_func qn_output[8] = {
 	qn_reset, qn_reset, qn_reset, qn_enable, qn_disable, qn_reset,
-	qn_disable, qn_disable
+	qn_disable, qn_enable
 };
 
 static void iox74lv_init(void)
@@ -150,6 +151,8 @@ static void iox74lv_init(void)
 	 * shift register will be output to pins
 	 */
 	gpio_direction_output(IOX_STCP, 1);
+
+	gpio_direction_output(IOX_OE, 1);
 };
 
 #ifdef CONFIG_SYS_I2C_MXC
@@ -192,7 +195,9 @@ int power_init_board(void)
 		       reg, rev_id);
 
 		/* disable Low Power Mode during standby mode */
-		pmic_reg_write(pfuze, PFUZE3000_LDOGCTL, 0x1);
+		pmic_reg_read(pfuze, PFUZE3000_LDOGCTL, &reg);
+		reg |= 0x1;
+		pmic_reg_write(pfuze, PFUZE3000_LDOGCTL, reg);
 
 		/* SW1B step ramp up time from 2us to 4us/25mV */
 		reg = 0x40;
@@ -224,7 +229,6 @@ static iomux_v3_cfg_t const uart1_pads[] = {
 	MX6_PAD_UART1_RX_DATA__UART1_DCE_RX | MUX_PAD_CTRL(UART_PAD_CTRL),
 };
 
-#ifndef CONFIG_SPL_BUILD
 static iomux_v3_cfg_t const usdhc1_pads[] = {
 	MX6_PAD_SD1_CLK__USDHC1_CLK | MUX_PAD_CTRL(USDHC_PAD_CTRL),
 	MX6_PAD_SD1_CMD__USDHC1_CMD | MUX_PAD_CTRL(USDHC_PAD_CTRL),
@@ -240,7 +244,6 @@ static iomux_v3_cfg_t const usdhc1_pads[] = {
 	/* RST_B */
 	MX6_PAD_GPIO1_IO09__GPIO1_IO09 | MUX_PAD_CTRL(NO_PAD_CTRL),
 };
-#endif
 
 /*
  * mx6ul_14x14_evk board default supports sd card. If want to use
@@ -276,16 +279,18 @@ static iomux_v3_cfg_t const usdhc2_pads[] = {
 	MX6_PAD_NAND_DATA03__USDHC2_DATA3 | MUX_PAD_CTRL(USDHC_PAD_CTRL),
 };
 
-/*
- * The evk board uses DAT3 to detect CD card plugin,
- * in u-boot we mux the pin to GPIO when doing board_mmc_getcd.
- */
-static iomux_v3_cfg_t const usdhc2_cd_pad =
-	MX6_PAD_NAND_DATA03__GPIO4_IO05 | MUX_PAD_CTRL(USDHC_DAT3_CD_PAD_CTRL);
+static iomux_v3_cfg_t const usdhc2_cd_pads[] = {
+	/*
+	 * The evk board uses DAT3 to detect CD card plugin,
+	 * in u-boot we mux the pin to GPIO when doing board_mmc_getcd.
+	 */
+	MX6_PAD_NAND_DATA03__GPIO4_IO05 | MUX_PAD_CTRL(USDHC_DAT3_CD_PAD_CTRL),
+};
 
-static iomux_v3_cfg_t const usdhc2_dat3_pad =
+static iomux_v3_cfg_t const usdhc2_dat3_pads[] = {
 	MX6_PAD_NAND_DATA03__USDHC2_DATA3 |
-	MUX_PAD_CTRL(USDHC_DAT3_CD_PAD_CTRL);
+	MUX_PAD_CTRL(USDHC_DAT3_CD_PAD_CTRL),
+};
 #endif
 
 static void setup_iomux_uart(void)
@@ -297,7 +302,7 @@ static void setup_iomux_uart(void)
 
 #define QSPI_PAD_CTRL1	\
 	(PAD_CTL_SRE_FAST | PAD_CTL_SPEED_MED | \
-	 PAD_CTL_PKE | PAD_CTL_PUE | PAD_CTL_PUS_47K_UP | PAD_CTL_DSE_120ohm)
+	 PAD_CTL_PKE | PAD_CTL_PUE | PAD_CTL_PUS_47K_UP | PAD_CTL_DSE_60ohm)
 
 static iomux_v3_cfg_t const quadspi_pads[] = {
 	MX6_PAD_NAND_WP_B__QSPI_A_SCLK | MUX_PAD_CTRL(QSPI_PAD_CTRL1),
@@ -348,7 +353,8 @@ int board_mmc_getcd(struct mmc *mmc)
 #if defined(CONFIG_MX6UL_14X14_EVK_EMMC_REWORK)
 		ret = 1;
 #else
-		imx_iomux_v3_setup_pad(usdhc2_cd_pad);
+		imx_iomux_v3_setup_multiple_pads(usdhc2_cd_pads,
+						 ARRAY_SIZE(usdhc2_cd_pads));
 		gpio_direction_input(USDHC2_CD_GPIO);
 
 		/*
@@ -357,7 +363,8 @@ int board_mmc_getcd(struct mmc *mmc)
 		 */
 		ret = gpio_get_value(USDHC2_CD_GPIO);
 
-		imx_iomux_v3_setup_pad(usdhc2_dat3_pad);
+		imx_iomux_v3_setup_multiple_pads(usdhc2_dat3_pads,
+						 ARRAY_SIZE(usdhc2_dat3_pads));
 #endif
 		break;
 	}
@@ -384,7 +391,7 @@ int board_mmc_init(bd_t *bis)
 
 	/*
 	 * According to the board_mmc_init() the following map is done:
-	 * (U-Boot device node)    (Physical Port)
+	 * (U-boot device node)    (Physical Port)
 	 * mmc0                    USDHC1
 	 * mmc1                    USDHC2
 	 */
@@ -561,62 +568,6 @@ int board_phy_config(struct phy_device *phydev)
 }
 #endif
 
-#ifdef CONFIG_VIDEO_MXS
-static iomux_v3_cfg_t const lcd_pads[] = {
-	MX6_PAD_LCD_CLK__LCDIF_CLK | MUX_PAD_CTRL(LCD_PAD_CTRL),
-	MX6_PAD_LCD_ENABLE__LCDIF_ENABLE | MUX_PAD_CTRL(LCD_PAD_CTRL),
-	MX6_PAD_LCD_HSYNC__LCDIF_HSYNC | MUX_PAD_CTRL(LCD_PAD_CTRL),
-	MX6_PAD_LCD_VSYNC__LCDIF_VSYNC | MUX_PAD_CTRL(LCD_PAD_CTRL),
-	MX6_PAD_LCD_DATA00__LCDIF_DATA00 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-	MX6_PAD_LCD_DATA01__LCDIF_DATA01 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-	MX6_PAD_LCD_DATA02__LCDIF_DATA02 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-	MX6_PAD_LCD_DATA03__LCDIF_DATA03 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-	MX6_PAD_LCD_DATA04__LCDIF_DATA04 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-	MX6_PAD_LCD_DATA05__LCDIF_DATA05 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-	MX6_PAD_LCD_DATA06__LCDIF_DATA06 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-	MX6_PAD_LCD_DATA07__LCDIF_DATA07 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-	MX6_PAD_LCD_DATA08__LCDIF_DATA08 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-	MX6_PAD_LCD_DATA09__LCDIF_DATA09 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-	MX6_PAD_LCD_DATA10__LCDIF_DATA10 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-	MX6_PAD_LCD_DATA11__LCDIF_DATA11 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-	MX6_PAD_LCD_DATA12__LCDIF_DATA12 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-	MX6_PAD_LCD_DATA13__LCDIF_DATA13 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-	MX6_PAD_LCD_DATA14__LCDIF_DATA14 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-	MX6_PAD_LCD_DATA15__LCDIF_DATA15 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-	MX6_PAD_LCD_DATA16__LCDIF_DATA16 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-	MX6_PAD_LCD_DATA17__LCDIF_DATA17 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-	MX6_PAD_LCD_DATA18__LCDIF_DATA18 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-	MX6_PAD_LCD_DATA19__LCDIF_DATA19 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-	MX6_PAD_LCD_DATA20__LCDIF_DATA20 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-	MX6_PAD_LCD_DATA21__LCDIF_DATA21 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-	MX6_PAD_LCD_DATA22__LCDIF_DATA22 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-	MX6_PAD_LCD_DATA23__LCDIF_DATA23 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-
-	/* LCD_RST */
-	MX6_PAD_SNVS_TAMPER9__GPIO5_IO09 | MUX_PAD_CTRL(NO_PAD_CTRL),
-
-	/* Use GPIO for Brightness adjustment, duty cycle = period. */
-	MX6_PAD_GPIO1_IO08__GPIO1_IO08 | MUX_PAD_CTRL(NO_PAD_CTRL),
-};
-
-static int setup_lcd(void)
-{
-	enable_lcdif_clock(LCDIF1_BASE_ADDR, 1);
-
-	imx_iomux_v3_setup_multiple_pads(lcd_pads, ARRAY_SIZE(lcd_pads));
-
-	/* Reset the LCD */
-	gpio_direction_output(IMX_GPIO_NR(5, 9) , 0);
-	udelay(500);
-	gpio_direction_output(IMX_GPIO_NR(5, 9) , 1);
-
-	/* Set Brightness to high */
-	gpio_direction_output(IMX_GPIO_NR(1, 8) , 1);
-
-	return 0;
-}
-#endif
-
 int board_early_init_f(void)
 {
 	setup_iomux_uart();
@@ -649,10 +600,6 @@ int board_init(void)
 	board_qspi_init();
 #endif
 
-#ifdef CONFIG_VIDEO_MXS
-	setup_lcd();
-#endif
-
 	return 0;
 }
 
@@ -673,12 +620,12 @@ int board_late_init(void)
 #endif
 
 #ifdef CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG
-	env_set("board_name", "EVK");
+	setenv("board_name", "EVK");
 
 	if (is_mx6ul_9x9_evk())
-		env_set("board_rev", "9X9");
+		setenv("board_rev", "9X9");
 	else
-		env_set("board_rev", "14X14");
+		setenv("board_rev", "14X14");
 #endif
 
 	return 0;
@@ -695,7 +642,7 @@ int checkboard(void)
 }
 
 #ifdef CONFIG_SPL_BUILD
-#include <linux/libfdt.h>
+#include <libfdt.h>
 #include <spl.h>
 #include <asm/arch/mx6-ddr.h>
 
@@ -765,8 +712,6 @@ struct mx6_ddr_sysinfo ddr_sysinfo = {
 	.sde_to_rst = 0,    /* LPDDR2 does not need this field */
 	.rst_to_cke = 0x10, /* JEDEC value for LPDDR2: 200us */
 	.ddr_type = DDR_TYPE_LPDDR2,
-	.refsel = 0,	/* Refresh cycles at 64KHz */
-	.refr = 3,	/* 4 refresh commands per refresh cycle */
 };
 
 #else
@@ -778,17 +723,17 @@ static struct mx6ul_iomux_ddr_regs mx6_ddr_ioregs = {
 	.dram_odt0 = 0x00000030,
 	.dram_odt1 = 0x00000030,
 	.dram_sdba2 = 0x00000000,
-	.dram_sdclk_0 = 0x00000030,
-	.dram_sdqs0 = 0x00000030,
+	.dram_sdclk_0 = 0x00000008,
+	.dram_sdqs0 = 0x00000038,
 	.dram_sdqs1 = 0x00000030,
 	.dram_reset = 0x00000030,
 };
 
 static struct mx6_mmdc_calibration mx6_mmcd_calib = {
-	.p0_mpwldectrl0 = 0x00000000,
-	.p0_mpdgctrl0 = 0x41570155,
-	.p0_mprddlctl = 0x4040474A,
-	.p0_mpwrdlctl = 0x40405550,
+	.p0_mpwldectrl0 = 0x00070007,
+	.p0_mpdgctrl0 = 0x41490145,
+	.p0_mprddlctl = 0x40404546,
+	.p0_mpwrdlctl = 0x4040524D,
 };
 
 struct mx6_ddr_sysinfo ddr_sysinfo = {
@@ -798,15 +743,13 @@ struct mx6_ddr_sysinfo ddr_sysinfo = {
 	.cs1_mirror = 0,
 	.rtt_wr = 2,
 	.rtt_nom = 1,		/* RTT_Nom = RZQ/2 */
-	.walat = 0,		/* Write additional latency */
+	.walat = 1,		/* Write additional latency */
 	.ralat = 5,		/* Read additional latency */
 	.mif3_mode = 3,		/* Command prediction working mode */
 	.bi_on = 1,		/* Bank interleaving enabled */
 	.sde_to_rst = 0x10,	/* 14 cycles, 200us (JEDEC default) */
 	.rst_to_cke = 0x23,	/* 33 cycles, 500us (JEDEC default) */
 	.ddr_type = DDR_TYPE_DDR3,
-	.refsel = 0,	/* Refresh cycles at 64KHz */
-	.refr = 1,	/* 2 refresh commands per refresh cycle */
 };
 
 static struct mx6_ddr3_cfg mem_ddr = {
@@ -845,10 +788,10 @@ static void spl_dram_init(void)
 
 void board_init_f(ulong dummy)
 {
-	ccgr_init();
-
 	/* setup AIPS and disable watchdog */
 	arch_cpu_init();
+
+	ccgr_init();
 
 	/* iomux and setup of i2c */
 	board_early_init_f();
@@ -867,5 +810,9 @@ void board_init_f(ulong dummy)
 
 	/* load/boot image from boot device */
 	board_init_r(NULL, 0);
+}
+
+void reset_cpu(ulong addr)
+{
 }
 #endif

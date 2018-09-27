@@ -12,6 +12,4 @@ config SYS_SOC
 config SYS_CONFIG_NAME
 	default "am43xx_evm"
 
-source "board/ti/common/Kconfig"
-
 endif

@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Chip-specific header file for the SAMA5D3 family
  *
@@ -7,10 +6,17 @@
  *
  * Definitions for the SoC:
  * SAMA5D3
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef SAMA5D3_H
 #define SAMA5D3_H
+
+/*
+ * defines to be used in other places
+ */
+#define CONFIG_AT91FAMILY	/* it's a member of AT91 */
 
 /*
  * Peripheral identifiers/interrupts.
@@ -152,9 +158,6 @@
 #define ATMEL_BASE_RTC		0xfffffeb0
 /* Reserved:	0xfffffee0 - 0xffffffff */
 
-#define ATMEL_CHIPID_CIDR	0xffffee40
-#define ATMEL_CHIPID_EXID	0xffffee44
-
 /*
  * Internal Memory.
  */
@@ -182,6 +185,8 @@
  * Other misc defines
  */
 #define ATMEL_PIO_PORTS		5
+#define CPU_HAS_PIO3
+#define PIO_SCDR_DIV		0x3fff
 #define CPU_HAS_PCR
 
 /* Timer */

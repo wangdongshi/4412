@@ -1,7 +1,8 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2013-2015
  * NVIDIA Corporation <www.nvidia.com>
+ *
+ * SPDX-License-Identifier: GPL-2.0+
  */
 
 #ifndef _MAX77620_INIT_H_
@@ -11,8 +12,6 @@
 
 #define MAX77620_I2C_ADDR		0x78
 #define MAX77620_I2C_ADDR_7BIT		0x3C
-
-#define MAX77620_CNFGGLBL1_REG		0x00
 
 #define MAX77620_SD0_REG		0x16
 #define MAX77620_SD1_REG		0x17

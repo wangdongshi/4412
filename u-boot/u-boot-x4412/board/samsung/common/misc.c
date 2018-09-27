@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2013 Samsung Electronics
  * Przemyslaw Marczak <p.marczak@samsung.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -17,19 +18,6 @@
 #include <asm/gpio.h>
 #include <linux/input.h>
 #include <dm.h>
-/*
- * Use #ifdef to work around conflicting headers while we wait for this to be
- * converted to driver model.
- */
-#ifdef CONFIG_DM_PMIC_MAX77686
-#include <power/max77686_pmic.h>
-#endif
-#ifdef CONFIG_DM_PMIC_MAX8998
-#include <power/max8998_pmic.h>
-#endif
-#ifdef CONFIG_PMIC_MAX8997
-#include <power/max8997_pmic.h>
-#endif
 #include <power/pmic.h>
 #include <mmc.h>
 
@@ -50,7 +38,7 @@ void set_dfu_alt_info(char *interface, char *devstr)
 
 	alt_setting = get_dfu_alt_boot(interface, devstr);
 	if (alt_setting) {
-		env_set("dfu_alt_boot", alt_setting);
+		setenv("dfu_alt_boot", alt_setting);
 		offset = snprintf(buf, buf_size, "%s", alt_setting);
 	}
 
@@ -70,7 +58,7 @@ void set_dfu_alt_info(char *interface, char *devstr)
 		status = "done\n";
 	}
 
-	env_set("dfu_alt_info", alt_info);
+	setenv("dfu_alt_info", alt_info);
 	puts(status);
 }
 #endif
@@ -82,14 +70,14 @@ void set_board_info(void)
 
 	snprintf(info, ARRAY_SIZE(info), "%u.%u", (s5p_cpu_rev & 0xf0) >> 4,
 		 s5p_cpu_rev & 0xf);
-	env_set("soc_rev", info);
+	setenv("soc_rev", info);
 
 	snprintf(info, ARRAY_SIZE(info), "%x", s5p_cpu_id);
-	env_set("soc_id", info);
+	setenv("soc_id", info);
 
 #ifdef CONFIG_REVISION_TAG
 	snprintf(info, ARRAY_SIZE(info), "%x", get_board_rev());
-	env_set("board_rev", info);
+	setenv("board_rev", info);
 #endif
 #ifdef CONFIG_OF_LIBFDT
 	const char *bdtype = "";
@@ -97,15 +85,12 @@ void set_board_info(void)
 
 #ifdef CONFIG_BOARD_TYPES
 	bdtype = get_board_type();
-	if (!bdtype)
-		bdtype = "";
-
 	sprintf(info, "%s%s", bdname, bdtype);
-	env_set("boardname", info);
+	setenv("boardname", info);
 #endif
 	snprintf(info, ARRAY_SIZE(info),  "%s%x-%s%s.dtb",
 		 CONFIG_SYS_SOC, s5p_cpu_id, bdname, bdtype);
-	env_set("fdtfile", info);
+	setenv("fdtfile", info);
 #endif
 }
 #endif /* CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG */
@@ -113,7 +98,6 @@ void set_board_info(void)
 #ifdef CONFIG_LCD_MENU
 static int power_key_pressed(u32 reg)
 {
-#ifndef CONFIG_DM_I2C /* TODO(maintainer): Convert to driver model */
 	struct pmic *pmic;
 	u32 status;
 	u32 mask;
@@ -136,9 +120,6 @@ static int power_key_pressed(u32 reg)
 		return 0;
 
 	return !!(status & mask);
-#else
-	return 0;
-#endif
 }
 
 static int key_pressed(int key)
@@ -163,7 +144,6 @@ static int key_pressed(int key)
 	return value;
 }
 
-#ifdef CONFIG_LCD
 static int check_keys(void)
 {
 	int keys = 0;
@@ -220,7 +200,7 @@ mode_cmd[BOOT_MODE_EXIT + 1] = {
 
 static void display_board_info(void)
 {
-#ifdef CONFIG_MMC
+#ifdef CONFIG_GENERIC_MMC
 	struct mmc *mmc = find_mmc_device(0);
 #endif
 	vidinfo_t *vid = &panel_info;
@@ -238,7 +218,7 @@ static void display_board_info(void)
 	lcd_printf("\tDRAM banks: %u\n", CONFIG_NR_DRAM_BANKS);
 	lcd_printf("\tDRAM size: %u MB\n", gd->ram_size / SZ_1M);
 
-#ifdef CONFIG_MMC
+#ifdef CONFIG_GENERIC_MMC
 	if (mmc) {
 		if (!mmc->capacity)
 			mmc_init(mmc);
@@ -252,11 +232,9 @@ static void display_board_info(void)
 
 	lcd_printf("\tDisplay BPP: %u\n", 1 << vid->vl_bpix);
 }
-#endif
 
 static int mode_leave_menu(int mode)
 {
-#ifdef CONFIG_LCD
 	char *exit_option;
 	char *exit_reset = "reset";
 	char *exit_back = "back";
@@ -278,9 +256,9 @@ static int mode_leave_menu(int mode)
 		cmd = find_cmd(mode_name[mode][1]);
 		if (cmd) {
 			printf("Enter: %s %s\n", mode_name[mode][0],
-			       mode_info[mode]);
+						 mode_info[mode]);
 			lcd_printf("\n\n\t%s %s\n", mode_name[mode][0],
-				   mode_info[mode]);
+						    mode_info[mode]);
 			lcd_puts("\n\tDo not turn off device before finish!\n");
 
 			cmd_result = run_command(mode_cmd[mode], 0);
@@ -320,12 +298,8 @@ static int mode_leave_menu(int mode)
 
 	lcd_clear();
 	return leave;
-#else
-	return 0;
-#endif
 }
 
-#ifdef CONFIG_LCD
 static void display_download_menu(int mode)
 {
 	char *selection[BOOT_MODE_EXIT + 1];
@@ -341,13 +315,12 @@ static void display_download_menu(int mode)
 
 	for (i = 0; i <= BOOT_MODE_EXIT; i++)
 		lcd_printf("\t%s  %s - %s\n\n", selection[i],
-			   mode_name[i][0], mode_info[i]);
+						mode_name[i][0],
+						mode_info[i]);
 }
-#endif
 
 static void download_menu(void)
 {
-#ifdef CONFIG_LCD
 	int mode = 0;
 	int last_mode = 0;
 	int run;
@@ -418,7 +391,6 @@ static void download_menu(void)
 	}
 
 	lcd_clear();
-#endif
 }
 
 void check_boot_mode(void)
@@ -456,7 +428,7 @@ void draw_logo(void)
 
 	addr = panel_info.logo_addr;
 	if (!addr) {
-		pr_err("There is no logo data.\n");
+		error("There is no logo data.");
 		return;
 	}
 

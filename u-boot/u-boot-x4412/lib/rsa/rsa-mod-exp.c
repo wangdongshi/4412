@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2013, Google Inc.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef USE_HOSTCC
@@ -8,7 +9,7 @@
 #include <fdtdec.h>
 #include <asm/types.h>
 #include <asm/byteorder.h>
-#include <linux/errno.h>
+#include <asm/errno.h>
 #include <asm/types.h>
 #include <asm/unaligned.h>
 #else

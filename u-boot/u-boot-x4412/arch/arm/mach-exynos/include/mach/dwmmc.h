@@ -1,7 +1,8 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2012 SAMSUNG Electronics
  * Jaehoon Chung <jh80.chung@samsung.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #define DWMCI_CLKSEL		0x09C
@@ -27,3 +28,4 @@
 #define DWMCI_DIVRATIO_MASK		0x7
 
 int exynos_dwmmc_init(const void *blob);
+int exynos_dwmci_add_port(int index, u32 regbase, int bus_width, u32 clksel);

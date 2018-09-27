@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * common.c
  *
@@ -7,11 +6,13 @@
  * Copyright (C) 2013 Hannes Schmelzer <oe5hpm@oevsv.at>
  * Bernecker & Rainer Industrieelektronik GmbH - http://www.br-automation.com
  *
+ * SPDX-License-Identifier:	GPL-2.0+
+ *
  */
 #include <version.h>
 #include <common.h>
-#include <environment.h>
 #include <errno.h>
+#include <spl.h>
 #include <asm/arch/cpu.h>
 #include <asm/arch/hardware.h>
 #include <asm/arch/omap.h>
@@ -58,9 +59,9 @@ void lcdbacklight(int on)
 	unsigned int bright = FDTPROP(PATHINF, "brightdef");
 	unsigned int pwmfrq = FDTPROP(PATHINF, "brightfdim");
 #else
-	unsigned int driver = env_get_ulong("ds1_bright_drv", 16, 0UL);
-	unsigned int bright = env_get_ulong("ds1_bright_def", 10, 50);
-	unsigned int pwmfrq = env_get_ulong("ds1_pwmfreq", 10, ~0UL);
+	unsigned int driver = getenv_ulong("ds1_bright_drv", 16, 0UL);
+	unsigned int bright = getenv_ulong("ds1_bright_def", 10, 50);
+	unsigned int pwmfrq = getenv_ulong("ds1_pwmfreq", 10, ~0UL);
 #endif
 	unsigned int tmp;
 	struct gptimer *timerhw;
@@ -139,7 +140,13 @@ int load_lcdtiming(struct am335x_lcdpanel *panel)
 	pnltmp.vsw = FDTPROP(PATHTIM, "vsync-len");
 	pnltmp.pup_delay = FDTPROP(PATHTIM, "pupdelay");
 	pnltmp.pon_delay = FDTPROP(PATHTIM, "pondelay");
-	pnltmp.pxl_clk = FDTPROP(PATHTIM, "clock-frequency");
+
+	/* calc. proper clk-divisor */
+	dtbprop = FDTPROP(PATHTIM, "clock-frequency");
+	if (dtbprop != ~0UL)
+		pnltmp.pxl_clk_div = 192000000 / dtbprop;
+	else
+		pnltmp.pxl_clk_div = ~0UL;
 
 	/* check polarity of control-signals */
 	dtbprop = FDTPROP(PATHTIM, "hsync-active");
@@ -178,22 +185,22 @@ int load_lcdtiming(struct am335x_lcdpanel *panel)
 		puts("no 'factory-settings / rotation' in dtb!\n");
 	}
 	snprintf(buf, sizeof(buf), "fbcon=rotate:%d", panel_info.vl_rot);
-	env_set("optargs_rot", buf);
+	setenv("optargs_rot", buf);
 #else
-	pnltmp.hactive = env_get_ulong("ds1_hactive", 10, ~0UL);
-	pnltmp.vactive = env_get_ulong("ds1_vactive", 10, ~0UL);
-	pnltmp.bpp = env_get_ulong("ds1_bpp", 10, ~0UL);
-	pnltmp.hfp = env_get_ulong("ds1_hfp", 10, ~0UL);
-	pnltmp.hbp = env_get_ulong("ds1_hbp", 10, ~0UL);
-	pnltmp.hsw = env_get_ulong("ds1_hsw", 10, ~0UL);
-	pnltmp.vfp = env_get_ulong("ds1_vfp", 10, ~0UL);
-	pnltmp.vbp = env_get_ulong("ds1_vbp", 10, ~0UL);
-	pnltmp.vsw = env_get_ulong("ds1_vsw", 10, ~0UL);
-	pnltmp.pxl_clk = env_get_ulong("ds1_pxlclk", 10, ~0UL);
-	pnltmp.pol = env_get_ulong("ds1_pol", 16, ~0UL);
-	pnltmp.pup_delay = env_get_ulong("ds1_pupdelay", 10, ~0UL);
-	pnltmp.pon_delay = env_get_ulong("ds1_tondelay", 10, ~0UL);
-	panel_info.vl_rot = env_get_ulong("ds1_rotation", 10, 0);
+	pnltmp.hactive = getenv_ulong("ds1_hactive", 10, ~0UL);
+	pnltmp.vactive = getenv_ulong("ds1_vactive", 10, ~0UL);
+	pnltmp.bpp = getenv_ulong("ds1_bpp", 10, ~0UL);
+	pnltmp.hfp = getenv_ulong("ds1_hfp", 10, ~0UL);
+	pnltmp.hbp = getenv_ulong("ds1_hbp", 10, ~0UL);
+	pnltmp.hsw = getenv_ulong("ds1_hsw", 10, ~0UL);
+	pnltmp.vfp = getenv_ulong("ds1_vfp", 10, ~0UL);
+	pnltmp.vbp = getenv_ulong("ds1_vbp", 10, ~0UL);
+	pnltmp.vsw = getenv_ulong("ds1_vsw", 10, ~0UL);
+	pnltmp.pxl_clk_div = getenv_ulong("ds1_pxlclkdiv", 10, ~0UL);
+	pnltmp.pol = getenv_ulong("ds1_pol", 16, ~0UL);
+	pnltmp.pup_delay = getenv_ulong("ds1_pupdelay", 10, ~0UL);
+	pnltmp.pon_delay = getenv_ulong("ds1_tondelay", 10, ~0UL);
+	panel_info.vl_rot = getenv_ulong("ds1_rotation", 10, 0);
 #endif
 	if (
 	   ~0UL == (pnltmp.hactive) ||
@@ -205,7 +212,7 @@ int load_lcdtiming(struct am335x_lcdpanel *panel)
 	   ~0UL == (pnltmp.vfp) ||
 	   ~0UL == (pnltmp.vbp) ||
 	   ~0UL == (pnltmp.vsw) ||
-	   ~0UL == (pnltmp.pxl_clk) ||
+	   ~0UL == (pnltmp.pxl_clk_div) ||
 	   ~0UL == (pnltmp.pol) ||
 	   ~0UL == (pnltmp.pup_delay) ||
 	   ~0UL == (pnltmp.pon_delay)
@@ -228,7 +235,7 @@ int load_lcdtiming(struct am335x_lcdpanel *panel)
 			pnltmp.hactive, pnltmp.vactive, pnltmp.bpp,
 			pnltmp.hfp, pnltmp.hbp, pnltmp.hsw,
 			pnltmp.vfp, pnltmp.vbp, pnltmp.vsw,
-			pnltmp.pxl_clk, pnltmp.pol, pnltmp.pon_delay);
+			pnltmp.pxl_clk_div, pnltmp.pol, pnltmp.pon_delay);
 
 		return -1;
 	}
@@ -245,7 +252,7 @@ static int load_devicetree(void)
 {
 	int rc;
 	loff_t dtbsize;
-	u32 dtbaddr = env_get_ulong("dtbaddr", 16, 0UL);
+	u32 dtbaddr = getenv_ulong("dtbaddr", 16, 0UL);
 
 	if (dtbaddr == 0) {
 		printf("%s: don't have a valid <dtbaddr> in env!\n", __func__);
@@ -253,19 +260,18 @@ static int load_devicetree(void)
 	}
 #ifdef CONFIG_NAND
 	dtbsize = 0x20000;
-	rc = nand_read_skip_bad(get_nand_dev_by_index(0), 0x40000,
-				(size_t *)&dtbsize,
+	rc = nand_read_skip_bad(&nand_info[0], 0x40000, (size_t *)&dtbsize,
 				NULL, 0x20000, (u_char *)dtbaddr);
 #else
-	char *dtbname = env_get("dtb");
-	char *dtbdev = env_get("dtbdev");
-	char *dtbpart = env_get("dtbpart");
-	if (!dtbdev || !dtbpart || !dtbname) {
+	char *dtbname = getenv("dtb");
+	char *dtbdev = getenv("dtbdev");
+	char *dtppart = getenv("dtbpart");
+	if (!dtbdev || !dtbdev || !dtbname) {
 		printf("%s: <dtbdev>/<dtbpart>/<dtb> missing.\n", __func__);
 		return -1;
 	}
 
-	if (fs_set_blk_dev(dtbdev, dtbpart, FS_TYPE_EXT)) {
+	if (fs_set_blk_dev(dtbdev, dtppart, FS_TYPE_EXT)) {
 		puts("load_devicetree: set_blk_dev failed.\n");
 		return -1;
 	}
@@ -369,7 +375,7 @@ int ft_board_setup(void *blob, bd_t *bd)
 	 * if no simplefb is requested through environment, we don't set up
 	 * one, instead we turn off backlight.
 	 */
-	if (env_get_ulong("simplefb", 10, 0) == 0) {
+	if (getenv_ulong("simplefb", 10, 0) == 0) {
 		lcdbacklight(0);
 		return 0;
 	}
@@ -399,11 +405,11 @@ static void br_summaryscreen_printenv(char *prefix,
 				       char *name, char *altname,
 				       char *suffix)
 {
-	char *envval = env_get(name);
+	char *envval = getenv(name);
 	if (0 != envval) {
 		lcd_printf("%s %s %s", prefix, envval, suffix);
 	} else if (0 != altname) {
-		envval = env_get(altname);
+		envval = getenv(altname);
 		if (0 != envval)
 			lcd_printf("%s %s %s", prefix, envval, suffix);
 	} else {
@@ -441,7 +447,7 @@ void lcdpower(int on)
 	}
 	pin = FDTPROP(PATHINF, "pwrpin");
 #else
-	pin = env_get_ulong("ds1_pwr", 16, ~0UL);
+	pin = getenv_ulong("ds1_pwr", 16, ~0UL);
 #endif
 	if (pin == ~0UL) {
 		puts("no pwrpin in dtb/env, cannot powerup display!\n");
@@ -634,7 +640,8 @@ static struct cpsw_platform_data cpsw_data = {
 };
 #endif /* CONFIG_DRIVER_TI_CPSW, ... */
 
-#if defined(CONFIG_DRIVER_TI_CPSW) && !defined(CONFIG_SPL_BUILD)
+#if defined(CONFIG_DRIVER_TI_CPSW)
+
 int board_eth_init(bd_t *bis)
 {
 	int rv = 0;
@@ -651,7 +658,9 @@ int board_eth_init(bd_t *bis)
 	mac_addr[4] = mac_lo & 0xFF;
 	mac_addr[5] = (mac_lo & 0xFF00) >> 8;
 
-	if (!env_get("ethaddr")) {
+#if (defined(CONFIG_DRIVER_TI_CPSW) && !defined(CONFIG_SPL_BUILD)) || \
+	(defined(CONFIG_SPL_ETH_SUPPORT) && defined(CONFIG_SPL_BUILD))
+	if (!getenv("ethaddr")) {
 		#if !defined(CONFIG_SPL_BUILD) && defined(CONFIG_USE_FDT)
 		printf("<ethaddr> not set. trying DTB ... ");
 		mac = dtbmacaddr(0);
@@ -664,7 +673,7 @@ int board_eth_init(bd_t *bis)
 
 		if (mac) {
 			printf("using: %pM on ", mac);
-			eth_env_set_enetaddr("ethaddr", (const u8 *)mac);
+			eth_setenv_enetaddr("ethaddr", (const u8 *)mac);
 		}
 	}
 	writel(MII_MODE_ENABLE, &cdev->miisel);
@@ -676,18 +685,14 @@ int board_eth_init(bd_t *bis)
 		printf("Error %d registering CPSW switch\n", rv);
 		return 0;
 	}
+#endif /* CONFIG_DRIVER_TI_CPSW, ... */
 	return rv;
 }
-#endif /* defined(CONFIG_DRIVER_TI_CPSW) && !defined(CONFIG_SPL_BUILD) */
-#if defined(CONFIG_MMC)
+#endif /* CONFIG_DRIVER_TI_CPSW */
+#if defined(CONFIG_GENERIC_MMC) && !defined(CONFIG_SPL_BUILD)
 int board_mmc_init(bd_t *bis)
 {
-	int rc = 0;
-
-	rc |= omap_mmc_init(0, 0, 0, -1, -1);
-	rc |= omap_mmc_init(1, 0, 0, -1, -1);
-
-	return rc;
+	return omap_mmc_init(1, 0, 0, -1, -1);
 }
 #endif
 int overwrite_console(void)

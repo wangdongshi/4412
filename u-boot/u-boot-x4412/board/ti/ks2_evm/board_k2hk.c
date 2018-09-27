@@ -1,15 +1,18 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * K2HK EVM : Board initialization
  *
  * (C) Copyright 2012-2014
  *     Texas Instruments Incorporated, <www.ti.com>
+ *
+ * SPDX-License-Identifier:     GPL-2.0+
  */
 
 #include <common.h>
 #include <asm/arch/clock.h>
 #include <asm/arch/hardware.h>
 #include <asm/ti-common/keystone_net.h>
+
+DECLARE_GLOBAL_DATA_PTR;
 
 unsigned int external_clk[ext_clk_count] = {
 	[sys_clk]	=	122880000,
@@ -19,37 +22,6 @@ unsigned int external_clk[ext_clk_count] = {
 	[ddr3a_clk]	=	100000000,
 	[ddr3b_clk]	=	100000000,
 };
-
-unsigned int get_external_clk(u32 clk)
-{
-	unsigned int clk_freq;
-
-	switch (clk) {
-	case sys_clk:
-		clk_freq = 122880000;
-		break;
-	case alt_core_clk:
-		clk_freq = 125000000;
-		break;
-	case pa_clk:
-		clk_freq = 122880000;
-		break;
-	case tetris_clk:
-		clk_freq = 125000000;
-		break;
-	case ddr3a_clk:
-		clk_freq = 100000000;
-		break;
-	case ddr3b_clk:
-		clk_freq = 100000000;
-		break;
-	default:
-		clk_freq = 0;
-		break;
-	}
-
-	return clk_freq;
-}
 
 static struct pll_init_data core_pll_config[NUM_SPDS] = {
 	[SPD800]	= CORE_PLL_799,
@@ -79,11 +51,11 @@ struct pll_init_data *get_pll_init_data(int pll)
 
 	switch (pll) {
 	case MAIN_PLL:
-		speed = get_max_dev_speed(speeds);
+		speed = get_max_dev_speed();
 		data = &core_pll_config[speed];
 		break;
 	case TETRIS_PLL:
-		speed = get_max_arm_speed(speeds);
+		speed = get_max_arm_speed();
 		data = &tetris_pll_config[speed];
 		break;
 	case PASS_PLL:
@@ -104,7 +76,6 @@ struct eth_priv_t eth_priv_cfg[] = {
 		.phy_addr	= 0,
 		.slave_port	= 1,
 		.sgmii_link_type = SGMII_LINK_MAC_PHY,
-		.phy_if          = PHY_INTERFACE_MODE_SGMII,
 	},
 	{
 		.int_name	= "K2HK_EMAC1",
@@ -112,7 +83,6 @@ struct eth_priv_t eth_priv_cfg[] = {
 		.phy_addr	= 1,
 		.slave_port	= 2,
 		.sgmii_link_type = SGMII_LINK_MAC_PHY,
-		.phy_if          = PHY_INTERFACE_MODE_SGMII,
 	},
 	{
 		.int_name	= "K2HK_EMAC2",
@@ -120,7 +90,6 @@ struct eth_priv_t eth_priv_cfg[] = {
 		.phy_addr	= 2,
 		.slave_port	= 3,
 		.sgmii_link_type = SGMII_LINK_MAC_MAC_FORCED,
-		.phy_if          = PHY_INTERFACE_MODE_SGMII,
 	},
 	{
 		.int_name	= "K2HK_EMAC3",
@@ -128,7 +97,6 @@ struct eth_priv_t eth_priv_cfg[] = {
 		.phy_addr	= 3,
 		.slave_port	= 4,
 		.sgmii_link_type = SGMII_LINK_MAC_MAC_FORCED,
-		.phy_if          = PHY_INTERFACE_MODE_SGMII,
 	},
 };
 
@@ -144,16 +112,6 @@ int board_early_init_f(void)
 	init_plls();
 
 	return 0;
-}
-#endif
-
-#if defined(CONFIG_MULTI_DTB_FIT)
-int board_fit_config_name_match(const char *name)
-{
-	if (!strcmp(name, "keystone-k2hk-evm"))
-		return 0;
-
-	return -1;
 }
 #endif
 

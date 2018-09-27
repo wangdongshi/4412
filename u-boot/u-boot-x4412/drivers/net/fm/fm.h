@@ -1,6 +1,7 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2009-2011 Freescale Semiconductor, Inc.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __FM_H__
@@ -9,7 +10,7 @@
 #include <common.h>
 #include <phy.h>
 #include <fm_eth.h>
-#include <fsl_fman.h>
+#include <asm/fsl_fman.h>
 
 /* Port ID */
 #define OH_PORT_ID_BASE		0x01
@@ -25,10 +26,10 @@
 #define MIIM_TIMEOUT    0xFFFF
 
 struct fm_muram {
-	void *base;
-	void *top;
-	size_t size;
-	void *alloc;
+	u32 base;
+	u32 top;
+	u32 size;
+	u32 alloc;
 };
 #define FM_MURAM_RES_SIZE	0x01000
 
@@ -87,15 +88,15 @@ struct fm_port_global_pram {
 #define PRAM_MODE_GLOBAL	0x20000000
 #define PRAM_MODE_GRACEFUL_STOP	0x00800000
 
-#if defined(CONFIG_ARCH_P1023)
+#if defined(CONFIG_P1017) || defined(CONFIG_P1023)
 #define FM_FREE_POOL_SIZE	0x2000 /* 8K bytes */
 #else
 #define FM_FREE_POOL_SIZE	0x20000 /* 128K bytes */
 #endif
 #define FM_FREE_POOL_ALIGN	256
 
-void *fm_muram_alloc(int fm_idx, size_t size, ulong align);
-void *fm_muram_base(int fm_idx);
+u32 fm_muram_alloc(int fm_idx, u32 size, u32 align);
+u32 fm_muram_base(int fm_idx);
 int fm_init_common(int index, struct ccsr_fman *reg);
 int fm_eth_initialize(struct ccsr_fman *reg, struct fm_eth_info *info);
 phy_interface_t fman_port_enet_if(enum fm_port port);

@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2004,2007-2011 Freescale Semiconductor, Inc.
  * (C) Copyright 2002, 2003 Motorola Inc.
@@ -6,6 +5,8 @@
  *
  * (C) Copyright 2000
  * Wolfgang Denk, DENX Software Engineering, wd@denx.de.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <config.h>
@@ -22,7 +23,6 @@
 #include <post.h>
 #include <asm/processor.h>
 #include <fsl_ddr_sdram.h>
-#include <asm/ppc.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -293,8 +293,8 @@ int checkcpu (void)
 int do_reset (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 /* Everything after the first generation of PQ3 parts has RSTCR */
-#if defined(CONFIG_ARCH_MPC8540) || defined(CONFIG_ARCH_MPC8541) || \
-	defined(CONFIG_ARCH_MPC8555) || defined(CONFIG_ARCH_MPC8560)
+#if defined(CONFIG_MPC8540) || defined(CONFIG_MPC8541) || \
+    defined(CONFIG_MPC8555) || defined(CONFIG_MPC8560)
 	unsigned long val, msr;
 
 	/*
@@ -384,7 +384,7 @@ int cpu_mmc_init(bd_t *bis)
  * Currently prints out LAWs, BR0/OR0 for LBC, CSPR/CSOR/Timing
  * parameters for IFC and TLBs
  */
-void print_reginfo(void)
+void mpc85xx_reginfo(void)
 {
 	print_tlbcam();
 	print_laws();
@@ -401,19 +401,17 @@ void print_reginfo(void)
 #ifndef CONFIG_FSL_CORENET
 #if (defined(CONFIG_SYS_RAMBOOT) || defined(CONFIG_SPL)) && \
 	!defined(CONFIG_SYS_INIT_L2_ADDR)
-int dram_init(void)
+phys_size_t initdram(int board_type)
 {
 #if defined(CONFIG_SPD_EEPROM) || defined(CONFIG_DDR_SPD) || \
-	defined(CONFIG_ARCH_QEMU_E500)
-	gd->ram_size = fsl_ddr_sdram_size();
+	defined(CONFIG_QEMU_E500)
+	return fsl_ddr_sdram_size();
 #else
-	gd->ram_size = (phys_size_t)CONFIG_SYS_SDRAM_SIZE * 1024 * 1024;
+	return (phys_size_t)CONFIG_SYS_SDRAM_SIZE * 1024 * 1024;
 #endif
-
-	return 0;
 }
 #else /* CONFIG_SYS_RAMBOOT */
-int dram_init(void)
+phys_size_t initdram(int board_type)
 {
 	phys_size_t dram_size = 0;
 
@@ -462,9 +460,7 @@ int dram_init(void)
 #endif
 
 	debug("DDR: ");
-	gd->ram_size = dram_size;
-
-	return 0;
+	return dram_size;
 }
 #endif /* CONFIG_SYS_RAMBOOT */
 #endif
@@ -486,17 +482,17 @@ static void dump_spd_ddr_reg(void)
 	int i, j, k, m;
 	u8 *p_8;
 	u32 *p_32;
-	struct ccsr_ddr __iomem *ddr[CONFIG_SYS_NUM_DDR_CTLRS];
+	struct ccsr_ddr __iomem *ddr[CONFIG_NUM_DDR_CONTROLLERS];
 	generic_spd_eeprom_t
-		spd[CONFIG_SYS_NUM_DDR_CTLRS][CONFIG_DIMM_SLOTS_PER_CTLR];
+		spd[CONFIG_NUM_DDR_CONTROLLERS][CONFIG_DIMM_SLOTS_PER_CTLR];
 
-	for (i = 0; i < CONFIG_SYS_NUM_DDR_CTLRS; i++)
+	for (i = 0; i < CONFIG_NUM_DDR_CONTROLLERS; i++)
 		fsl_ddr_get_spd(spd[i], i, CONFIG_DIMM_SLOTS_PER_CTLR);
 
-	puts("SPD data of all dimms (zero value is omitted)...\n");
+	puts("SPD data of all dimms (zero vaule is omitted)...\n");
 	puts("Byte (hex)  ");
 	k = 1;
-	for (i = 0; i < CONFIG_SYS_NUM_DDR_CTLRS; i++) {
+	for (i = 0; i < CONFIG_NUM_DDR_CONTROLLERS; i++) {
 		for (j = 0; j < CONFIG_DIMM_SLOTS_PER_CTLR; j++)
 			printf("Dimm%d ", k++);
 	}
@@ -504,7 +500,7 @@ static void dump_spd_ddr_reg(void)
 	for (k = 0; k < sizeof(generic_spd_eeprom_t); k++) {
 		m = 0;
 		printf("%3d (0x%02x)  ", k, k);
-		for (i = 0; i < CONFIG_SYS_NUM_DDR_CTLRS; i++) {
+		for (i = 0; i < CONFIG_NUM_DDR_CONTROLLERS; i++) {
 			for (j = 0; j < CONFIG_DIMM_SLOTS_PER_CTLR; j++) {
 				p_8 = (u8 *) &spd[i][j];
 				if (p_8[k]) {
@@ -520,22 +516,22 @@ static void dump_spd_ddr_reg(void)
 			puts("\r");
 	}
 
-	for (i = 0; i < CONFIG_SYS_NUM_DDR_CTLRS; i++) {
+	for (i = 0; i < CONFIG_NUM_DDR_CONTROLLERS; i++) {
 		switch (i) {
 		case 0:
 			ddr[i] = (void *)CONFIG_SYS_FSL_DDR_ADDR;
 			break;
-#if defined(CONFIG_SYS_FSL_DDR2_ADDR) && (CONFIG_SYS_NUM_DDR_CTLRS > 1)
+#if defined(CONFIG_SYS_FSL_DDR2_ADDR) && (CONFIG_NUM_DDR_CONTROLLERS > 1)
 		case 1:
 			ddr[i] = (void *)CONFIG_SYS_FSL_DDR2_ADDR;
 			break;
 #endif
-#if defined(CONFIG_SYS_FSL_DDR3_ADDR) && (CONFIG_SYS_NUM_DDR_CTLRS > 2)
+#if defined(CONFIG_SYS_FSL_DDR3_ADDR) && (CONFIG_NUM_DDR_CONTROLLERS > 2)
 		case 2:
 			ddr[i] = (void *)CONFIG_SYS_FSL_DDR3_ADDR;
 			break;
 #endif
-#if defined(CONFIG_SYS_FSL_DDR4_ADDR) && (CONFIG_SYS_NUM_DDR_CTLRS > 3)
+#if defined(CONFIG_SYS_FSL_DDR4_ADDR) && (CONFIG_NUM_DDR_CONTROLLERS > 3)
 		case 3:
 			ddr[i] = (void *)CONFIG_SYS_FSL_DDR4_ADDR;
 			break;
@@ -547,15 +543,15 @@ static void dump_spd_ddr_reg(void)
 		}
 	}
 	printf("DDR registers dump for all controllers "
-		"(zero value is omitted)...\n");
+		"(zero vaule is omitted)...\n");
 	puts("Offset (hex)   ");
-	for (i = 0; i < CONFIG_SYS_NUM_DDR_CTLRS; i++)
+	for (i = 0; i < CONFIG_NUM_DDR_CONTROLLERS; i++)
 		printf("     Base + 0x%04x", (u32)ddr[i] & 0xFFFF);
 	puts("\n");
 	for (k = 0; k < sizeof(struct ccsr_ddr)/4; k++) {
 		m = 0;
 		printf("%6d (0x%04x)", k * 4, k * 4);
-		for (i = 0; i < CONFIG_SYS_NUM_DDR_CTLRS; i++) {
+		for (i = 0; i < CONFIG_NUM_DDR_CONTROLLERS; i++) {
 			p_32 = (u32 *) ddr[i];
 			if (p_32[k]) {
 				printf("        0x%08x", p_32[k]);

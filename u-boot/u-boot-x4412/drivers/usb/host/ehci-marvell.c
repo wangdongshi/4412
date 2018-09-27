@@ -1,8 +1,9 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2009
  * Marvell Semiconductor <www.marvell.com>
  * Written-by: Prafulla Wadaskar <prafulla@marvell.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -11,7 +12,6 @@
 #include "ehci.h"
 #include <linux/mbus.h>
 #include <asm/arch/cpu.h>
-#include <dm.h>
 
 #if defined(CONFIG_KIRKWOOD)
 #include <asm/arch/soc.h>
@@ -25,32 +25,27 @@ DECLARE_GLOBAL_DATA_PTR;
 #define USB_WINDOW_BASE(i)	(0x324 + ((i) << 4))
 #define USB_TARGET_DRAM		0x0
 
-#define USB2_SBUSCFG_OFF	0x90
-
-#define USB_SBUSCFG_BAWR_OFF	0x6
-#define USB_SBUSCFG_BARD_OFF	0x3
-#define USB_SBUSCFG_AHBBRST_OFF	0x0
-
-#define USB_SBUSCFG_BAWR_ALIGN_64B	0x4
-#define USB_SBUSCFG_BARD_ALIGN_64B	0x4
-#define USB_SBUSCFG_AHBBRST_INCR16	0x7
-
 /*
  * USB 2.0 Bridge Address Decoding registers setup
  */
-#ifdef CONFIG_DM_USB
+#ifdef CONFIG_ARMADA_XP
 
-struct ehci_mvebu_priv {
-	struct ehci_ctrl ehci;
-	fdt_addr_t hcd_base;
-};
+/*
+ * Armada XP and Armada 38x have different base addresses for
+ * the USB 2.0 EHCI host controller. So we need to provide
+ * a mechnism to support both here.
+ */
+#define MVUSB0_BASE					\
+	(mvebu_soc_family() == MVEBU_SOC_A38X ?		\
+	 MVEBU_USB20_BASE : MVEBU_AXP_USB_BASE)
+#define MVUSB_BASE(port)	MVUSB0_BASE + ((port) << 12)
 
 /*
  * Once all the older Marvell SoC's (Orion, Kirkwood) are converted
  * to the common mvebu archticture including the mbus setup, this
  * will be the only function needed to configure the access windows
  */
-static void usb_brg_adrdec_setup(void *base)
+static void usb_brg_adrdec_setup(int index)
 {
 	const struct mbus_dram_target_info *dram;
 	int i;
@@ -58,8 +53,8 @@ static void usb_brg_adrdec_setup(void *base)
 	dram = mvebu_mbus_dram_info();
 
 	for (i = 0; i < 4; i++) {
-		writel(0, base + USB_WINDOW_CTRL(i));
-		writel(0, base + USB_WINDOW_BASE(i));
+		writel(0, MVUSB_BASE(index) + USB_WINDOW_CTRL(i));
+		writel(0, MVUSB_BASE(index) + USB_WINDOW_BASE(i));
 	}
 
 	for (i = 0; i < dram->num_cs; i++) {
@@ -68,93 +63,12 @@ static void usb_brg_adrdec_setup(void *base)
 		/* Write size, attributes and target id to control register */
 		writel(((cs->size - 1) & 0xffff0000) | (cs->mbus_attr << 8) |
 		       (dram->mbus_dram_target_id << 4) | 1,
-		       base + USB_WINDOW_CTRL(i));
+		       MVUSB_BASE(index) + USB_WINDOW_CTRL(i));
 
 		/* Write base address to base register */
-		writel(cs->base, base + USB_WINDOW_BASE(i));
+		writel(cs->base, MVUSB_BASE(index) + USB_WINDOW_BASE(i));
 	}
 }
-
-static void marvell_ehci_powerup_fixup(struct ehci_ctrl *ctrl,
-				       uint32_t *status_reg, uint32_t *reg)
-{
-	struct ehci_mvebu_priv *priv = ctrl->priv;
-
-	/*
-	 * Set default value for reg SBUSCFG, which is Control for the AMBA
-	 * system bus interface:
-	 * BAWR = BARD = 4 : Align rd/wr bursts packets larger than 64 bytes
-	 * AHBBRST = 7     : Align AHB burst for packets larger than 64 bytes
-	 */
-	writel((USB_SBUSCFG_BAWR_ALIGN_64B << USB_SBUSCFG_BAWR_OFF) |
-	       (USB_SBUSCFG_BARD_ALIGN_64B << USB_SBUSCFG_BARD_OFF) |
-	       (USB_SBUSCFG_AHBBRST_INCR16 << USB_SBUSCFG_AHBBRST_OFF),
-	       priv->hcd_base + USB2_SBUSCFG_OFF);
-
-	mdelay(50);
-}
-
-static struct ehci_ops marvell_ehci_ops = {
-	.powerup_fixup	= NULL,
-};
-
-static int ehci_mvebu_probe(struct udevice *dev)
-{
-	struct ehci_mvebu_priv *priv = dev_get_priv(dev);
-	struct ehci_hccr *hccr;
-	struct ehci_hcor *hcor;
-
-	/*
-	 * Get the base address for EHCI controller from the device node
-	 */
-	priv->hcd_base = devfdt_get_addr(dev);
-	if (priv->hcd_base == FDT_ADDR_T_NONE) {
-		debug("Can't get the EHCI register base address\n");
-		return -ENXIO;
-	}
-
-	/*
-	 * For SoCs without hlock like Armada3700 we need to program the sbuscfg
-	 * reg to guarantee AHB master's burst will not overrun or underrun
-	 * the FIFO. Otherwise all USB2 write option will fail.
-	 * Also, the address decoder doesn't need to get setup with this
-	 * SoC, so don't call usb_brg_adrdec_setup().
-	 */
-	if (device_is_compatible(dev, "marvell,armada3700-ehci"))
-		marvell_ehci_ops.powerup_fixup = marvell_ehci_powerup_fixup;
-	else
-		usb_brg_adrdec_setup((void *)priv->hcd_base);
-
-	hccr = (struct ehci_hccr *)(priv->hcd_base + 0x100);
-	hcor = (struct ehci_hcor *)
-		((uintptr_t)hccr + HC_LENGTH(ehci_readl(&hccr->cr_capbase)));
-
-	debug("ehci-marvell: init hccr %lx and hcor %lx hc_length %ld\n",
-	      (uintptr_t)hccr, (uintptr_t)hcor,
-	      (uintptr_t)HC_LENGTH(ehci_readl(&hccr->cr_capbase)));
-
-	return ehci_register(dev, hccr, hcor, &marvell_ehci_ops, 0,
-			     USB_INIT_HOST);
-}
-
-static const struct udevice_id ehci_usb_ids[] = {
-	{ .compatible = "marvell,orion-ehci", },
-	{ .compatible = "marvell,armada3700-ehci", },
-	{ }
-};
-
-U_BOOT_DRIVER(ehci_mvebu) = {
-	.name	= "ehci_mvebu",
-	.id	= UCLASS_USB,
-	.of_match = ehci_usb_ids,
-	.probe = ehci_mvebu_probe,
-	.remove = ehci_deregister,
-	.ops	= &ehci_usb_ops,
-	.platdata_auto_alloc_size = sizeof(struct usb_platdata),
-	.priv_auto_alloc_size = sizeof(struct ehci_mvebu_priv),
-	.flags	= DM_FLAG_ALLOC_PRIV_DMA,
-};
-
 #else
 #define MVUSB_BASE(port)	MVUSB0_BASE
 
@@ -198,6 +112,7 @@ static void usb_brg_adrdec_setup(int index)
 		writel(base, MVUSB0_BASE + USB_WINDOW_BASE(i));
 	}
 }
+#endif
 
 /*
  * Create the appropriate control structures to manage
@@ -227,5 +142,3 @@ int ehci_hcd_stop(int index)
 {
 	return 0;
 }
-
-#endif /* CONFIG_DM_USB */

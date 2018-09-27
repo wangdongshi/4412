@@ -1,10 +1,11 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * include/linker_lists.h
  *
  * Implementation of linker-generated arrays
  *
  * Copyright (C) 2012 Marek Vasut <marex@denx.de>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __LINKER_LISTS_H__
@@ -13,7 +14,8 @@
 #include <linux/compiler.h>
 
 /*
- * There is no use in including this from ASM files.
+ * There is no use in including this from ASM files, but that happens
+ * anyway, e.g. PPC kgdb.S includes command.h which incluse us.
  * So just don't define anything when included from ASM.
  */
 

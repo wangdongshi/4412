@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2014 Eukréa Electromatique
  * Author: Eric Bénard <eric@eukrea.com>
@@ -10,6 +9,8 @@
  * and on hummingboard.c which is :
  * Copyright (C) 2013 SolidRun ltd.
  * Copyright (C) 2013 Jon Nettleton <jon.nettleton@gmail.com>.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <asm/arch/clock.h>
@@ -17,15 +18,14 @@
 #include <asm/arch/imx-regs.h>
 #include <asm/arch/iomux.h>
 #include <asm/arch/mx6-pins.h>
-#include <linux/errno.h>
+#include <asm/errno.h>
 #include <asm/gpio.h>
-#include <asm/mach-imx/iomux-v3.h>
-#include <asm/mach-imx/boot_mode.h>
-#include <asm/mach-imx/mxc_i2c.h>
-#include <asm/mach-imx/spi.h>
-#include <asm/mach-imx/video.h>
+#include <asm/imx-common/iomux-v3.h>
+#include <asm/imx-common/boot_mode.h>
+#include <asm/imx-common/mxc_i2c.h>
+#include <asm/imx-common/spi.h>
+#include <asm/imx-common/video.h>
 #include <i2c.h>
-#include <input.h>
 #include <mmc.h>
 #include <fsl_esdhc.h>
 #include <miiphy.h>
@@ -35,7 +35,7 @@
 #include <linux/fb.h>
 #include <ipu_pixfmt.h>
 #include <asm/io.h>
-
+#include <asm/arch/sys_proto.h>
 DECLARE_GLOBAL_DATA_PTR;
 
 #define UART_PAD_CTRL  (PAD_CTL_PUS_100K_UP |			\
@@ -221,7 +221,7 @@ int board_mmc_init(bd_t *bis)
 
 	/*
 	 * According to the board_mmc_init() the following map is done:
-	 * (U-Boot device node)    (Physical Port)
+	 * (U-boot device node)    (Physical Port)
 	 * ** RiOTboard :
 	 * mmc0                    SDCard slot (bottom)
 	 * mmc1                    uSDCard slot (top)

@@ -698,7 +698,11 @@ static void ax88180_read_mac_addr (struct eth_device *dev)
 	}
 }
 
-/* Exported SubProgram Bodies */
+/*
+===========================================================================
+<<<<<<			Exported SubProgram Bodies		>>>>>>
+===========================================================================
+*/
 int ax88180_initialize (bd_t * bis)
 {
 	struct eth_device *dev;
@@ -718,7 +722,7 @@ int ax88180_initialize (bd_t * bis)
 
 	memset (priv, 0, sizeof *priv);
 
-	strcpy(dev->name, "ax88180");
+	sprintf (dev->name, "ax88180");
 	dev->iobase = AX88180_BASE;
 	dev->priv = priv;
 	dev->init = ax88180_init;

@@ -87,7 +87,7 @@ void xr3pci_set_atr_entry(unsigned long base, unsigned long src_addr,
 	writel((u32)(trsl_addr >> 32), base + XR3PCI_ATR_TRSL_ADDR_HIGH);
 	writel(trsl_param, base + XR3PCI_ATR_TRSL_PARAM);
 
-	debug("ATR entry: 0x%010lx %s 0x%010lx [0x%010llx] (param: 0x%06x)\n",
+	printf("ATR entry: 0x%010lx %s 0x%010lx [0x%010llx] (param: 0x%06x)\n",
 	       src_addr, (trsl_param & 0x400000) ? "<-" : "->", trsl_addr,
 	       ((u64)1) << window_size, trsl_param);
 }
@@ -123,7 +123,7 @@ void xr3pci_setup_atr(void)
 	base += XR3PCI_ATR_TABLE_SIZE;
 
 	/* setup IO space translation */
-	xr3pci_set_atr_entry(base, XR3_PCI_IOSPACE_START, 0,
+	xr3pci_set_atr_entry(base, XR3_PCI_IOSPACE_START, XR3_PCI_IOSPACE_START,
 			     XR3_PCI_IOSPACE_SIZE, XR3PCI_ATR_TRSLID_PCIE_IO);
 
 	base += XR3PCI_ATR_TABLE_SIZE;
@@ -191,5 +191,7 @@ void xr3pci_init(void)
 
 void vexpress64_pcie_init(void)
 {
+#ifdef CONFIG_TARGET_VEXPRESS64_JUNO
 	xr3pci_init();
+#endif
 }

@@ -1,8 +1,9 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2013 Freescale Semiconductor, Inc.
  *
  * Author: Fabio Estevam <fabio.estevam@freescale.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <asm/arch/clock.h>
@@ -10,10 +11,10 @@
 #include <asm/arch/iomux.h>
 #include <malloc.h>
 #include <asm/arch/mx6-pins.h>
-#include <linux/errno.h>
+#include <asm/errno.h>
 #include <asm/gpio.h>
-#include <asm/mach-imx/iomux-v3.h>
-#include <asm/mach-imx/sata.h>
+#include <asm/imx-common/iomux-v3.h>
+#include <asm/imx-common/sata.h>
 #include <mmc.h>
 #include <fsl_esdhc.h>
 #include <asm/arch/crm_regs.h>
@@ -243,8 +244,9 @@ int board_init(void)
 	/* address of boot parameters */
 	gd->bd->bi_boot_params = PHYS_SDRAM + 0x100;
 
-#ifdef CONFIG_SATA
-	setup_sata();
+#ifdef CONFIG_CMD_SATA
+	if (is_cpu_type(MXC_CPU_MX6Q))
+		setup_sata();
 #endif
 	return 0;
 }
@@ -253,9 +255,9 @@ int board_late_init(void)
 {
 #ifdef CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG
 	if (is_cpu_type(MXC_CPU_MX6Q))
-		env_set("board_rev", "MX6Q");
+		setenv("board_rev", "MX6Q");
 	else
-		env_set("board_rev", "MX6DL");
+		setenv("board_rev", "MX6DL");
 #endif
 	return 0;
 }

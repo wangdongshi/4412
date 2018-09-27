@@ -1,9 +1,10 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Early debug UART support
  *
  * (C) Copyright 2014 Google, Inc
  * Writte by Simon Glass <sjg@chromium.org>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef _DEBUG_UART_H
@@ -37,15 +38,10 @@
  * To enable the debug UART in your serial driver:
  *
  * - #include <debug_uart.h>
- * - Define _debug_uart_init(), trying to avoid using the stack
+ * - Define debug_uart_init(), trying to avoid using the stack
  * - Define _debug_uart_putc() as static inline (avoiding stack usage)
  * - Immediately afterwards, add DEBUG_UART_FUNCS to define the rest of the
  *     functionality (printch(), etc.)
- *
- * If your board needs additional init for the UART to work, enable
- * CONFIG_DEBUG_UART_BOARD_INIT and write a function called
- * board_debug_uart_init() to perform that init. When debug_uart_init() is
- * called, the init will happen automatically.
  */
 
 /**
@@ -60,14 +56,6 @@
  *    - CONFIG_DEBUG_UART_CLOCK: Input clock for UART
  */
 void debug_uart_init(void);
-
-#ifdef CONFIG_DEBUG_UART_BOARD_INIT
-void board_debug_uart_init(void);
-#else
-static inline void board_debug_uart_init(void)
-{
-}
-#endif
 
 /**
  * printch() - Output a character to the debug UART
@@ -104,44 +92,19 @@ void printhex4(uint value);
  */
 void printhex8(uint value);
 
-#ifdef CONFIG_DEBUG_UART_ANNOUNCE
-#define _DEBUG_UART_ANNOUNCE	printascii("<debug_uart> ");
-#else
-#define _DEBUG_UART_ANNOUNCE
-#endif
-
-#define serial_dout(reg, value)	\
-	serial_out_shift((char *)com_port + \
-		((char *)reg - (char *)com_port) * \
-			(1 << CONFIG_DEBUG_UART_SHIFT), \
-		CONFIG_DEBUG_UART_SHIFT, value)
-#define serial_din(reg) \
-	serial_in_shift((char *)com_port + \
-		((char *)reg - (char *)com_port) * \
-			(1 << CONFIG_DEBUG_UART_SHIFT), \
-		CONFIG_DEBUG_UART_SHIFT)
-
 /*
  * Now define some functions - this should be inserted into the serial driver
  */
 #define DEBUG_UART_FUNCS \
-\
-	static inline void _printch(int ch) \
-	{ \
-		if (ch == '\n') \
-			_debug_uart_putc('\r'); \
-		_debug_uart_putc(ch); \
-	} \
-\
 	void printch(int ch) \
 	{ \
-		_printch(ch); \
+		_debug_uart_putc(ch); \
 	} \
 \
 	void printascii(const char *str) \
 	{ \
 		while (*str) \
-			_printch(*str++); \
+			_debug_uart_putc(*str++); \
 	} \
 \
 	static inline void printhex1(uint digit) \
@@ -169,13 +132,6 @@ void printhex8(uint value);
 	void printhex8(uint value) \
 	{ \
 		printhex(value, 8); \
-	} \
-\
-	void debug_uart_init(void) \
-	{ \
-		board_debug_uart_init(); \
-		_debug_uart_init(); \
-		_DEBUG_UART_ANNOUNCE \
-	} \
+	}
 
 #endif

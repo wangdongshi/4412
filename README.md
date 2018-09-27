@@ -73,13 +73,33 @@ sync
 
 经过上面的裸机程序移植，我们已经对开发的基本情况有所了解，接下来直接搞个U-boot试一下吧！这个移植过程基本参照彭东林博客上的移植步骤，他写得比较全面了。  
 
-不过在移植之前，有个关于环境的问题还想记录一下——如何使用diff和patch工具，来给自己的工程制作和打上补丁。  
-diff -ruN u-boot-2018.07 u-boot-x4412 > x4412_uboot.patch  
+这里有几点注意事项再强调一下。
+
+1. 如何使用diff和patch工具，来给自己的工程制作和打上补丁。  
+diff -ruN u-boot-2015.10 u-boot-x4412 > x4412_uboot.patch  
 patch –p1 < ../x4412_uboot.patch  
 
+2. 编译环境  
+编译环境最好严格按照彭东林的说明来：  
+交叉编译工具链：友善之臂提供的arm-linux-gcc-4.5.1-v6-vfp-20101103.tgz  
+基础u-boot版本：u-boot-2015-10  
+另外，在Makefile的CROSS_COMPILE配置是无效的，问题出在上面的那个if句（比较主机架构和目标机架构的if句）。  
+
+3. 编译时会用到的几个额外的软件包。  
 apt-get install flex  
 apt-get install bison  
-Flex是一个用C语言编写的词法(Lexer)分析工具，Bison是语法(Parser)分析工具，他们是Lex和Yacc的GNU代替品。  
+Flex是一个用C语言编写的词法(Lexer)分析工具，Bison是语法(Parser)分析工具，它们是Lex和Yacc的GNU代替品。  
+apt-get install device-tree-compiler  
+DTC是一个设备树生成工具，它的由来很有意思，可以参照下述说明。  
+
+#### ARM/Linux设备树的由来  
+- 设备树(Devicetree)是一套用来描述硬件属相的规则。ARM/Linux采用设备树机制源于2011年3月份Linux创始人Linus发的一封邮件，在这封邮件中他提倡ARM平台应该参考其他平台如PowerPC的设备树机制描述硬件。因为在此之前，ARM平台还是采用旧的机制，在kernel/arch/arm/plat-xxx目录和kernel/arch/arm/mach-xxx目录下用代码描述硬件，如注册platform设备，声明设备的resource等。因为这些代码都是用来描述芯片平台及板级差异的，所以对于内核来讲都是垃圾代码。因为嵌入式平台中很多公司的芯片采用的都是ARM架构，随着Android的成功，这些代码越来越多。据说常见的平台如s3c2410板级目录下边的代码有数万行，难怪Linus会说：  
+This whole ARM thing is a fucking pain in the ass.    内核中关于设备树的文档位于kernel/Documentation/devicetree/目录。设备树是Power.org组织定义的一套规范，在Linux中，它的用法可以参考社区中的[文档](https://elinux.org/Device_Tree_Usage)。  
+- dts文件（扩展名为.dts）是一种ASCII格式的设备数描述文件，此文本格式非常人性化，适合人类的阅读习惯。基本上，在ARM/Linux上，一个dts文件对应一个ARM的machine，一般放置在内核的arch/arm/boot/dts/目录。由于一个SoC可能对应多个machine（一个SoC可以对应多个产品和电路板），势必这些dts文件需包含许多共同的部分，Linux内核为了简化，把SoC公用的部分或者多个machine共同的部分一般提炼为.dtsi，类似于C语言的头文件。其他的machine对应的dts文件就include这个.dtsi文件。  
+- DTC（device-tree-compiler）就是用于将.dts编译为.dtb的工具。DTC的源代码位于内核的scripts/dtc目录，在Linux内核使能了DeviceTree的情况下，编译内核的时候主机工具dtc会被编译出来，对应scripts/dtc/Makefile中的“hostprogs-y:=dtc”这一hostprogs编译target。在Linux内核的arch/arm/boot/dts/Makefile中，描述了当某种SoC被选中后，哪些.dtb文件会被编译出来。  
+- .dtb文件是.dts被DTC编译后的二进制格式的DeviceTree描述，可由Linux内核解析。通常在我们为电路板制作NAND、SD启动image时，会为.dtb文件单独留下一个很小的区域以存放之，之后bootloader在引导kernel的过程中，会先读取该.dtb到内存。  
+
+
 
 ### 参考文章  
 

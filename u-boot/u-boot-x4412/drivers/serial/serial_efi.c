@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2015 Google, Inc
  * Written by Simon Glass <sjg@chromium.org>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -106,7 +107,7 @@ static int serial_efi_pending(struct udevice *dev, bool input)
  * There is nothing to init here since the EFI console is already running by
  * the time we enter U-Boot.
  */
-static inline void _debug_uart_init(void)
+void debug_uart_init(void)
 {
 }
 

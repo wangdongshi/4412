@@ -184,7 +184,7 @@ static void dns_handler(uchar *pkt, unsigned dest, struct in_addr sip,
 			ip_to_string(ip_addr, ip_str);
 			printf("%s\n", ip_str);
 			if (net_dns_env_var)
-				env_set(net_dns_env_var, ip_str);
+				setenv(net_dns_env_var, ip_str);
 		} else {
 			puts("server responded with invalid IP number\n");
 		}

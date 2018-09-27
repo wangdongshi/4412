@@ -1,20 +1,21 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2013 Freescale Semiconductor, Inc.
  * Copyright (C) 2015 ECA Sinters
  *
  * Author: Fabio Estevam <fabio.estevam@freescale.com>
  * Modified by: Boris Brezillon <boris.brezillon@free-electrons.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <asm/arch/clock.h>
 #include <asm/arch/imx-regs.h>
 #include <asm/arch/iomux.h>
 #include <asm/arch/mx6-pins.h>
-#include <linux/errno.h>
+#include <asm/errno.h>
 #include <asm/gpio.h>
-#include <asm/mach-imx/iomux-v3.h>
-#include <asm/mach-imx/boot_mode.h>
+#include <asm/imx-common/iomux-v3.h>
+#include <asm/imx-common/boot_mode.h>
 #include <mmc.h>
 #include <fsl_esdhc.h>
 #include <miiphy.h>
@@ -26,7 +27,7 @@
 #include <asm/io.h>
 #include <asm/arch/sys_proto.h>
 #include <micrel.h>
-#include <asm/mach-imx/mxc_i2c.h>
+#include <asm/imx-common/mxc_i2c.h>
 #include <i2c.h>
 
 #define UART_PAD_CTRL  (PAD_CTL_PUS_100K_UP |			\

@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Device manager
  *
@@ -6,6 +5,8 @@
  *
  * (C) Copyright 2012
  * Pavel Herrmann <morpheus.ibis@gmail.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -17,16 +18,7 @@
 #include <dm/uclass-internal.h>
 #include <dm/util.h>
 
-/**
- * device_chld_unbind() - Unbind all device's children from the device
- *
- * On error, the function continues to unbind all children, and reports the
- * first error.
- *
- * @dev:	The device that is to be stripped of its children
- * @return 0 on success, -ve on error
- */
-static int device_chld_unbind(struct udevice *dev)
+int device_unbind_children(struct udevice *dev)
 {
 	struct udevice *pos, *n;
 	int ret, saved_ret = 0;
@@ -42,13 +34,7 @@ static int device_chld_unbind(struct udevice *dev)
 	return saved_ret;
 }
 
-/**
- * device_chld_remove() - Stop all device's children
- * @dev:	The device whose children are to be removed
- * @pre_os_remove: Flag, if this functions is called in the pre-OS stage
- * @return 0 on success, -ve on error
- */
-static int device_chld_remove(struct udevice *dev, uint flags)
+int device_remove_children(struct udevice *dev)
 {
 	struct udevice *pos, *n;
 	int ret;
@@ -56,7 +42,7 @@ static int device_chld_remove(struct udevice *dev, uint flags)
 	assert(dev);
 
 	list_for_each_entry_safe(pos, n, &dev->child_head, sibling_node) {
-		ret = device_remove(pos, flags);
+		ret = device_remove(pos);
 		if (ret)
 			return ret;
 	}
@@ -87,7 +73,7 @@ int device_unbind(struct udevice *dev)
 			return ret;
 	}
 
-	ret = device_chld_unbind(dev);
+	ret = device_unbind_children(dev);
 	if (ret)
 		return ret;
 
@@ -112,8 +98,6 @@ int device_unbind(struct udevice *dev)
 
 	devres_release_all(dev);
 
-	if (dev->flags & DM_FLAG_NAME_ALLOCED)
-		free((char *)dev->name);
 	free(dev);
 
 	return 0;
@@ -151,16 +135,7 @@ void device_free(struct udevice *dev)
 	devres_release_probe(dev);
 }
 
-static bool flags_remove(uint flags, uint drv_flags)
-{
-	if ((flags & DM_REMOVE_NORMAL) ||
-	    (flags & (drv_flags & (DM_FLAG_ACTIVE_DMA | DM_FLAG_OS_PREPARE))))
-		return true;
-
-	return false;
-}
-
-int device_remove(struct udevice *dev, uint flags)
+int device_remove(struct udevice *dev)
 {
 	const struct driver *drv;
 	int ret;
@@ -178,15 +153,11 @@ int device_remove(struct udevice *dev, uint flags)
 	if (ret)
 		return ret;
 
-	ret = device_chld_remove(dev, flags);
+	ret = device_remove_children(dev);
 	if (ret)
 		goto err;
 
-	/*
-	 * Remove the device if called with the "normal" remove flag set,
-	 * or if the remove flag matches any of the drivers remove flags
-	 */
-	if (drv->remove && flags_remove(flags, drv->flags)) {
+	if (drv->remove) {
 		ret = drv->remove(dev);
 		if (ret)
 			goto err_remove;
@@ -200,12 +171,10 @@ int device_remove(struct udevice *dev, uint flags)
 		}
 	}
 
-	if (flags_remove(flags, drv->flags)) {
-		device_free(dev);
+	device_free(dev);
 
-		dev->seq = -1;
-		dev->flags &= ~DM_FLAG_ACTIVATED;
-	}
+	dev->seq = -1;
+	dev->flags &= ~DM_FLAG_ACTIVATED;
 
 	return ret;
 

@@ -1,6 +1,7 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Copyright (c) 2015 Google, Inc
+ *
+ * SPDX-License-Identifier:	GPL-2.0
  *
  * Taken from coreboot file of the same name
  */
@@ -189,10 +190,9 @@ load_msr:
 
 	/* c_handler(cpu_num) */
 	movl	%esi, %eax	/* cpu_num */
-	mov	c_handler, %esi
-	call	*%esi
+	mov	c_handler, %eax
+	call	*%eax
 
-	/* This matches struct sipi_param */
 	.align	4
 .globl	sipi_params
 sipi_params:

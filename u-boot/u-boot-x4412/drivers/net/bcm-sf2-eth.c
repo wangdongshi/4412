@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2014 Broadcom Corporation.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -39,7 +40,7 @@ static int bcm_sf2_eth_init(struct eth_device *dev)
 
 	rc = eth->mac_init(dev);
 	if (rc) {
-		pr_err("%s: Couldn't cofigure MAC!\n", __func__);
+		error("%s: Couldn't cofigure MAC!\n", __func__);
 		return rc;
 	}
 
@@ -89,7 +90,7 @@ static int bcm_sf2_eth_send(struct eth_device *dev, void *packet, int length)
 		debug(".");
 		i++;
 		if (i > 20) {
-			pr_err("%s: Tx timeout: retried 20 times\n", __func__);
+			error("%s: Tx timeout: retried 20 times\n", __func__);
 			rc = -1;
 			break;
 		}
@@ -116,7 +117,7 @@ static int bcm_sf2_eth_receive(struct eth_device *dev)
 			debug("\nNO More Rx\n");
 			break;
 		} else if ((rcvlen == 0) || (rcvlen > RX_BUF_SIZE)) {
-			pr_err("%s: Wrong Ethernet packet size (%d B), skip!\n",
+			error("%s: Wrong Ethernet packet size (%d B), skip!\n",
 			      __func__, rcvlen);
 			break;
 		} else {
@@ -165,9 +166,9 @@ static int bcm_sf2_eth_open(struct eth_device *dev, bd_t *bt)
 	 */
 	for (i = 0; i < eth->port_num; i++) {
 		if (phy_startup(eth->port[i])) {
-			pr_err("%s: PHY %d startup failed!\n", __func__, i);
+			error("%s: PHY %d startup failed!\n", __func__, i);
 			if (i == CONFIG_BCM_SF2_ETH_DEFAULT_PORT) {
-				pr_err("%s: No default port %d!\n", __func__, i);
+				error("%s: No default port %d!\n", __func__, i);
 				return -1;
 			}
 		}
@@ -204,13 +205,13 @@ int bcm_sf2_eth_register(bd_t *bis, u8 dev_num)
 
 	dev = (struct eth_device *)malloc(sizeof(struct eth_device));
 	if (dev == NULL) {
-		pr_err("%s: Not enough memory!\n", __func__);
+		error("%s: Not enough memory!\n", __func__);
 		return -1;
 	}
 
 	eth = (struct eth_info *)malloc(sizeof(struct eth_info));
 	if (eth == NULL) {
-		pr_err("%s: Not enough memory!\n", __func__);
+		error("%s: Not enough memory!\n", __func__);
 		return -1;
 	}
 
@@ -233,7 +234,7 @@ int bcm_sf2_eth_register(bd_t *bis, u8 dev_num)
 	if (gmac_add(dev)) {
 		free(eth);
 		free(dev);
-		pr_err("%s: Adding GMAC failed!\n", __func__);
+		error("%s: Adding GMAC failed!\n", __func__);
 		return -1;
 	}
 #else
@@ -243,18 +244,7 @@ int bcm_sf2_eth_register(bd_t *bis, u8 dev_num)
 	eth_register(dev);
 
 #ifdef CONFIG_CMD_MII
-	int retval;
-	struct mii_dev *mdiodev = mdio_alloc();
-
-	if (!mdiodev)
-		return -ENOMEM;
-	strncpy(mdiodev->name, dev->name, MDIO_NAME_LEN);
-	mdiodev->read = eth->miiphy_read;
-	mdiodev->write = eth->miiphy_write;
-
-	retval = mdio_register(mdiodev);
-	if (retval < 0)
-		return retval;
+	miiphy_register(dev->name, eth->miiphy_read, eth->miiphy_write);
 #endif
 
 	/* Initialization */
@@ -262,7 +252,7 @@ int bcm_sf2_eth_register(bd_t *bis, u8 dev_num)
 
 	rc = bcm_sf2_eth_init(dev);
 	if (rc != 0) {
-		pr_err("%s: configuration failed!\n", __func__);
+		error("%s: configuration failed!\n", __func__);
 		return -1;
 	}
 

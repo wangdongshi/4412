@@ -1,6 +1,7 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (c) 2011 The Chromium OS Authors.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __USB_ETHER_H__
@@ -130,12 +131,6 @@ int smsc95xx_eth_probe(struct usb_device *dev, unsigned int ifnum,
 			struct ueth_data *ss);
 int smsc95xx_eth_get_info(struct usb_device *dev, struct ueth_data *ss,
 			struct eth_device *eth);
-
-void r8152_eth_before_probe(void);
-int r8152_eth_probe(struct usb_device *dev, unsigned int ifnum,
-		    struct ueth_data *ss);
-int r8152_eth_get_info(struct usb_device *dev, struct ueth_data *ss,
-		       struct eth_device *eth);
 #endif
 
 #endif /* __USB_ETHER_H__ */

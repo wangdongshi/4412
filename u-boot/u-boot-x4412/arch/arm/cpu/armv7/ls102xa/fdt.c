@@ -1,10 +1,11 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2014 Freescale Semiconductor, Inc.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
-#include <linux/libfdt.h>
+#include <libfdt.h>
 #include <fdt_support.h>
 #include <asm/io.h>
 #include <asm/processor.h>
@@ -29,13 +30,17 @@ void ft_fixup_enet_phy_connect_type(void *fdt)
 	int phy_node;
 	int i = 0;
 	uint32_t ph;
-	char *name[3] = { "eTSEC1", "eTSEC2", "eTSEC3" };
 
-	for (; i < ARRAY_SIZE(name); i++) {
-		dev = eth_get_dev_by_name(name[i]);
-		if (dev) {
-			sprintf(enet, "ethernet%d", i);
-			sprintf(phy, "enet%d_rgmii_phy", i);
+	while ((dev = eth_get_dev_by_index(i++)) != NULL) {
+		if (strstr(dev->name, "eTSEC1")) {
+			strcpy(enet, "ethernet0");
+			strcpy(phy, "enet0_rgmii_phy");
+		} else if (strstr(dev->name, "eTSEC2")) {
+			strcpy(enet, "ethernet1");
+			strcpy(phy, "enet1_rgmii_phy");
+		} else if (strstr(dev->name, "eTSEC3")) {
+			strcpy(enet, "ethernet2");
+			strcpy(phy, "enet2_rgmii_phy");
 		} else {
 			continue;
 		}
@@ -92,6 +97,8 @@ void ft_cpu_setup(void *blob, bd_t *bd)
 		fdt_fixup_crypto_node(blob, sec_in32(&sec->secvid_ms));
 	}
 #endif
+
+	fdt_fixup_ethernet(blob);
 
 	off = fdt_node_offset_by_prop_value(blob, -1, "device_type", "cpu", 4);
 	while (off != -FDT_ERR_NOTFOUND) {
@@ -164,7 +171,7 @@ void ft_cpu_setup(void *blob, bd_t *bd)
 	do_fixup_by_compat_u32(blob, "fsl, ls1021a-flexcan",
 			       "clock-frequency", busclk / 2, 1);
 
-#if defined(CONFIG_QSPI_BOOT) || defined(CONFIG_SD_BOOT_QSPI)
+#ifdef CONFIG_QSPI_BOOT
 	off = fdt_node_offset_by_compat_reg(blob, FSL_IFC_COMPAT,
 					    CONFIG_SYS_IFC_ADDR);
 	fdt_set_node_status(blob, off, FDT_STATUS_DISABLED, 0);

@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2015 Google, Inc
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -11,6 +12,8 @@
 #include <power/pmic.h>
 #include <power/regulator.h>
 #include <power/s5m8767.h>
+
+DECLARE_GLOBAL_DATA_PTR;
 
 static const struct pmic_child_info pmic_children_info[] = {
 	{ .prefix = "LDO", .driver = S5M8767_LDO_DRIVER },
@@ -27,7 +30,7 @@ static int s5m8767_write(struct udevice *dev, uint reg, const uint8_t *buff,
 			  int len)
 {
 	if (dm_i2c_write(dev, reg, buff, len)) {
-		pr_err("write error to device: %p register: %#x!", dev, reg);
+		error("write error to device: %p register: %#x!", dev, reg);
 		return -EIO;
 	}
 
@@ -37,7 +40,7 @@ static int s5m8767_write(struct udevice *dev, uint reg, const uint8_t *buff,
 static int s5m8767_read(struct udevice *dev, uint reg, uint8_t *buff, int len)
 {
 	if (dm_i2c_read(dev, reg, buff, len)) {
-		pr_err("read error from device: %p register: %#x!", dev, reg);
+		error("read error from device: %p register: %#x!", dev, reg);
 		return -EIO;
 	}
 
@@ -51,11 +54,12 @@ int s5m8767_enable_32khz_cp(struct udevice *dev)
 
 static int s5m8767_bind(struct udevice *dev)
 {
+	int node;
+	const void *blob = gd->fdt_blob;
 	int children;
-	ofnode node;
 
-	node = dev_read_subnode(dev, "regulators");
-	if (!ofnode_valid(node)) {
+	node = fdt_subnode_offset(blob, dev->of_offset, "regulators");
+	if (node <= 0) {
 		debug("%s: %s regulators subnode not found!", __func__,
 		      dev->name);
 		return -ENXIO;

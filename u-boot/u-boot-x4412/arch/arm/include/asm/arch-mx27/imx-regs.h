@@ -1,7 +1,8 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (c) 2007 Pengutronix, Sascha Hauer <s.hauer@pengutronix.de>
  * (c) 2009 Ilya Yanok, Emcraft Systems <yanok@emcraft.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef _IMX_REGS_H
@@ -21,10 +22,10 @@ extern void mx27_uart1_init_pins(void);
 extern void mx27_fec_init_pins(void);
 #endif /* CONFIG_FEC_MXC */
 
-#ifdef CONFIG_MMC_MXC
+#ifdef CONFIG_MXC_MMC
 extern void mx27_sd1_init_pins(void);
 extern void mx27_sd2_init_pins(void);
-#endif /* CONFIG_MMC_MXC */
+#endif /* CONFIG_MXC_MMC */
 
 /* AIPI */
 struct aipi_regs {
@@ -105,9 +106,9 @@ struct esdramc_regs {
 
 /* Watchdog Registers*/
 struct wdog_regs {
-	u16 wcr;
-	u16 wsr;
-	u16 wstr;
+	u32 wcr;
+	u32 wsr;
+	u32 wstr;
 };
 
 /* PLL registers */

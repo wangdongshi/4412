@@ -1,9 +1,10 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Freescale i.MX28 SPI driver
  *
  * Copyright (C) 2011 Marek Vasut <marek.vasut@gmail.com>
  * on behalf of DENX Software Engineering GmbH
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  *
  * NOTE: This driver only supports the SPI-controller chipselects,
  *       GPIO driven chipselects are not supported.
@@ -13,12 +14,12 @@
 #include <malloc.h>
 #include <memalign.h>
 #include <spi.h>
-#include <linux/errno.h>
+#include <asm/errno.h>
 #include <asm/io.h>
 #include <asm/arch/clock.h>
 #include <asm/arch/imx-regs.h>
 #include <asm/arch/sys_proto.h>
-#include <asm/mach-imx/dma.h>
+#include <asm/imx-common/dma.h>
 
 #define	MXS_SPI_MAX_TIMEOUT	1000000
 #define	MXS_SPI_PORT_OFFSET	0x2000

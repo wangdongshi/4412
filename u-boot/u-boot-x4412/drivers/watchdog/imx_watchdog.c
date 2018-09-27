@@ -34,16 +34,16 @@ void hw_watchdog_init(void)
 #endif
 	timeout = (CONFIG_WATCHDOG_TIMEOUT_MSECS / 500) - 1;
 	writew(WCR_WDZST | WCR_WDBG | WCR_WDE | WCR_WDT | WCR_SRS |
-		WCR_WDA | SET_WCR_WT(timeout), &wdog->wcr);
+		SET_WCR_WT(timeout), &wdog->wcr);
 	hw_watchdog_reset();
 }
 #endif
 
-void __attribute__((weak)) reset_cpu(ulong addr)
+void reset_cpu(ulong addr)
 {
 	struct watchdog_regs *wdog = (struct watchdog_regs *)WDOG1_BASE_ADDR;
 
-	clrsetbits_le16(&wdog->wcr, WCR_WT_MSK, WCR_WDE);
+	clrsetbits_le16(&wdog->wcr, 0, WCR_WDE);
 
 	writew(0x5555, &wdog->wsr);
 	writew(0xaaaa, &wdog->wsr);	/* load minimum 1/2 second timeout */

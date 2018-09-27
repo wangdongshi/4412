@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2010
  * Vipin Kumar, ST Micoelectronics, vipin.kumar@st.com.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -83,7 +84,7 @@ int print_cpuinfo(void)
 }
 #endif
 
-#if !defined(CONFIG_SPL_BUILD) && defined(CONFIG_NAND_ECC_BCH) && defined(CONFIG_NAND_FSMC)
+#if !defined(CONFIG_SPL_BUILD) && defined(CONFIG_NAND_ECC_BCH)
 static int do_switch_ecc(cmd_tbl_t *cmdtp, int flag, int argc,
 			 char *const argv[])
 {

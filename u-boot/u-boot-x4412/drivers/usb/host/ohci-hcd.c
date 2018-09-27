@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * URB OHCI HCD (Host Controller Driver) for USB on the AT91RM9200 and PCI bus.
  *
@@ -17,6 +16,8 @@
  *
  * Modified for the MP2USB by (C) Copyright 2005 Eric Benard
  * ebenard@eukrea.com - based on s3c24x0's driver
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 /*
  * IMPORTANT NOTES
@@ -50,7 +51,10 @@
 #endif
 
 #if defined(CONFIG_CPU_ARM920T) || \
+    defined(CONFIG_S3C24X0) || \
+    defined(CONFIG_440EP) || \
     defined(CONFIG_PCI_OHCI) || \
+    defined(CONFIG_MPC5200) || \
     defined(CONFIG_SYS_OHCI_USE_NPS)
 # define OHCI_USE_NPS		/* force NoPowerSwitching mode */
 #endif
@@ -678,7 +682,7 @@ static int ep_link(ohci_t *ohci, ed_t *edi)
 		ed->hwNextED = 0;
 		flush_dcache_ed(ed);
 		if (ohci->ed_controltail == NULL)
-			ohci_writel((uintptr_t)ed, &ohci->regs->ed_controlhead);
+			ohci_writel(ed, &ohci->regs->ed_controlhead);
 		else
 			ohci->ed_controltail->hwNextED =
 						   m32_swap((unsigned long)ed);
@@ -696,7 +700,7 @@ static int ep_link(ohci_t *ohci, ed_t *edi)
 		ed->hwNextED = 0;
 		flush_dcache_ed(ed);
 		if (ohci->ed_bulktail == NULL)
-			ohci_writel((uintptr_t)ed, &ohci->regs->ed_bulkhead);
+			ohci_writel(ed, &ohci->regs->ed_bulkhead);
 		else
 			ohci->ed_bulktail->hwNextED =
 						   m32_swap((unsigned long)ed);
@@ -749,7 +753,7 @@ static void periodic_unlink(struct ohci *ohci, volatile struct ed *ed,
 
 		/* ED might have been unlinked through another path */
 		while (*ed_p != 0) {
-			if (((struct ed *)(uintptr_t)
+			if (((struct ed *)
 					m32_swap((unsigned long)ed_p)) == ed) {
 				*ed_p = ed->hwNextED;
 				aligned_ed_p = (unsigned long)ed_p;
@@ -758,7 +762,7 @@ static void periodic_unlink(struct ohci *ohci, volatile struct ed *ed,
 					aligned_ed_p + ARCH_DMA_MINALIGN);
 				break;
 			}
-			ed_p = &(((struct ed *)(uintptr_t)
+			ed_p = &(((struct ed *)
 				     m32_swap((unsigned long)ed_p))->hwNextED);
 		}
 	}
@@ -794,7 +798,7 @@ static int ep_unlink(ohci_t *ohci, ed_t *edi)
 		if (ohci->ed_controltail == ed) {
 			ohci->ed_controltail = ed->ed_prev;
 		} else {
-			((ed_t *)(uintptr_t)m32_swap(
+			((ed_t *)m32_swap(
 			    *((__u32 *)&ed->hwNextED)))->ed_prev = ed->ed_prev;
 		}
 		break;
@@ -815,7 +819,7 @@ static int ep_unlink(ohci_t *ohci, ed_t *edi)
 		if (ohci->ed_bulktail == ed) {
 			ohci->ed_bulktail = ed->ed_prev;
 		} else {
-			((ed_t *)(uintptr_t)m32_swap(
+			((ed_t *)m32_swap(
 			     *((__u32 *)&ed->hwNextED)))->ed_prev = ed->ed_prev;
 		}
 		break;
@@ -910,13 +914,12 @@ static void td_fill(ohci_t *ohci, unsigned int info,
 
 	/* fill the old dummy TD */
 	td = urb_priv->td [index] =
-			     (td_t *)(uintptr_t)
-			     (m32_swap(urb_priv->ed->hwTailP) & ~0xf);
+			     (td_t *)(m32_swap(urb_priv->ed->hwTailP) & ~0xf);
 
 	td->ed = urb_priv->ed;
 	td->next_dl_td = NULL;
 	td->index = index;
-	td->data = (uintptr_t)data;
+	td->data = (__u32)data;
 #ifdef OHCI_FILL_TRACE
 	if (usb_pipebulk(urb_priv->pipe) && usb_pipeout(urb_priv->pipe)) {
 		for (i = 0; i < len; i++)
@@ -960,7 +963,7 @@ static void td_submit_job(ohci_t *ohci, struct usb_device *dev,
 	flush_dcache_buffer(buffer, data_len);
 
 	/* OHCI handles the DATA-toggles itself, we just use the USB-toggle
-	 * bits for resetting */
+	 * bits for reseting */
 	if (usb_gettoggle(dev, usb_pipeendpoint(pipe), usb_pipeout(pipe))) {
 		toggle = TD_T_TOGGLE;
 	} else {
@@ -1085,6 +1088,10 @@ static void check_status(td_t *td_list)
 				*phwHeadP &= m32_swap(0xfffffff2);
 			flush_dcache_ed(td_list->ed);
 		}
+#ifdef CONFIG_MPC5200
+		td_list->hwNextTD = 0;
+		flush_dcache_td(td_list);
+#endif
 	}
 }
 
@@ -1092,7 +1099,7 @@ static void check_status(td_t *td_list)
  * we reverse the reversed done-list */
 static td_t *dl_reverse_done_list(ohci_t *ohci)
 {
-	uintptr_t td_list_hc;
+	__u32 td_list_hc;
 	td_t *td_rev = NULL;
 	td_t *td_list = NULL;
 
@@ -1855,7 +1862,7 @@ static int hc_start(ohci_t *ohci)
 	ohci_writel(0, &ohci->regs->ed_controlhead);
 	ohci_writel(0, &ohci->regs->ed_bulkhead);
 
-	ohci_writel((uintptr_t)ohci->hcca,
+	ohci_writel((__u32)ohci->hcca,
 		    &ohci->regs->hcca); /* reset clears this */
 
 	fminterval = 0x2edf;
@@ -2198,7 +2205,6 @@ int ohci_register(struct udevice *dev, struct ohci_regs *regs)
 	if (!ohci->hcca)
 		return -ENOMEM;
 	memset(ohci->hcca, 0, sizeof(struct ohci_hcca));
-	flush_dcache_hcca(ohci->hcca);
 
 	if (hc_reset(ohci) < 0)
 		return -EIO;

@@ -1,8 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*------------------------------------------------------------------------
  * lan91c96.c
  * This is a driver for SMSC's LAN91C96 single-chip Ethernet device, based
- * on the SMC91111 driver from U-Boot.
+ * on the SMC91111 driver from U-boot.
  *
  * (C) Copyright 2002
  * Sysgo Real-Time Solutions, GmbH <www.elinos.com>
@@ -11,6 +10,8 @@
  * Copyright (C) 2001 Standard Microsystems Corporation (SMSC)
  *       Developed by Simple Network Magic Corporation (SNMC)
  * Copyright (C) 1996 by Erik Stahlman (ES)
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  *
  * Information contained in this file was obtained from the LAN91C96
  * manual from SMC.  To get a copy, if you really want one, you can find
@@ -703,13 +704,13 @@ static int smc_get_ethaddr(bd_t *bd, struct eth_device *dev)
 {
 	uchar v_mac[6];
 
-	if (!eth_env_get_enetaddr("ethaddr", v_mac)) {
+	if (!eth_getenv_enetaddr("ethaddr", v_mac)) {
 		/* get ROM mac value if any */
 		if (!get_rom_mac(dev, v_mac)) {
 			printf("\n*** ERROR: ethaddr is NOT set !!\n");
 			return -1;
 		}
-		eth_env_set_enetaddr("ethaddr", v_mac);
+		eth_setenv_enetaddr("ethaddr", v_mac);
 	}
 
 	smc_set_mac_addr(v_mac); /* use old function to update smc default */

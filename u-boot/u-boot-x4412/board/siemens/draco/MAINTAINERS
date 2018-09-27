@@ -4,7 +4,6 @@ S:	Maintained
 F:	board/siemens/draco/
 F:	include/configs/draco.h
 F:	configs/draco_defconfig
-F:	configs/etamin_defconfig
 F:	include/configs/thuban.h
 F:	configs/thuban_defconfig
 F:	include/configs/rastaban.h

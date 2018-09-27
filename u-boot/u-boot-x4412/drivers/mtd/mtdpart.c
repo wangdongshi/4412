@@ -1,10 +1,11 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Simple MTD partitioning layer
  *
  * Copyright © 2000 Nicolas Pitre <nico@fluxnic.net>
  * Copyright © 2002 Thomas Gleixner <gleixner@linutronix.de>
  * Copyright © 2000-2010 David Woodhouse <dwmw2@infradead.org>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  *
  */
 
@@ -19,7 +20,7 @@
 
 #include <common.h>
 #include <malloc.h>
-#include <linux/errno.h>
+#include <asm/errno.h>
 #include <linux/compat.h>
 #include <ubi_uboot.h>
 

@@ -1,9 +1,10 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * USB 3.0 DRD Controller
  *
  * (C) Copyright 2012-2014
  *     Texas Instruments Incorporated, <www.ti.com>
+ *
+ * SPDX-License-Identifier:     GPL-2.0+
  */
 
 #include <common.h>
@@ -13,7 +14,7 @@
 #include <asm/io.h>
 #include <linux/usb/dwc3.h>
 #include <asm/arch/xhci-keystone.h>
-#include <linux/errno.h>
+#include <asm-generic/errno.h>
 #include <linux/list.h>
 #include "xhci.h"
 

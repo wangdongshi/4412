@@ -1,7 +1,8 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2012
  * Joe Hershberger, National Instruments, joe.hershberger@ni.com
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __ENV_FLAGS_H__
@@ -56,8 +57,8 @@ enum env_flags_varaccess {
 	"gatewayip:i," \
 	"netmask:i," \
 	"serverip:i," \
-	"nvlan:d," \
-	"vlan:d," \
+	"nvlan:i," \
+	"vlan:i," \
 	"dnsip:i,"
 #else
 #define ETHADDR_FLAGS
@@ -142,7 +143,7 @@ int env_flags_validate_varaccess(const char *name, int check_mask);
 /*
  * Validate the parameters passed to "env set" for type compliance
  */
-int env_flags_validate_env_set_params(char *name, char *const val[], int count);
+int env_flags_validate_env_set_params(int argc, char * const argv[]);
 
 #else /* !USE_HOSTCC */
 

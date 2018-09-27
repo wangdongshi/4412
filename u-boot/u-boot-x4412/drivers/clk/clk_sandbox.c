@@ -1,66 +1,64 @@
-// SPDX-License-Identifier: GPL-2.0
 /*
  * (C) Copyright 2015 Google, Inc
+ *
+ * SPDX-License-Identifier:	GPL-2.0
  */
 
 #include <common.h>
-#include <clk-uclass.h>
+#include <clk.h>
 #include <dm.h>
 #include <errno.h>
-#include <asm/clk.h>
+#include <asm/test.h>
 
 struct sandbox_clk_priv {
-	ulong rate[SANDBOX_CLK_ID_COUNT];
-	bool enabled[SANDBOX_CLK_ID_COUNT];
+	ulong rate;
+	ulong periph_rate[PERIPH_ID_COUNT];
 };
 
-static ulong sandbox_clk_get_rate(struct clk *clk)
+static ulong sandbox_clk_get_rate(struct udevice *dev)
 {
-	struct sandbox_clk_priv *priv = dev_get_priv(clk->dev);
+	struct sandbox_clk_priv *priv = dev_get_priv(dev);
 
-	if (clk->id >= SANDBOX_CLK_ID_COUNT)
-		return -EINVAL;
-
-	return priv->rate[clk->id];
+	return priv->rate;
 }
 
-static ulong sandbox_clk_set_rate(struct clk *clk, ulong rate)
+static ulong sandbox_clk_set_rate(struct udevice *dev, ulong rate)
 {
-	struct sandbox_clk_priv *priv = dev_get_priv(clk->dev);
-	ulong old_rate;
-
-	if (clk->id >= SANDBOX_CLK_ID_COUNT)
-		return -EINVAL;
+	struct sandbox_clk_priv *priv = dev_get_priv(dev);
 
 	if (!rate)
 		return -EINVAL;
+	priv->rate = rate;
+	return 0;
+}
 
-	old_rate = priv->rate[clk->id];
-	priv->rate[clk->id] = rate;
+ulong sandbox_get_periph_rate(struct udevice *dev, int periph)
+{
+	struct sandbox_clk_priv *priv = dev_get_priv(dev);
+
+	if (periph < PERIPH_ID_FIRST || periph >= PERIPH_ID_COUNT)
+		return -EINVAL;
+	return priv->periph_rate[periph];
+}
+
+ulong sandbox_set_periph_rate(struct udevice *dev, int periph, ulong rate)
+{
+	struct sandbox_clk_priv *priv = dev_get_priv(dev);
+	ulong old_rate;
+
+	if (periph < PERIPH_ID_FIRST || periph >= PERIPH_ID_COUNT)
+		return -EINVAL;
+	old_rate = priv->periph_rate[periph];
+	priv->periph_rate[periph] = rate;
 
 	return old_rate;
 }
 
-static int sandbox_clk_enable(struct clk *clk)
+static int sandbox_clk_probe(struct udevice *dev)
 {
-	struct sandbox_clk_priv *priv = dev_get_priv(clk->dev);
+	struct sandbox_clk_priv *priv = dev_get_priv(dev);
 
-	if (clk->id >= SANDBOX_CLK_ID_COUNT)
-		return -EINVAL;
-
-	priv->enabled[clk->id] = true;
-
-	return 0;
-}
-
-static int sandbox_clk_disable(struct clk *clk)
-{
-	struct sandbox_clk_priv *priv = dev_get_priv(clk->dev);
-
-	if (clk->id >= SANDBOX_CLK_ID_COUNT)
-		return -EINVAL;
-
-	priv->enabled[clk->id] = false;
+	priv->rate = SANDBOX_CLK_RATE;
 
 	return 0;
 }
@@ -68,8 +66,8 @@ static int sandbox_clk_disable(struct clk *clk)
 static struct clk_ops sandbox_clk_ops = {
 	.get_rate	= sandbox_clk_get_rate,
 	.set_rate	= sandbox_clk_set_rate,
-	.enable		= sandbox_clk_enable,
-	.disable	= sandbox_clk_disable,
+	.get_periph_rate = sandbox_get_periph_rate,
+	.set_periph_rate = sandbox_set_periph_rate,
 };
 
 static const struct udevice_id sandbox_clk_ids[] = {
@@ -83,24 +81,5 @@ U_BOOT_DRIVER(clk_sandbox) = {
 	.of_match	= sandbox_clk_ids,
 	.ops		= &sandbox_clk_ops,
 	.priv_auto_alloc_size = sizeof(struct sandbox_clk_priv),
+	.probe		= sandbox_clk_probe,
 };
-
-ulong sandbox_clk_query_rate(struct udevice *dev, int id)
-{
-	struct sandbox_clk_priv *priv = dev_get_priv(dev);
-
-	if (id < 0 || id >= SANDBOX_CLK_ID_COUNT)
-		return -EINVAL;
-
-	return priv->rate[id];
-}
-
-int sandbox_clk_query_enable(struct udevice *dev, int id)
-{
-	struct sandbox_clk_priv *priv = dev_get_priv(dev);
-
-	if (id < 0 || id >= SANDBOX_CLK_ID_COUNT)
-		return -EINVAL;
-
-	return priv->enabled[id];
-}

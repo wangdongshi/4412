@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2013 Broadcom Corporation.
+ *
+ * SPDX-License-Identifier:      GPL-2.0+
  */
 
 #include <common.h>
@@ -12,7 +13,7 @@
 #include <asm/arch/sysmap.h>
 
 #include <usb.h>
-#include <usb/dwc2_udc.h>
+#include <usb/s3c_udc.h>
 #include <g_dnl.h>
 
 #define SECWATCHDOG_SDOGCR_OFFSET	0x00000000
@@ -68,15 +69,13 @@ int dram_init(void)
 }
 
 /* This is called after dram_init() so use get_ram_size result */
-int dram_init_banksize(void)
+void dram_init_banksize(void)
 {
 	gd->bd->bi_dram[0].start = CONFIG_SYS_SDRAM_BASE;
 	gd->bd->bi_dram[0].size = gd->ram_size;
-
-	return 0;
 }
 
-#ifdef CONFIG_MMC_SDHCI_KONA
+#ifdef CONFIG_KONA_SDHCI
 /*
  * mmc_init - Initializes mmc
  */
@@ -96,20 +95,20 @@ int board_mmc_init(bd_t *bis)
 #endif
 
 #ifdef CONFIG_USB_GADGET
-static struct dwc2_plat_otg_data bcm_otg_data = {
+static struct s3c_plat_otg_data bcm_otg_data = {
 	.regs_otg	= HSOTG_BASE_ADDR
 };
 
 int board_usb_init(int index, enum usb_init_type init)
 {
-	debug("%s: performing dwc2_udc_probe\n", __func__);
-	return dwc2_udc_probe(&bcm_otg_data);
+	debug("%s: performing s3c_udc_probe\n", __func__);
+	return s3c_udc_probe(&bcm_otg_data);
 }
 
 int g_dnl_bind_fixup(struct usb_device_descriptor *dev, const char *name)
 {
 	debug("%s\n", __func__);
-	if (!env_get("serial#"))
+	if (!getenv("serial#"))
 		g_dnl_set_serialnumber(CONFIG_USB_SERIALNO);
 	return 0;
 }

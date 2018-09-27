@@ -23,7 +23,7 @@
 
 #define CONFIG_SYS_DCACHE_OFF		1
 
-/* ORIGEN has 4 bank of DRAM */
+/* X4412 has 4 bank of DRAM */
 #define CONFIG_NR_DRAM_BANKS		4
 #define CONFIG_SYS_SDRAM_BASE		0x40000000
 #define PHYS_SDRAM_1			CONFIG_SYS_SDRAM_BASE

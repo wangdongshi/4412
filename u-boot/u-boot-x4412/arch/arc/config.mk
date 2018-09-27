@@ -1,6 +1,8 @@
-# SPDX-License-Identifier: GPL-2.0+
 #
 # Copyright (C) 2013-2014 Synopsys, Inc. All rights reserved.
+#
+# SPDX-License-Identifier:	GPL-2.0+
+#
 
 ifndef CONFIG_CPU_BIG_ENDIAN
 CONFIG_SYS_LITTLE_ENDIAN = 1
@@ -29,30 +31,29 @@ CONFIG_MMU = 1
 endif
 
 ifdef CONFIG_CPU_ARC750D
-PLATFORM_CPPFLAGS += -mcpu=arc700
+PLATFORM_CPPFLAGS += -marc700
 endif
 
 ifdef CONFIG_CPU_ARC770D
-PLATFORM_CPPFLAGS += -mcpu=arc700 -mlock -mswape
+PLATFORM_CPPFLAGS += -marc700 -mlock -mswape
 endif
 
 ifdef CONFIG_CPU_ARCEM6
-PLATFORM_CPPFLAGS += -mcpu=arcem
+PLATFORM_CPPFLAGS += -marcem
 endif
 
 ifdef CONFIG_CPU_ARCHS34
-PLATFORM_CPPFLAGS += -mcpu=archs
+PLATFORM_CPPFLAGS += -marchs
 endif
 
 ifdef CONFIG_CPU_ARCHS38
-PLATFORM_CPPFLAGS += -mcpu=archs
+PLATFORM_CPPFLAGS += -marchs
 endif
 
-PLATFORM_CPPFLAGS += -ffixed-r25 -D__ARC__ -gdwarf-2 -mno-sdata
-PLATFORM_RELFLAGS += -ffunction-sections -fdata-sections
+PLATFORM_CPPFLAGS += -ffixed-r25 -D__ARC__ -gdwarf-2
 
 # Needed for relocation
-LDFLAGS_FINAL += -pie --gc-sections
+LDFLAGS_FINAL += -pie
 
 # Load address for standalone apps
 CONFIG_STANDALONE_LOAD_ADDR ?= 0x82000000

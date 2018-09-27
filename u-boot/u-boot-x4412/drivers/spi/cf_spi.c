@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  *
  * (C) Copyright 2000-2003
@@ -6,6 +5,8 @@
  *
  * Copyright (C) 2004-2009 Freescale Semiconductor, Inc.
  * TsiChung Liew (Tsi-Chung.Liew@freescale.com)
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -278,6 +279,10 @@ static struct spi_slave *cfspi_setup_slave(struct cf_spi_slave *cfslave,
 }
 #endif				/* CONFIG_CF_DSPI */
 
+#ifdef CONFIG_CF_QSPI
+/* 52xx, 53xx */
+#endif				/* CONFIG_CF_QSPI */
+
 #ifdef CONFIG_CMD_SPI
 int spi_cs_is_valid(unsigned int bus, unsigned int cs)
 {
@@ -285,6 +290,14 @@ int spi_cs_is_valid(unsigned int bus, unsigned int cs)
 		return 1;
 	else
 		return 0;
+}
+
+void spi_init_f(void)
+{
+}
+
+void spi_init_r(void)
+{
 }
 
 void spi_init(void)

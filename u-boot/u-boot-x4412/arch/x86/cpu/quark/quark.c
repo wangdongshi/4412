@@ -1,20 +1,39 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2015, Bin Meng <bmeng.cn@gmail.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <mmc.h>
 #include <asm/io.h>
-#include <asm/ioapic.h>
 #include <asm/irq.h>
-#include <asm/mrccache.h>
 #include <asm/mtrr.h>
 #include <asm/pci.h>
 #include <asm/post.h>
+#include <asm/processor.h>
 #include <asm/arch/device.h>
 #include <asm/arch/msg_port.h>
 #include <asm/arch/quark.h>
+
+static struct pci_device_id mmc_supported[] = {
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_QRK_SDIO },
+};
+
+/*
+ * TODO:
+ *
+ * This whole routine should be removed until we fully convert the ICH SPI
+ * driver to DM and make use of DT to pass the bios control register offset
+ */
+static void unprotect_spi_flash(void)
+{
+	u32 bc;
+
+	qrk_pci_read_config_dword(QUARK_LEGACY_BRIDGE, 0xd8, &bc);
+	bc |= 0x1;	/* unprotect the flash */
+	qrk_pci_write_config_dword(QUARK_LEGACY_BRIDGE, 0xd8, bc);
+}
 
 static void quark_setup_mtrr(void)
 {
@@ -213,6 +232,9 @@ int arch_cpu_init(void)
 	int ret;
 
 	post_code(POST_CPU_INIT);
+#ifdef CONFIG_SYS_X86_TSC_TIMER
+	timer_set_base(rdtsc());
+#endif
 
 	ret = x86_cpu_init_f();
 	if (ret)
@@ -231,20 +253,6 @@ int arch_cpu_init(void)
 	 */
 	quark_setup_bars();
 
-	/* Initialize USB2 PHY */
-	quark_usb_early_init();
-
-	/* Initialize thermal sensor */
-	quark_thermal_early_init();
-
-	/* Turn on legacy segments (A/B/E/F) decode to system RAM */
-	quark_enable_legacy_seg();
-
-	return 0;
-}
-
-int arch_cpu_init_dm(void)
-{
 	/*
 	 * Initialize PCIe controller
 	 *
@@ -256,11 +264,17 @@ int arch_cpu_init_dm(void)
 	 */
 	quark_pcie_early_init();
 
-	return 0;
-}
+	/* Initialize USB2 PHY */
+	quark_usb_early_init();
 
-int checkcpu(void)
-{
+	/* Initialize thermal sensor */
+	quark_thermal_early_init();
+
+	/* Turn on legacy segments (A/B/E/F) decode to system RAM */
+	quark_enable_legacy_seg();
+
+	unprotect_spi_flash();
+
 	return 0;
 }
 
@@ -314,7 +328,22 @@ static void quark_usb_init(void)
 	writel((0xf << 16) | 0xf, bar + USBD_EP_INT_STS);
 }
 
-static void quark_irq_init(void)
+int arch_early_init_r(void)
+{
+	quark_pcie_init();
+
+	quark_usb_init();
+
+	return 0;
+}
+
+int cpu_mmc_init(bd_t *bis)
+{
+	return pci_mmc_init("Quark SDHCI", mmc_supported,
+			    ARRAY_SIZE(mmc_supported));
+}
+
+void cpu_irq_init(void)
 {
 	struct quark_rcba *rcba;
 	u32 base;
@@ -337,32 +366,9 @@ static void quark_irq_init(void)
 	       &rcba->d20d21_ir);
 }
 
-int arch_early_init_r(void)
-{
-	quark_pcie_init();
-
-	quark_usb_init();
-
-	quark_irq_init();
-
-	return 0;
-}
-
 int arch_misc_init(void)
 {
-#ifdef CONFIG_ENABLE_MRC_CACHE
-	/*
-	 * We intend not to check any return value here, as even MRC cache
-	 * is not saved successfully, it is not a severe error that will
-	 * prevent system from continuing to boot.
-	 */
-	mrccache_save();
-#endif
-
-	/* Assign a unique I/O APIC ID */
-	io_apic_set_id(1);
-
-	return 0;
+	return pirq_init();
 }
 
 void board_final_cleanup(void)

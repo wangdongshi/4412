@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0
 /*-
  * Copyright (c) 2007-2008, Juniper Networks, Inc.
  * All rights reserved.
+ *
+ * SPDX-License-Identifier:	GPL-2.0
  */
 
 #include <common.h>
@@ -9,7 +10,6 @@
 #include <errno.h>
 #include <pci.h>
 #include <usb.h>
-#include <asm/io.h>
 
 #include "ehci.h"
 
@@ -18,34 +18,32 @@ struct ehci_pci_priv {
 	struct ehci_ctrl ehci;
 };
 
-#ifdef CONFIG_DM_USB
-
-static void ehci_pci_init(struct udevice *dev, struct ehci_hccr **ret_hccr,
-			  struct ehci_hcor **ret_hcor)
+static void ehci_pci_common_init(pci_dev_t pdev, struct ehci_hccr **ret_hccr,
+				 struct ehci_hcor **ret_hcor)
 {
 	struct ehci_hccr *hccr;
 	struct ehci_hcor *hcor;
-	u32 cmd;
+	uint32_t cmd;
 
-	hccr = (struct ehci_hccr *)dm_pci_map_bar(dev,
+	hccr = (struct ehci_hccr *)pci_map_bar(pdev,
 			PCI_BASE_ADDRESS_0, PCI_REGION_MEM);
-	hcor = (struct ehci_hcor *)((uintptr_t) hccr +
+	hcor = (struct ehci_hcor *)((uint32_t) hccr +
 			HC_LENGTH(ehci_readl(&hccr->cr_capbase)));
 
-	debug("EHCI-PCI init hccr %#lx and hcor %#lx hc_length %d\n",
-	      (ulong)hccr, (ulong)hcor,
-	      (u32)HC_LENGTH(ehci_readl(&hccr->cr_capbase)));
+	debug("EHCI-PCI init hccr 0x%x and hcor 0x%x hc_length %d\n",
+	      (uint32_t)hccr, (uint32_t)hcor,
+	      (uint32_t)HC_LENGTH(ehci_readl(&hccr->cr_capbase)));
 
 	*ret_hccr = hccr;
 	*ret_hcor = hcor;
 
 	/* enable busmaster */
-	dm_pci_read_config32(dev, PCI_COMMAND, &cmd);
+	pci_read_config_dword(pdev, PCI_COMMAND, &cmd);
 	cmd |= PCI_COMMAND_MASTER;
-	dm_pci_write_config32(dev, PCI_COMMAND, cmd);
+	pci_write_config_dword(pdev, PCI_COMMAND, cmd);
 }
 
-#else
+#ifndef CONFIG_DM_USB
 
 #ifdef CONFIG_PCI_EHCI_DEVICE
 static struct pci_device_id ehci_pci_ids[] = {
@@ -56,31 +54,6 @@ static struct pci_device_id ehci_pci_ids[] = {
 	{0, 0}
 };
 #endif
-
-static void ehci_pci_legacy_init(pci_dev_t pdev, struct ehci_hccr **ret_hccr,
-				 struct ehci_hcor **ret_hcor)
-{
-	struct ehci_hccr *hccr;
-	struct ehci_hcor *hcor;
-	u32 cmd;
-
-	hccr = (struct ehci_hccr *)pci_map_bar(pdev,
-			PCI_BASE_ADDRESS_0, PCI_REGION_MEM);
-	hcor = (struct ehci_hcor *)((uintptr_t) hccr +
-			HC_LENGTH(ehci_readl(&hccr->cr_capbase)));
-
-	debug("EHCI-PCI init hccr 0x%x and hcor 0x%x hc_length %d\n",
-	      (u32)hccr, (u32)hcor,
-	      (u32)HC_LENGTH(ehci_readl(&hccr->cr_capbase)));
-
-	*ret_hccr = hccr;
-	*ret_hcor = hcor;
-
-	/* enable busmaster */
-	pci_read_config_dword(pdev, PCI_COMMAND, &cmd);
-	cmd |= PCI_COMMAND_MASTER;
-	pci_write_config_dword(pdev, PCI_COMMAND, cmd);
-}
 
 /*
  * Create the appropriate control structures to manage
@@ -100,7 +73,7 @@ int ehci_hcd_init(int index, enum usb_init_type init,
 		printf("EHCI host controller not found\n");
 		return -1;
 	}
-	ehci_pci_legacy_init(pdev, ret_hccr, ret_hcor);
+	ehci_pci_common_init(pdev, ret_hccr, ret_hcor);
 
 	return 0;
 }
@@ -121,22 +94,27 @@ static int ehci_pci_probe(struct udevice *dev)
 	struct ehci_hccr *hccr;
 	struct ehci_hcor *hcor;
 
-	ehci_pci_init(dev, &hccr, &hcor);
+	ehci_pci_common_init(pci_get_bdf(dev), &hccr, &hcor);
 
 	return ehci_register(dev, hccr, hcor, NULL, 0, USB_INIT_HOST);
 }
 
-static const struct udevice_id ehci_pci_ids[] = {
-	{ .compatible = "ehci-pci" },
-	{ }
-};
+static int ehci_pci_remove(struct udevice *dev)
+{
+	int ret;
+
+	ret = ehci_deregister(dev);
+	if (ret)
+		return ret;
+
+	return 0;
+}
 
 U_BOOT_DRIVER(ehci_pci) = {
 	.name	= "ehci_pci",
 	.id	= UCLASS_USB,
 	.probe = ehci_pci_probe,
-	.remove = ehci_deregister,
-	.of_match = ehci_pci_ids,
+	.remove = ehci_pci_remove,
 	.ops	= &ehci_usb_ops,
 	.platdata_auto_alloc_size = sizeof(struct usb_platdata),
 	.priv_auto_alloc_size = sizeof(struct ehci_pci_priv),

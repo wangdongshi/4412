@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  *  U-Boot - x86 Startup Code
  *
@@ -7,6 +6,8 @@
  *
  * (C) Copyright 2002
  * Daniel Engström, Omicron Ceti AB, <daniel@omicron.se>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <config.h>
@@ -67,10 +68,6 @@ _start:
 	/* Save table pointer */
 	movl	%ecx, %esi
 
-#ifdef CONFIG_X86_LOAD_FROM_32_BIT
-	lgdt	gdt_ptr2
-#endif
-
 	/* Load the segement registers to match the GDT loaded in start16.S */
 	movl	$(X86_GDT_ENTRY_32BIT_DS * X86_GDT_ENTRY_SIZE), %eax
 	movw	%ax, %fs
@@ -126,13 +123,17 @@ car_init_ret:
 #endif
 	/* Set up global data */
 	mov	%esp, %eax
-	call	board_init_f_alloc_reserve
+	call	board_init_f_mem
 	mov	%eax, %esp
-	call	board_init_f_init_reserve
 
-#ifdef CONFIG_DEBUG_UART
-	call	debug_uart_init
-#endif
+	/*
+	 * Debug UART is available here although it may not be plumbed out
+	 * to pins depending on the board. To use it:
+	 *
+	 * call  debug_uart_init
+	 * mov   $'a', %eax
+	 * call  printch
+	 */
 
 	/* Get address of global_data */
 	mov	%fs:0, %edx
@@ -223,71 +224,3 @@ multiboot_header:
 	.long	0
 	/* entry addr */
 	.long	CONFIG_SYS_TEXT_BASE
-
-#ifdef CONFIG_X86_LOAD_FROM_32_BIT
-	/*
-	 * The following Global Descriptor Table is just enough to get us into
-	 * 'Flat Protected Mode' - It will be discarded as soon as the final
-	 * GDT is setup in a safe location in RAM
-	 */
-gdt_ptr2:
-	.word	0x1f		/* limit (31 bytes = 4 GDT entries - 1) */
-	.long	gdt_rom2	/* base */
-
-	/* Some CPUs are picky about GDT alignment... */
-	.align	16
-.globl gdt_rom2
-gdt_rom2:
-	/*
-	 * The GDT table ...
-	 *
-	 *	 Selector	Type
-	 *	 0x00		NULL
-	 *	 0x08		Unused
-	 *	 0x10		32bit code
-	 *	 0x18		32bit data/stack
-	 */
-	/* The NULL Desciptor - Mandatory */
-	.word	0x0000		/* limit_low */
-	.word	0x0000		/* base_low */
-	.byte	0x00		/* base_middle */
-	.byte	0x00		/* access */
-	.byte	0x00		/* flags + limit_high */
-	.byte	0x00		/* base_high */
-
-	/* Unused Desciptor - (matches Linux) */
-	.word	0x0000		/* limit_low */
-	.word	0x0000		/* base_low */
-	.byte	0x00		/* base_middle */
-	.byte	0x00		/* access */
-	.byte	0x00		/* flags + limit_high */
-	.byte	0x00		/* base_high */
-
-	/*
-	 * The Code Segment Descriptor:
-	 * - Base   = 0x00000000
-	 * - Size   = 4GB
-	 * - Access = Present, Ring 0, Exec (Code), Readable
-	 * - Flags  = 4kB Granularity, 32-bit
-	 */
-	.word	0xffff		/* limit_low */
-	.word	0x0000		/* base_low */
-	.byte	0x00		/* base_middle */
-	.byte	0x9b		/* access */
-	.byte	0xcf		/* flags + limit_high */
-	.byte	0x00		/* base_high */
-
-	/*
-	 * The Data Segment Descriptor:
-	 * - Base   = 0x00000000
-	 * - Size   = 4GB
-	 * - Access = Present, Ring 0, Non-Exec (Data), Writable
-	 * - Flags  = 4kB Granularity, 32-bit
-	 */
-	.word	0xffff		/* limit_low */
-	.word	0x0000		/* base_low */
-	.byte	0x00		/* base_middle */
-	.byte	0x93		/* access */
-	.byte	0xcf		/* flags + limit_high */
-	.byte	0x00		/* base_high */
-#endif

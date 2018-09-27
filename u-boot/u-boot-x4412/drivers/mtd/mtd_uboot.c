@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2014
  * Heiko Schocher, DENX Software Engineering, hs@denx.de.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 #include <common.h>
 #include <linux/mtd/mtd.h>
@@ -36,7 +37,7 @@ static int get_part(const char *partname, int *idx, loff_t *off, loff_t *size,
 
 	return 0;
 #else
-	puts("mtdparts support missing.\n");
+	puts("offset is not a number\n");
 	return -1;
 #endif
 }

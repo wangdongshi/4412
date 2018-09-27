@@ -1,8 +1,9 @@
-// SPDX-License-Identifier: GPL-2.0
 /*
  * From Coreboot file of the same name
  *
  * Copyright (C) 2011 The Chromium Authors.
+ *
+ * SPDX-License-Identifier:	GPL-2.0
  */
 
 #include <common.h>
@@ -11,9 +12,7 @@
 #include <asm/processor.h>
 #include <asm/turbo.h>
 
-DECLARE_GLOBAL_DATA_PTR;
-
-#ifdef CONFIG_CPU_INTEL_TURBO_NOT_PACKAGE_SCOPED
+#if CONFIG_CPU_INTEL_TURBO_NOT_PACKAGE_SCOPED
 static inline int get_global_turbo_state(void)
 {
 	return TURBO_UNKNOWN;
@@ -23,14 +22,16 @@ static inline void set_global_turbo_state(int state)
 {
 }
 #else
+static int g_turbo_state = TURBO_UNKNOWN;
+
 static inline int get_global_turbo_state(void)
 {
-	return gd->arch.turbo_state;
+	return g_turbo_state;
 }
 
 static inline void set_global_turbo_state(int state)
 {
-	gd->arch.turbo_state = state;
+	g_turbo_state = state;
 }
 #endif
 

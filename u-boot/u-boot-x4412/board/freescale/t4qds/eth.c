@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2012 Freescale Semiconductor, Inc.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -20,7 +21,7 @@
 #include <fsl_mdio.h>
 #include <miiphy.h>
 #include <phy.h>
-#include <fsl_dtsec.h>
+#include <asm/fsl_dtsec.h>
 #include <asm/fsl_serdes.h>
 #include <hwconfig.h>
 #include "../common/qixis.h"
@@ -152,7 +153,7 @@ static int t4240qds_mdio_init(char *realbusname, u8 muxval)
 	bus->read = t4240qds_mdio_read;
 	bus->write = t4240qds_mdio_write;
 	bus->reset = t4240qds_mdio_reset;
-	strcpy(bus->name, t4240qds_mdio_name_for_muxval(muxval));
+	sprintf(bus->name, t4240qds_mdio_name_for_muxval(muxval));
 
 	pmdio->realbus = miiphy_get_dev_by_name(realbusname);
 
@@ -657,7 +658,7 @@ int board_eth_init(bd_t *bis)
 		switch (fm_info_get_enet_if(i)) {
 		case PHY_INTERFACE_MODE_XGMII:
 			if ((srds_prtcl_s2 == 55) || (srds_prtcl_s2 == 57)) {
-				/* A fake PHY address to make U-Boot happy */
+				/* A fake PHY address to make U-boot happy */
 				fm_info_set_phy_address(i, i);
 			} else {
 				lane = serdes_get_first_lane(FSL_SRDS_1,
@@ -838,7 +839,7 @@ int board_eth_init(bd_t *bis)
 		switch (fm_info_get_enet_if(i)) {
 		case PHY_INTERFACE_MODE_XGMII:
 			if ((srds_prtcl_s2 == 55) || (srds_prtcl_s2 == 57)) {
-				/* A fake PHY address to make U-Boot happy */
+				/* A fake PHY address to make U-boot happy */
 				fm_info_set_phy_address(i, i);
 			} else {
 				lane = serdes_get_first_lane(FSL_SRDS_2,

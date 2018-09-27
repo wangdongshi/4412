@@ -1,7 +1,8 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  *  (C) Copyright 2010
  *  NVIDIA Corporation <www.nvidia.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __ASM_ARCH_TEGRA_DC_H
@@ -564,5 +565,10 @@ enum {
 #define DC_POLL_TIMEOUT_MS		50
 #define DC_N_WINDOWS			5
 #define DC_REG_SAVE_SPACE		(DC_N_WINDOWS + 5)
+
+struct display_timing;
+
+int display_init(void *lcdbase, int fb_bits_per_pixel,
+		 struct display_timing *timing);
 
 #endif /* __ASM_ARCH_TEGRA_DC_H */

@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2000
  * Wolfgang Denk, DENX Software Engineering, wd@denx.de.
@@ -6,18 +5,18 @@
  * Add to readline cmdline-editing by
  * (C) Copyright 2005
  * JinHua Luo, GuangDong Linux Center, <luo.jinhua@gd-linux.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <cli.h>
 #include <cli_hush.h>
-#include <console.h>
 #include <fdtdec.h>
 #include <malloc.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
-#ifdef CONFIG_CMDLINE
 /*
  * Run a command using the selected parser.
  *
@@ -27,7 +26,7 @@ DECLARE_GLOBAL_DATA_PTR;
  */
 int run_command(const char *cmd, int flag)
 {
-#ifndef CONFIG_HUSH_PARSER
+#ifndef CONFIG_SYS_HUSH_PARSER
 	/*
 	 * cli_run_command can return 0 or 1 for success, so clean up
 	 * its result.
@@ -54,7 +53,7 @@ int run_command(const char *cmd, int flag)
  */
 int run_command_repeatable(const char *cmd, int flag)
 {
-#ifndef CONFIG_HUSH_PARSER
+#ifndef CONFIG_SYS_HUSH_PARSER
 	return cli_simple_run_command(cmd, flag);
 #else
 	/*
@@ -68,7 +67,6 @@ int run_command_repeatable(const char *cmd, int flag)
 	return 0;
 #endif
 }
-#endif /* CONFIG_CMDLINE */
 
 int run_command_list(const char *cmd, int len, int flag)
 {
@@ -78,7 +76,7 @@ int run_command_list(const char *cmd, int len, int flag)
 
 	if (len == -1) {
 		len = strlen(cmd);
-#ifdef CONFIG_HUSH_PARSER
+#ifdef CONFIG_SYS_HUSH_PARSER
 		/* hush will never change our string */
 		need_buff = 0;
 #else
@@ -93,7 +91,7 @@ int run_command_list(const char *cmd, int len, int flag)
 		memcpy(buff, cmd, len);
 		buff[len] = '\0';
 	}
-#ifdef CONFIG_HUSH_PARSER
+#ifdef CONFIG_SYS_HUSH_PARSER
 	rcode = parse_string_outer(buff, FLAG_PARSE_SEMICOLON);
 #else
 	/*
@@ -103,14 +101,10 @@ int run_command_list(const char *cmd, int len, int flag)
 	 * doing a malloc() which is actually required only in a case that
 	 * is pretty rare.
 	 */
-#ifdef CONFIG_CMDLINE
 	rcode = cli_simple_run_command_list(buff, flag);
-#else
-	rcode = board_run_command(buff);
-#endif
-#endif
 	if (need_buff)
 		free(buff);
+#endif
 
 	return rcode;
 }
@@ -128,7 +122,7 @@ int do_run(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	for (i = 1; i < argc; ++i) {
 		char *arg;
 
-		arg = env_get(argv[i]);
+		arg = getenv(argv[i]);
 		if (arg == NULL) {
 			printf("## Error: \"%s\" not defined\n", argv[i]);
 			return 1;
@@ -171,9 +165,7 @@ bool cli_process_fdt(const char **cmdp)
  */
 void cli_secure_boot_cmd(const char *cmd)
 {
-#ifdef CONFIG_CMDLINE
 	cmd_tbl_t *cmdtp;
-#endif
 	int rc;
 
 	if (!cmd) {
@@ -185,7 +177,6 @@ void cli_secure_boot_cmd(const char *cmd)
 	disable_ctrlc(1);
 
 	/* Find the command directly. */
-#ifdef CONFIG_CMDLINE
 	cmdtp = find_cmd(cmd);
 	if (!cmdtp) {
 		printf("## Error: \"%s\" not defined\n", cmd);
@@ -194,10 +185,6 @@ void cli_secure_boot_cmd(const char *cmd)
 
 	/* Run the command, forcing no flags and faking argc and argv. */
 	rc = (cmdtp->cmd)(cmdtp, 0, 1, (char **)&cmd);
-
-#else
-	rc = board_run_command(cmd);
-#endif
 
 	/* Shouldn't ever return from boot command. */
 	printf("## Error: \"%s\" returned (code %d)\n", cmd, rc);
@@ -213,20 +200,18 @@ err:
 
 void cli_loop(void)
 {
-#ifdef CONFIG_HUSH_PARSER
+#ifdef CONFIG_SYS_HUSH_PARSER
 	parse_file_outer();
 	/* This point is never reached */
 	for (;;);
-#elif defined(CONFIG_CMDLINE)
-	cli_simple_loop();
 #else
-	printf("## U-Boot command line is disabled. Please enable CONFIG_CMDLINE\n");
-#endif /*CONFIG_HUSH_PARSER*/
+	cli_simple_loop();
+#endif /*CONFIG_SYS_HUSH_PARSER*/
 }
 
 void cli_init(void)
 {
-#ifdef CONFIG_HUSH_PARSER
+#ifdef CONFIG_SYS_HUSH_PARSER
 	u_boot_hush_start();
 #endif
 

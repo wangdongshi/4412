@@ -1,7 +1,8 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  *  (C) Copyright 2010,2011
  *  NVIDIA Corporation <www.nvidia.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef _TEGRA_BOARD_H_
@@ -19,7 +20,7 @@ void gpio_early_init(void);  /* overrideable GPIO config        */
 /*
  * Hooks to allow boards to set up the pinmux for a specific function.
  * Has to be implemented in the board files as we don't yet support pinmux
- * setup from FDT. If a board file does not implement one of those functions
+ * setup from FTD. If a board file does not implement one of those functions
  * an empty stub function will be called.
  */
 

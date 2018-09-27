@@ -1,10 +1,11 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2010
  * Vipin Kumar, ST Microelectronics, vipin.kumar@st.com.
  *
  * (C) Copyright 2012
  * Amit Virdi, ST Microelectronics, amit.virdi@st.com.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -164,7 +165,7 @@ static int count_written_bits(uint8_t *buff, int size, int max_bits)
 
 static void fsmc_nand_hwcontrol(struct mtd_info *mtd, int cmd, uint ctrl)
 {
-	struct nand_chip *this = mtd_to_nand(mtd);
+	struct nand_chip *this = mtd->priv;
 	ulong IO_ADDR_W;
 
 	if (ctrl & NAND_CTRL_CHANGE) {
@@ -408,8 +409,8 @@ int fsmc_nand_switch_ecc(uint32_t eccstrength)
 	 * Nomadik SoC is currently supporting this fsmc_nand_switch_ecc()
 	 * function, as it doesn't need to switch to a different ECC layout.
 	 */
-	mtd = get_nand_dev_by_index(nand_curr_device);
-	nand = mtd_to_nand(mtd);
+	mtd = &nand_info[nand_curr_device];
+	nand = mtd->priv;
 
 	/* Setup the ecc configurations again */
 	if (eccstrength == 1) {
@@ -442,6 +443,7 @@ int fsmc_nand_init(struct nand_chip *nand)
 {
 	static int chip_nr;
 	struct mtd_info *mtd;
+	int i;
 	u32 peripid2 = readl(&fsmc_regs_p->peripid2);
 
 	fsmc_version = (peripid2 >> FSMC_REVISION_SHFT) &
@@ -478,7 +480,8 @@ int fsmc_nand_init(struct nand_chip *nand)
 		(void  __iomem *)CONFIG_SYS_NAND_BASE;
 	nand->badblockbits = 7;
 
-	mtd = nand_to_mtd(nand);
+	mtd = &nand_info[chip_nr++];
+	mtd->priv = nand;
 
 	switch (fsmc_version) {
 	case FSMC_VER8:
@@ -511,8 +514,9 @@ int fsmc_nand_init(struct nand_chip *nand)
 	if (nand_scan_tail(mtd))
 		return -ENXIO;
 
-	if (nand_register(chip_nr++, mtd))
-		return -ENXIO;
+	for (i = 0; i < CONFIG_SYS_MAX_NAND_DEVICE; i++)
+		if (nand_register(i))
+			return -ENXIO;
 
 	return 0;
 }

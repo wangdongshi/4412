@@ -1,12 +1,13 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2015  Masahiro Yamada <yamada.masahiro@socionext.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /* #define DEBUG */
 
 #include <common.h>
-#include <dm.h>
+#include <dm/device.h>
 #include <dm/pinctrl.h>
 
 static const char * const sandbox_pins[] = {

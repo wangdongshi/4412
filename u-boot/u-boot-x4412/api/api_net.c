@@ -1,8 +1,9 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2007 Semihalf
  *
  * Written by: Rafal Jaworowski <raj@semihalf.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <config.h>
@@ -10,6 +11,8 @@
 #include <net.h>
 #include <linux/types.h>
 #include <api_public.h>
+
+DECLARE_GLOBAL_DATA_PTR;
 
 #define DEBUG
 #undef DEBUG
@@ -22,7 +25,7 @@
 
 #define errf(fmt, args...) do { printf("ERROR @ %s(): ", __func__); printf(fmt, ##args); } while (0)
 
-#if defined(CONFIG_CMD_NET) && !defined(CONFIG_DM_ETH)
+#ifdef CONFIG_CMD_NET
 
 static int dev_valid_net(void *cookie)
 {

@@ -1,8 +1,9 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Chromium OS cros_ec driver
  *
  * Copyright (c) 2012 The Chromium OS Authors.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef _CROS_EC_H
@@ -10,9 +11,9 @@
 
 #include <linux/compiler.h>
 #include <ec_commands.h>
+#include <fdtdec.h>
 #include <cros_ec_message.h>
 #include <asm/gpio.h>
-#include <dm/of_extra.h>
 
 /* Our configuration information */
 struct cros_ec_dev {
@@ -80,7 +81,7 @@ int cros_ec_read_id(struct cros_ec_dev *dev, char *id, int maxlen);
  * @param scan		Place to put the scan results
  * @return 0 if ok, -1 on error
  */
-int cros_ec_scan_keyboard(struct udevice *dev, struct mbkp_keyscan *scan);
+int cros_ec_scan_keyboard(struct cros_ec_dev *dev, struct mbkp_keyscan *scan);
 
 /**
  * Read which image is currently running on the CROS-EC device.
@@ -124,7 +125,7 @@ int cros_ec_reboot(struct cros_ec_dev *dev, enum ec_reboot_cmd cmd,
  * @param dev		CROS-EC device
  * @return 0 if no interrupt is pending
  */
-int cros_ec_interrupt_pending(struct udevice *dev);
+int cros_ec_interrupt_pending(struct cros_ec_dev *dev);
 
 enum {
 	CROS_EC_OK,
@@ -249,6 +250,15 @@ void cros_ec_dump_data(const char *name, int cmd, const uint8_t *data, int len);
  */
 int cros_ec_calc_checksum(const uint8_t *data, int size);
 
+/**
+ * Decode a flash region parameter
+ *
+ * @param argc	Number of params remaining
+ * @param argv	List of remaining parameters
+ * @return flash region (EC_FLASH_REGION_...) or -1 on error
+ */
+int cros_ec_decode_region(int argc, char * const argv[]);
+
 int cros_ec_flash_erase(struct cros_ec_dev *dev, uint32_t offset,
 		uint32_t size);
 
@@ -269,17 +279,6 @@ int cros_ec_flash_erase(struct cros_ec_dev *dev, uint32_t offset,
  */
 int cros_ec_flash_read(struct cros_ec_dev *dev, uint8_t *data, uint32_t offset,
 		    uint32_t size);
-
-/**
- * Read back flash parameters
- *
- * This function reads back parameters of the flash as reported by the EC
- *
- * @param dev  Pointer to device
- * @param info Pointer to output flash info struct
- */
-int cros_ec_read_flashinfo(struct cros_ec_dev *dev,
-			  struct ec_response_flash_info *info);
 
 /**
  * Write data to the flash
@@ -376,10 +375,12 @@ int cros_ec_get_error(void);
 /**
  * Returns information from the FDT about the Chrome EC flash
  *
- * @param dev		Device to read from
+ * @param blob		FDT blob to use
+ * @param node		Node offset to read from
  * @param config	Structure to use to return information
  */
-int cros_ec_decode_ec_flash(struct udevice *dev, struct fdt_cros_ec *config);
+int cros_ec_decode_ec_flash(const void *blob, int node,
+			    struct fdt_cros_ec *config);
 
 /**
  * Check the current keyboard state, in case recovery mode is requested.
@@ -394,11 +395,9 @@ struct i2c_msg;
  * Tunnel an I2C transfer to the EC
  *
  * @param dev		CROS-EC device
- * @param port		The remote port on EC to use
  * @param msg		List of messages to transfer
  * @param nmsgs		Number of messages to transfer
  */
-int cros_ec_i2c_tunnel(struct udevice *dev, int port, struct i2c_msg *msg,
-		       int nmsgs);
+int cros_ec_i2c_tunnel(struct udevice *dev, struct i2c_msg *msg, int nmsgs);
 
 #endif

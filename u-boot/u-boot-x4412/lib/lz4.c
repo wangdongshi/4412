@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: BSD-2-Clause
 /*
    LZ4 - Fast LZ compression algorithm
    Copyright (C) 2011-2015, Yann Collet.
+
+   SPDX-License-Identifier: BSD-2-Clause
 
    You can contact the author at :
    - LZ4 source repository : https://github.com/Cyan4973/lz4

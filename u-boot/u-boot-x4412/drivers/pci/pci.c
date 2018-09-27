@@ -1,17 +1,15 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2001 Sysgo Real-Time Solutions, GmbH <www.elinos.com>
  * Andreas Heppel <aheppel@sysgo.de>
  *
  * (C) Copyright 2002, 2003
  * Wolfgang Denk, DENX Software Engineering, wd@denx.de.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /*
- * Old PCI routines
- *
- * Do not change this file. Instead, convert your board to use CONFIG_DM_PCI
- * and change pci-uclass.c.
+ * PCI routines
  */
 
 #include <common.h>
@@ -174,7 +172,11 @@ pci_dev_t pci_find_devices(struct pci_device_id *ids, int index)
 	int bus;
 
 	for (hose = pci_get_hose_head(); hose; hose = hose->next) {
+#ifdef CONFIG_SYS_SCSI_SCAN_BUS_REVERSE
+		for (bus = hose->last_busno; bus >= hose->first_busno; bus--) {
+#else
 		for (bus = hose->first_busno; bus <= hose->last_busno; bus++) {
+#endif
 			bdf = pci_hose_find_devices(hose, bus, ids, &index);
 			if (bdf != -1)
 				return bdf;
@@ -426,7 +428,7 @@ int pci_hose_scan(struct pci_controller *hose)
 
 	if (!gd->pcidelay_done) {
 		/* wait "pcidelay" ms (if defined)... */
-		s = env_get("pcidelay");
+		s = getenv("pcidelay");
 		if (s) {
 			int val = simple_strtoul(s, NULL, 10);
 			for (i = 0; i < val; i++)
@@ -456,10 +458,6 @@ int pci_hose_scan(struct pci_controller *hose)
 void pci_init(void)
 {
 	hose_head = NULL;
-
-	/* allow env to disable pci init/enum */
-	if (env_get("pcidisable") != NULL)
-		return;
 
 	/* now call board specific pci_init()... */
 	pci_init_board();

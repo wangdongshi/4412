@@ -1,8 +1,9 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * DDR3 mem setup file for board based on EXYNOS5
  *
  * Copyright (C) 2012 Samsung Electronics
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -19,8 +20,8 @@
 #define TIMEOUT_US		10000
 #define NUM_BYTE_LANES		4
 #define DEFAULT_DQS		8
-#define DEFAULT_DQS_X4		((DEFAULT_DQS << 24) || (DEFAULT_DQS << 16) \
-				|| (DEFAULT_DQS << 8) || (DEFAULT_DQS << 0))
+#define DEFAULT_DQS_X4		(DEFAULT_DQS << 24) || (DEFAULT_DQS << 16) \
+				|| (DEFAULT_DQS << 8) || (DEFAULT_DQS << 0)
 
 #ifdef CONFIG_EXYNOS5250
 static void reset_phy_ctrl(void)
@@ -617,7 +618,7 @@ int ddr3_mem_ctrl_init(struct mem_timings *mem, int reset)
 		/*
 		 * Send NOP, MRS and ZQINIT commands
 		 * Sending MRS command will reset the DRAM. We should not be
-		 * resetting the DRAM after resume, this will lead to memory
+		 * reseting the DRAM after resume, this will lead to memory
 		 * corruption as DRAM content is lost after DRAM reset
 		 */
 		dmc_config_mrs(mem, &drex0->directcmd);
@@ -855,10 +856,10 @@ int ddr3_mem_ctrl_init(struct mem_timings *mem, int reset)
 	 */
 	val = readl(&drex0->concontrol);
 	val |= CONCONTROL_UPDATE_MODE;
-	writel(val, &drex0->concontrol);
+	writel(val , &drex0->concontrol);
 	val = readl(&drex1->concontrol);
 	val |= CONCONTROL_UPDATE_MODE;
-	writel(val, &drex1->concontrol);
+	writel(val , &drex1->concontrol);
 
 	return 0;
 }

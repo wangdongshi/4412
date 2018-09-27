@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  *  (C) Copyright 2010-2013
  *  NVIDIA Corporation <www.nvidia.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -12,6 +13,7 @@
 #include <asm/gpio.h>
 #include "pinmux-config-cardhu.h"
 #include <i2c.h>
+#include <netdev.h>
 
 #define PMU_I2C_ADDRESS		0x2D
 #define MAX_I2C_RETRY		3
@@ -32,7 +34,7 @@ void pinmux_init(void)
 	pinmux_config_drvgrp_table(cardhu_padctrl, ARRAY_SIZE(cardhu_padctrl));
 }
 
-#if defined(CONFIG_MMC_SDHCI_TEGRA)
+#if defined(CONFIG_TEGRA_MMC)
 /*
  * Do I2C/PMU writes to bring up SD card bus power
  *
@@ -109,11 +111,11 @@ int tegra_pcie_board_init(void)
 	}
 
 	/* GPIO: PEX = 3.3V */
-	err = gpio_request(TEGRA_GPIO(L, 7), "PEX");
+	err = gpio_request(GPIO_PL7, "PEX");
 	if (err < 0)
 		return err;
 
-	gpio_direction_output(TEGRA_GPIO(L, 7), 1);
+	gpio_direction_output(GPIO_PL7, 1);
 
 	/* TPS659110: LDO2_REG = 1.05V, ACTIVE */
 	data[0] = 0x15;
@@ -126,5 +128,10 @@ int tegra_pcie_board_init(void)
 	}
 
 	return 0;
+}
+
+int board_eth_init(bd_t *bis)
+{
+	return pci_eth_init(bis);
 }
 #endif /* PCI */

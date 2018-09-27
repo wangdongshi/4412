@@ -1,14 +1,14 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Copyright (C) Marvell International Ltd. and its affiliates
+ *
+ * SPDX-License-Identifier:	GPL-2.0
  */
 
 #ifndef _DDR3_TOPOLOGY_DEF_H
 #define _DDR3_TOPOLOGY_DEF_H
 
-#define DEV_NUM_0	0
-
 /* TOPOLOGY */
+
 enum hws_speed_bin {
 	SPEED_BIN_DDR_800D,
 	SPEED_BIN_DDR_800E,
@@ -54,8 +54,7 @@ enum hws_ddr_freq {
 	DDR_FREQ_900,
 	DDR_FREQ_360,
 	DDR_FREQ_1000,
-	DDR_FREQ_LAST,
-	DDR_FREQ_SAR
+	DDR_FREQ_LIMIT
 };
 
 enum speed_bin_table_elements {
@@ -71,8 +70,7 @@ enum speed_bin_table_elements {
 	SPEED_BIN_TWTR,
 	SPEED_BIN_TRTP,
 	SPEED_BIN_TWR,
-	SPEED_BIN_TMOD,
-	SPEED_BIN_TXPDLL
+	SPEED_BIN_TMOD
 };
 
 #endif /* _DDR3_TOPOLOGY_DEF_H */

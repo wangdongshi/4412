@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  *  Copyright (C) 2015 Linaro
  *  Peter Griffin <peter.griffin@linaro.org>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 #include <asm/io.h>
 #include <common.h>
@@ -25,7 +26,7 @@ void hi6553_writeb(u32 offset, uint8_t value)
 int pmic_reg_write(struct pmic *p, u32 reg, u32 val)
 {
 	if (check_reg(p, reg))
-		return -EINVAL;
+		return -1;
 
 	hi6553_writeb(reg, (uint8_t)val);
 
@@ -35,7 +36,7 @@ int pmic_reg_write(struct pmic *p, u32 reg, u32 val)
 int pmic_reg_read(struct pmic *p, u32 reg, u32 *val)
 {
 	if (check_reg(p, reg))
-		return -EINVAL;
+		return -1;
 
 	*val = (u32)hi6553_readb(reg);
 

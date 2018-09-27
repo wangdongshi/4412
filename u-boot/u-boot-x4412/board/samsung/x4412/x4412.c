@@ -1,7 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2011 Samsung Electronics
- * Add by Wang.Yu 2018-09-25. Copy from samsung origen board.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -12,6 +12,8 @@
 #include <asm/arch/periph.h>
 #include <asm/arch/pinmux.h>
 #include <usb.h>
+
+DECLARE_GLOBAL_DATA_PTR;
 
 u32 get_board_rev(void)
 {

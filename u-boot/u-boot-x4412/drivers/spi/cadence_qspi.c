@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2012
  * Altera Corporation <www.altera.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -9,7 +10,7 @@
 #include <fdtdec.h>
 #include <malloc.h>
 #include <spi.h>
-#include <linux/errno.h>
+#include <asm/errno.h>
 #include "cadence_qspi.h"
 
 #define CQSPI_STIG_READ			0
@@ -36,8 +37,9 @@ static int cadence_spi_write_speed(struct udevice *bus, uint hz)
 }
 
 /* Calibration sequence to determine the read data capture delay register */
-static int spi_calibration(struct udevice *bus, uint hz)
+static int spi_calibration(struct udevice *bus)
 {
+	struct cadence_spi_platdata *plat = bus->platdata;
 	struct cadence_spi_priv *priv = dev_get_priv(bus);
 	void *base = priv->regbase;
 	u8 opcode_rdid = 0x9F;
@@ -62,7 +64,7 @@ static int spi_calibration(struct udevice *bus, uint hz)
 	}
 
 	/* use back the intended clock and find low range */
-	cadence_spi_write_speed(bus, hz);
+	cadence_spi_write_speed(bus, plat->max_hz);
 	for (i = 0; i < CQSPI_READ_CAPTURE_MAX_DELAY; i++) {
 		/* Disable QSPI */
 		cadence_qspi_apb_controller_disable(base);
@@ -109,7 +111,7 @@ static int spi_calibration(struct udevice *bus, uint hz)
 	      (range_hi + range_lo) / 2, range_lo, range_hi);
 
 	/* just to ensure we do once only when speed or chip select change */
-	priv->qspi_calibrated_hz = hz;
+	priv->qspi_calibrated_hz = plat->max_hz;
 	priv->qspi_calibrated_cs = spi_chip_select(bus);
 
 	return 0;
@@ -121,25 +123,17 @@ static int cadence_spi_set_speed(struct udevice *bus, uint hz)
 	struct cadence_spi_priv *priv = dev_get_priv(bus);
 	int err;
 
-	if (hz > plat->max_hz)
-		hz = plat->max_hz;
-
 	/* Disable QSPI */
 	cadence_qspi_apb_controller_disable(priv->regbase);
 
-	/*
-	 * Calibration required for different current SCLK speed, requested
-	 * SCLK speed or chip select
-	 */
-	if (priv->previous_hz != hz ||
-	    priv->qspi_calibrated_hz != hz ||
+	cadence_spi_write_speed(bus, hz);
+
+	/* Calibration required for different SCLK speed or chip select */
+	if (priv->qspi_calibrated_hz != plat->max_hz ||
 	    priv->qspi_calibrated_cs != spi_chip_select(bus)) {
-		err = spi_calibration(bus, hz);
+		err = spi_calibration(bus);
 		if (err)
 			return err;
-
-		/* prevent calibration run when same as previous request */
-		priv->previous_hz = hz;
 	}
 
 	/* Enable QSPI */
@@ -169,12 +163,14 @@ static int cadence_spi_probe(struct udevice *bus)
 static int cadence_spi_set_mode(struct udevice *bus, uint mode)
 {
 	struct cadence_spi_priv *priv = dev_get_priv(bus);
+	unsigned int clk_pol = (mode & SPI_CPOL) ? 1 : 0;
+	unsigned int clk_pha = (mode & SPI_CPHA) ? 1 : 0;
 
 	/* Disable QSPI */
 	cadence_qspi_apb_controller_disable(priv->regbase);
 
 	/* Set SPI mode */
-	cadence_qspi_apb_set_clk_mode(priv->regbase, mode);
+	cadence_qspi_apb_set_clk_mode(priv->regbase, clk_pol, clk_pha);
 
 	/* Enable QSPI */
 	cadence_qspi_apb_controller_enable(priv->regbase);
@@ -188,7 +184,6 @@ static int cadence_spi_xfer(struct udevice *dev, unsigned int bitlen,
 	struct udevice *bus = dev->parent;
 	struct cadence_spi_platdata *plat = bus->platdata;
 	struct cadence_spi_priv *priv = dev_get_priv(bus);
-	struct dm_spi_slave_platdata *dm_plat = dev_get_parent_platdata(dev);
 	void *base = priv->regbase;
 	u8 *cmd_buf = priv->cmd_buf;
 	size_t data_bytes;
@@ -211,7 +206,7 @@ static int cadence_spi_xfer(struct udevice *dev, unsigned int bitlen,
 
 	/* Set Chip select */
 	cadence_qspi_apb_chipselect(base, spi_chip_select(dev),
-				    plat->is_decoded_cs);
+				    CONFIG_CQSPI_DECODER);
 
 	if ((flags & SPI_XFER_END) || (flags == 0)) {
 		if (priv->cmd_len == 0) {
@@ -248,7 +243,7 @@ static int cadence_spi_xfer(struct udevice *dev, unsigned int bitlen,
 		break;
 		case CQSPI_INDIRECT_READ:
 			err = cadence_qspi_apb_indirect_read_setup(plat,
-				priv->cmd_len, dm_plat->mode, cmd_buf);
+				priv->cmd_len, cmd_buf);
 			if (!err) {
 				err = cadence_qspi_apb_indirect_read_execute
 				(plat, data_bytes, din);
@@ -281,16 +276,24 @@ static int cadence_spi_ofdata_to_platdata(struct udevice *bus)
 {
 	struct cadence_spi_platdata *plat = bus->platdata;
 	const void *blob = gd->fdt_blob;
-	int node = dev_of_offset(bus);
+	int node = bus->of_offset;
 	int subnode;
+	u32 data[4];
+	int ret;
 
-	plat->regbase = (void *)devfdt_get_addr_index(bus, 0);
-	plat->ahbbase = (void *)devfdt_get_addr_index(bus, 1);
-	plat->is_decoded_cs = fdtdec_get_bool(blob, node, "cdns,is-decoded-cs");
-	plat->fifo_depth = fdtdec_get_uint(blob, node, "cdns,fifo-depth", 128);
-	plat->fifo_width = fdtdec_get_uint(blob, node, "cdns,fifo-width", 4);
-	plat->trigger_address = fdtdec_get_uint(blob, node,
-						"cdns,trigger-address", 0);
+	/* 2 base addresses are needed, lets get them from the DT */
+	ret = fdtdec_get_int_array(blob, node, "reg", data, ARRAY_SIZE(data));
+	if (ret) {
+		printf("Error: Can't get base addresses (ret=%d)!\n", ret);
+		return -ENODEV;
+	}
+
+	plat->regbase = (void *)data[0];
+	plat->ahbbase = (void *)data[2];
+
+	/* Use 500KHz as a suitable default */
+	plat->max_hz = fdtdec_get_int(blob, node, "spi-max-frequency",
+				      500000);
 
 	/* All other paramters are embedded in the child node */
 	subnode = fdt_first_subnode(blob, node);
@@ -299,17 +302,14 @@ static int cadence_spi_ofdata_to_platdata(struct udevice *bus)
 		return -ENODEV;
 	}
 
-	/* Use 500 KHz as a suitable default */
-	plat->max_hz = fdtdec_get_uint(blob, subnode, "spi-max-frequency",
-				       500000);
-
 	/* Read other parameters from DT */
-	plat->page_size = fdtdec_get_uint(blob, subnode, "page-size", 256);
-	plat->block_size = fdtdec_get_uint(blob, subnode, "block-size", 16);
-	plat->tshsl_ns = fdtdec_get_uint(blob, subnode, "cdns,tshsl-ns", 200);
-	plat->tsd2d_ns = fdtdec_get_uint(blob, subnode, "cdns,tsd2d-ns", 255);
-	plat->tchsh_ns = fdtdec_get_uint(blob, subnode, "cdns,tchsh-ns", 20);
-	plat->tslch_ns = fdtdec_get_uint(blob, subnode, "cdns,tslch-ns", 20);
+	plat->page_size = fdtdec_get_int(blob, subnode, "page-size", 256);
+	plat->block_size = fdtdec_get_int(blob, subnode, "block-size", 16);
+	plat->tshsl_ns = fdtdec_get_int(blob, subnode, "tshsl-ns", 200);
+	plat->tsd2d_ns = fdtdec_get_int(blob, subnode, "tsd2d-ns", 255);
+	plat->tchsh_ns = fdtdec_get_int(blob, subnode, "tchsh-ns", 20);
+	plat->tslch_ns = fdtdec_get_int(blob, subnode, "tslch-ns", 20);
+	plat->sram_size = fdtdec_get_int(blob, node, "sram-size", 128);
 
 	debug("%s: regbase=%p ahbbase=%p max-frequency=%d page-size=%d\n",
 	      __func__, plat->regbase, plat->ahbbase, plat->max_hz,

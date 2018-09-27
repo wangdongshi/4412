@@ -1,7 +1,8 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2010-2015
  * NVIDIA Corporation <www.nvidia.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 #include <asm/types.h>
 
@@ -15,7 +16,7 @@
 #elif defined(CONFIG_TEGRA30) || defined(CONFIG_TEGRA114) || \
 	defined(CONFIG_TEGRA124) || defined(CONFIG_TEGRA210)
 #define NVBL_PLLP_KHZ	408000
-#define CSITE_KHZ	136000
+#define CSITE_KHZ	204000
 #else
 #error "Unknown Tegra chip!"
 #endif

@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2011-2012 The Chromium OS Authors.
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -153,7 +153,7 @@ int sandbox_read_state(struct sandbox_state *state, const char *fname)
 			return ret;
 	}
 
-	/* Call all the state read functions */
+	/* Call all the state read funtcions */
 	got_err = false;
 	blob = state->state_fdt;
 	io = ll_entry_start(struct sandbox_state_io, state_io);
@@ -337,30 +337,6 @@ struct sandbox_state *state_get_current(void)
 	return state;
 }
 
-void state_set_skip_delays(bool skip_delays)
-{
-	struct sandbox_state *state = state_get_current();
-
-	state->skip_delays = skip_delays;
-}
-
-bool state_get_skip_delays(void)
-{
-	struct sandbox_state *state = state_get_current();
-
-	return state->skip_delays;
-}
-
-void state_reset_for_test(struct sandbox_state *state)
-{
-	/* No reset yet, so mark it as such. Always allow power reset */
-	state->last_sysreset = SYSRESET_COUNT;
-	state->sysreset_allowed[SYSRESET_POWER] = true;
-
-	memset(&state->wdt, '\0', sizeof(state->wdt));
-	memset(state->spi, '\0', sizeof(state->spi));
-}
-
 int state_init(void)
 {
 	state = &main_state;
@@ -369,7 +345,10 @@ int state_init(void)
 	state->ram_buf = os_malloc(state->ram_size);
 	assert(state->ram_buf);
 
-	state_reset_for_test(state);
+	/* No reset yet, so mark it as such. Always allow power reset */
+	state->last_reset = RESET_COUNT;
+	state->reset_allowed[RESET_POWER] = true;
+
 	/*
 	 * Example of how to use GPIOs:
 	 *

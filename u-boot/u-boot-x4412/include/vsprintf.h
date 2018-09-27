@@ -1,14 +1,12 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2000-2009
  * Wolfgang Denk, DENX Software Engineering, wd@denx.de.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __VSPRINTF_H
 #define __VSPRINTF_H
-
-#include <stdarg.h>
-#include <linux/types.h>
 
 ulong simple_strtoul(const char *cp, char **endp, unsigned int base);
 
@@ -72,7 +70,7 @@ long trailing_strtoln(const char *str, const char *end);
  * panic() - Print a message and reset/hang
  *
  * Prints a message on the console(s) and then resets. If CONFIG_PANIC_HANG is
- * defined, then it will hang instead of resetting.
+ * defined, then it will hang instead of reseting.
  *
  * @param fmt:	printf() format string for message, which should not include
  *		\n, followed by arguments
@@ -84,7 +82,7 @@ void panic(const char *fmt, ...)
  * panic_str() - Print a message and reset/hang
  *
  * Prints a message on the console(s) and then resets. If CONFIG_PANIC_HANG is
- * defined, then it will hang instead of resetting.
+ * defined, then it will hang instead of reseting.
  *
  * This function can be used instead of panic() when your board does not
  * already use printf(), * to keep code size small.
@@ -112,10 +110,12 @@ int sprintf(char *buf, const char *fmt, ...)
  * Format a string and place it in a buffer (va_list version)
  *
  * @param buf	The buffer to place the result into
+ * @param size	The size of the buffer, including the trailing null space
  * @param fmt	The format string to use
  * @param args	Arguments for the format string
  * @return the number of characters which have been written into
- * the @buf not including the trailing '\0'.
+ * the @buf not including the trailing '\0'. If @size is == 0 the function
+ * returns 0.
  *
  * If you're not already dealing with a va_list consider using scnprintf().
  *
@@ -124,6 +124,7 @@ int sprintf(char *buf, const char *fmt, ...)
 int vsprintf(char *buf, const char *fmt, va_list args);
 char *simple_itoa(ulong i);
 
+#ifdef CONFIG_SYS_VSNPRINTF
 /**
  * Format a string and place it in a buffer
  *
@@ -198,6 +199,17 @@ int vsnprintf(char *buf, size_t size, const char *fmt, va_list args);
  * See the vsprintf() documentation for format string extensions over C99.
  */
 int vscnprintf(char *buf, size_t size, const char *fmt, va_list args);
+#else
+/*
+ * Use macros to silently drop the size parameter. Note that the 'cn'
+ * versions are the same as the 'n' versions since the functions assume
+ * there is always enough buffer space when !CONFIG_SYS_VSNPRINTF
+ */
+#define snprintf(buf, size, fmt, args...) sprintf(buf, fmt, ##args)
+#define scnprintf(buf, size, fmt, args...) sprintf(buf, fmt, ##args)
+#define vsnprintf(buf, size, fmt, args...) vsprintf(buf, fmt, ##args)
+#define vscnprintf(buf, size, fmt, args...) vsprintf(buf, fmt, ##args)
+#endif /* CONFIG_SYS_VSNPRINTF */
 
 /**
  * print_grouped_ull() - print a value with digits grouped by ','

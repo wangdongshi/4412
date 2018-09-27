@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2012 - 2013 Michal Simek <monstr@monstr.eu>
- * Copyright (C) 2012 - 2017 Xilinx, Inc. All rights reserved.
+ * Copyright (C) 2012 - 2013 Xilinx, Inc. All rights reserved.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -9,9 +10,8 @@
 #include <asm/arch/sys_proto.h>
 #include <asm/arch/hardware.h>
 
-#ifndef CONFIG_ZYNQ_DDRC_INIT
-void zynq_ddrc_init(void) {}
-#else
+DECLARE_GLOBAL_DATA_PTR;
+
 /* Control regsiter bitfield definitions */
 #define ZYNQ_DDRC_CTRLREG_BUSWIDTH_MASK		0xC
 #define ZYNQ_DDRC_CTRLREG_BUSWIDTH_SHIFT	2
@@ -42,8 +42,9 @@ void zynq_ddrc_init(void)
 		 */
 		/* cppcheck-suppress nullPointer */
 		memset((void *)0, 0, 1 * 1024 * 1024);
+
+		gd->ram_size /= 2;
 	} else {
 		puts("ECC disabled ");
 	}
 }
-#endif

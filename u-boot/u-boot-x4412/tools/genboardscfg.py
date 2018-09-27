@@ -1,7 +1,8 @@
 #!/usr/bin/env python2
-# SPDX-License-Identifier: GPL-2.0+
 #
 # Author: Masahiro Yamada <yamada.m@jp.panasonic.com>
+#
+# SPDX-License-Identifier:	GPL-2.0+
 #
 
 """
@@ -20,6 +21,7 @@ import glob
 import multiprocessing
 import optparse
 import os
+import subprocess
 import sys
 import tempfile
 import time
@@ -123,7 +125,7 @@ class KconfigScanner:
         os.environ['srctree'] = os.getcwd()
         os.environ['UBOOTVERSION'] = 'dummy'
         os.environ['KCONFIG_OBJDIR'] = ''
-        self._conf = kconfiglib.Config(print_warnings=False)
+        self._conf = kconfiglib.Config()
 
     def __del__(self):
         """Delete a leftover temporary file before exit.
@@ -165,10 +167,7 @@ class KconfigScanner:
                 else:
                     f.write(line[colon + 1:])
 
-        warnings = self._conf.load_config(self._tmpfile)
-        if warnings:
-            for warning in warnings:
-                print '%s: %s' % (defconfig, warning)
+        self._conf.load_config(self._tmpfile)
 
         try_remove(self._tmpfile)
         self._tmpfile = None
@@ -295,8 +294,6 @@ class MaintainersDatabase:
 
         tmp = self.database[target][0]
         if tmp.startswith('Maintained'):
-            return 'Active'
-        elif tmp.startswith('Supported'):
             return 'Active'
         elif tmp.startswith('Orphan'):
             return 'Orphan'

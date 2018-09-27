@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2014, NVIDIA
  * Copyright (C) 2015, Siemens AG
@@ -6,6 +5,8 @@
  * Authors:
  *  Thierry Reding <treding@nvidia.com>
  *  Jan Kiszka <jan.kiszka@siemens.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <linux/linkage.h>
@@ -60,6 +61,9 @@ ENTRY(psci_arch_init)
 	ldrne	r7, [r5]
 	mcrne	p15, 0, r7, c14, c0, 0	@ write CNTFRQ to CPU1..3
 
+	bl	psci_get_cpu_stack_top	@ stack top => r0
+	mov	sp, r0
+
 	bx	r6
 ENDPROC(psci_arch_init)
 
@@ -84,14 +88,12 @@ _loop:	wfi
 ENDPROC(psci_cpu_off)
 
 ENTRY(psci_cpu_on)
-	push	{r4, r5, r6, lr}
+	push	{lr}
 
-	mov	r4, r1
 	mov	r0, r1
-	mov	r1, r2
-	mov	r2, r3
-	bl	psci_save		@ store target PC and context id
-	mov	r1, r4
+	bl	psci_get_cpu_stack_top	@ get stack top of target CPU
+	str	r2, [r0]		@ store target PC at stack top
+	dsb
 
 	ldr	r6, =TEGRA_RESET_EXCEPTION_VECTOR
 	ldr	r5, =psci_cpu_entry
@@ -104,7 +106,9 @@ ENTRY(psci_cpu_on)
 	str	r5, [r6, r2]
 
 	mov	r0, #ARM_PSCI_RET_SUCCESS	@ Return PSCI_RET_SUCCESS
-	pop	{r4, r5, r6, pc}
+	pop	{pc}
 ENDPROC(psci_cpu_on)
 
+	.globl psci_text_end
+psci_text_end:
 	.popsection

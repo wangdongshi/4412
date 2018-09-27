@@ -1,8 +1,9 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * code for switching cores into non-secure state and into HYP mode
  *
  * Copyright (c) 2013	Andre Przywara <andre.przywara@linaro.org>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <config.h>
@@ -36,7 +37,7 @@ _monitor_vectors:
 
 /*
  * secure monitor handler
- * U-Boot calls this "software interrupt" in start.S
+ * U-boot calls this "software interrupt" in start.S
  * This is executed on a "smc" instruction, we use a "smc #0" to switch
  * to non-secure state.
  * r0, r1, r2: passed to the callee
@@ -48,13 +49,8 @@ _secure_monitor:
 	mcr	p15, 0, r5, c12, c0, 1
 	isb
 
-	@ Obtain a secure stack
-	bl	psci_stack_setup
-
-	@ Configure the PSCI backend
-	push	{r0, r1, r2, ip}
+	@ Obtain a secure stack, and configure the PSCI backend
 	bl	psci_arch_init
-	pop	{r0, r1, r2, ip}
 #endif
 
 #ifdef CONFIG_ARM_ERRATA_773022
@@ -187,11 +183,11 @@ ENTRY(_nonsec_init)
  * we do this here instead.
  * But first check if we have the generic timer.
  */
-#ifdef COUNTER_FREQUENCY
+#ifdef CONFIG_TIMER_CLK_FREQ
 	mrc	p15, 0, r0, c0, c1, 1		@ read ID_PFR1
 	and	r0, r0, #CPUID_ARM_GENTIMER_MASK	@ mask arch timer bits
 	cmp	r0, #(1 << CPUID_ARM_GENTIMER_SHIFT)
-	ldreq	r1, =COUNTER_FREQUENCY
+	ldreq	r1, =CONFIG_TIMER_CLK_FREQ
 	mcreq	p15, 0, r1, c14, c0, 0		@ write CNTFRQ
 #endif
 

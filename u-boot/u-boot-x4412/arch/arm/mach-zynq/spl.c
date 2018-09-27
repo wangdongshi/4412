@@ -1,34 +1,33 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
- * (C) Copyright 2014 - 2017 Xilinx, Inc. Michal Simek
+ * (C) Copyright 2014 Xilinx, Inc. Michal Simek
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 #include <common.h>
-#include <debug_uart.h>
 #include <spl.h>
 
 #include <asm/io.h>
-#include <asm/spl.h>
 #include <asm/arch/hardware.h>
+#include <asm/spl.h>
 #include <asm/arch/sys_proto.h>
-#include <asm/arch/ps7_init_gpl.h>
+
+DECLARE_GLOBAL_DATA_PTR;
 
 void board_init_f(ulong dummy)
 {
 	ps7_init();
 
-	arch_cpu_init();
+	/* Clear the BSS. */
+	memset(__bss_start, 0, __bss_end - __bss_start);
 
-#ifdef CONFIG_DEBUG_UART
-	/* Uart debug for sure */
-	debug_uart_init();
-	puts("Debug uart enabled\n"); /* or printch() */
-#endif
+	preloader_console_init();
+	arch_cpu_init();
+	board_init_r(NULL, 0);
 }
 
 #ifdef CONFIG_SPL_BOARD_INIT
 void spl_board_init(void)
 {
-	preloader_console_init();
 	board_init();
 }
 #endif
@@ -67,6 +66,13 @@ u32 spl_boot_device(void)
 	return mode;
 }
 
+#ifdef CONFIG_SPL_MMC_SUPPORT
+u32 spl_boot_mode(void)
+{
+	return MMCSD_MODE_FS;
+}
+#endif
+
 #ifdef CONFIG_SPL_OS_BOOT
 int spl_start_uboot(void)
 {
@@ -75,18 +81,10 @@ int spl_start_uboot(void)
 }
 #endif
 
-void spl_board_prepare_for_boot(void)
+__weak void ps7_init(void)
 {
-	ps7_post_config();
-	debug("SPL bye\n");
+	/*
+	 * This function is overridden by the one in
+	 * board/xilinx/zynq/(platform)/ps7_init_gpl.c, if it exists.
+	 */
 }
-
-#ifdef CONFIG_SPL_LOAD_FIT
-int board_fit_config_name_match(const char *name)
-{
-	/* Just empty function now - can't decide what to choose */
-	debug("%s: %s\n", __func__, name);
-
-	return 0;
-}
-#endif

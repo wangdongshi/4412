@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Porting to u-boot:
  *
@@ -8,13 +7,15 @@
  * Linux IPU driver for MX51:
  *
  * (C) Copyright 2005-2010 Freescale Semiconductor, Inc.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /* #define DEBUG */
 
 #include <common.h>
 #include <linux/types.h>
-#include <linux/errno.h>
+#include <asm/errno.h>
 #include <asm/io.h>
 #include <asm/arch/imx-regs.h>
 #include <asm/arch/sys_proto.h>
@@ -610,9 +611,11 @@ void ipu_dp_dc_enable(ipu_channel_t channel)
 	uint32_t reg;
 	uint32_t dc_chan;
 
+	if (channel == MEM_FG_SYNC)
+		dc_chan = 5;
 	if (channel == MEM_DC_SYNC)
 		dc_chan = 1;
-	else if ((channel == MEM_BG_SYNC) || (channel == MEM_FG_SYNC))
+	else if (channel == MEM_BG_SYNC)
 		dc_chan = 5;
 	else
 		return;
@@ -1116,7 +1119,7 @@ int32_t ipu_init_sync_panel(int disp, uint32_t pixel_clk,
 		reg &= 0x0000FFFF;
 		__raw_writel(reg, DI_STP_REP(disp, 6));
 		__raw_writel(0, DI_STP_REP(disp, 7));
-		__raw_writel(0, DI_STP_REP9(disp));
+		__raw_writel(0, DI_STP_REP(disp, 9));
 
 		/* Init template microcode */
 		if (disp) {

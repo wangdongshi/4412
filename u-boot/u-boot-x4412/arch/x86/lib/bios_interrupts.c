@@ -1,10 +1,11 @@
-// SPDX-License-Identifier: GPL-2.0
 /*
  * From Coreboot
  *
  * Copyright (C) 2001 Ronald G. Minnich
  * Copyright (C) 2005 Nick.Barker9@btinternet.com
  * Copyright (C) 2007-2009 coresystems GmbH
+ *
+ * SPDX-License-Identifier:	GPL-2.0
  */
 
 #include <common.h>
@@ -104,15 +105,13 @@ int int1a_handler(void)
 	unsigned short func = (unsigned short)M.x86.R_EAX;
 	int retval = 1;
 	unsigned short devid, vendorid, devfn;
-	struct udevice *dev;
 	/* Use short to get rid of gabage in upper half of 32-bit register */
 	short devindex;
 	unsigned char bus;
-	pci_dev_t bdf;
+	pci_dev_t dev;
 	u32 dword;
 	u16 word;
 	u8 byte, reg;
-	int ret;
 
 	switch (func) {
 	case 0xb101: /* PCIBIOS Check */
@@ -132,20 +131,17 @@ int int1a_handler(void)
 		devid = M.x86.R_ECX;
 		vendorid = M.x86.R_EDX;
 		devindex = M.x86.R_ESI;
-		bdf = -1;
-		ret = dm_pci_find_device(vendorid, devid, devindex, &dev);
-		if (!ret) {
+		dev = pci_find_device(vendorid, devid, devindex);
+		if (dev != -1) {
 			unsigned short busdevfn;
-
-			bdf = dm_pci_get_bdf(dev);
 			M.x86.R_EAX &= 0xffff00ff; /* Clear AH */
 			M.x86.R_EAX |= PCIBIOS_SUCCESSFUL;
 			/*
 			 * busnum is an unsigned char;
 			 * devfn is an int, so we mask it off.
 			 */
-			busdevfn = (PCI_BUS(bdf) << 8) | PCI_DEV(bdf) << 3 |
-				PCI_FUNC(bdf);
+			busdevfn = (PCI_BUS(dev) << 8) | PCI_DEV(dev) << 3 |
+				PCI_FUNC(dev);
 			debug("0x%x: return 0x%x\n", func, busdevfn);
 			M.x86.R_EBX = busdevfn;
 			retval = 1;
@@ -164,40 +160,35 @@ int int1a_handler(void)
 		devfn = M.x86.R_EBX & 0xff;
 		bus = M.x86.R_EBX >> 8;
 		reg = M.x86.R_EDI;
-		bdf = PCI_BDF(bus, devfn >> 3, devfn & 7);
-
-		ret = dm_pci_bus_find_bdf(bdf, &dev);
-		if (ret) {
-			debug("%s: Device %x not found\n", __func__, bdf);
-			break;
-		}
+		dev = PCI_BDF(bus, devfn >> 3, devfn & 7);
 
 		switch (func) {
 		case 0xb108: /* Read Config Byte */
-			dm_pci_read_config8(dev, reg, &byte);
+			byte = x86_pci_read_config8(dev, reg);
 			M.x86.R_ECX = byte;
 			break;
 		case 0xb109: /* Read Config Word */
-			dm_pci_read_config16(dev, reg, &word);
+			word = x86_pci_read_config16(dev, reg);
 			M.x86.R_ECX = word;
 			break;
 		case 0xb10a: /* Read Config Dword */
-			dm_pci_read_config32(dev, reg, &dword);
+			dword = x86_pci_read_config32(dev, reg);
 			M.x86.R_ECX = dword;
 			break;
 		case 0xb10b: /* Write Config Byte */
 			byte = M.x86.R_ECX;
-			dm_pci_write_config8(dev, reg, byte);
+			x86_pci_write_config8(dev, reg, byte);
 			break;
 		case 0xb10c: /* Write Config Word */
 			word = M.x86.R_ECX;
-			dm_pci_write_config16(dev, reg, word);
+			x86_pci_write_config16(dev, reg, word);
 			break;
 		case 0xb10d: /* Write Config Dword */
 			dword = M.x86.R_ECX;
-			dm_pci_write_config32(dev, reg, dword);
+			x86_pci_write_config32(dev, reg, dword);
 			break;
 		}
+
 #ifdef CONFIG_REALMODE_DEBUG
 		debug("0x%x: bus %d devfn 0x%x reg 0x%x val 0x%x\n", func,
 		      bus, devfn, reg, M.x86.R_ECX);

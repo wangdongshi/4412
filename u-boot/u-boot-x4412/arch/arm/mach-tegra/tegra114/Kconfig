@@ -6,7 +6,6 @@ choice
 
 config TARGET_DALMORE
 	bool "NVIDIA Tegra114 Dalmore evaluation board"
-	select BOARD_LATE_INIT
 
 endchoice
 

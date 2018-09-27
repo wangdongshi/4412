@@ -1,7 +1,8 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2002
  * Daniel Engström, Omicron Ceti AB, daniel@omicron.se
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef _ASM_ZIMAGE_H_
@@ -29,6 +30,9 @@
 #define SETUP_START_OFFSET 0x200
 #define BZIMAGE_LOAD_ADDR  0x100000
 #define ZIMAGE_LOAD_ADDR   0x10000
+
+/* Implementation defined function to install an e820 map. */
+unsigned install_e820_map(unsigned max_entries, struct e820entry *);
 
 struct boot_params *load_zimage(char *image, unsigned long kernel_size,
 				ulong *load_addressp);

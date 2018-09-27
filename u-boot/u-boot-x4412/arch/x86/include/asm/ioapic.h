@@ -1,8 +1,9 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /*
  * From coreboot file of the same name
  *
  * Copyright (C) 2010 coresystems GmbH
+ *
+ * SPDX-License-Identifier:	GPL-2.0
  */
 
 #ifndef __ASM_IOAPIC_H
@@ -37,7 +38,5 @@ u32 io_apic_read(u32 reg);
  * @val:	register value to write
  */
 void io_apic_write(u32 reg, u32 val);
-
-void io_apic_set_id(int ioapic_id);
 
 #endif

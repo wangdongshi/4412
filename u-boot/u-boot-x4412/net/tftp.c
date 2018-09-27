@@ -8,7 +8,6 @@
 
 #include <common.h>
 #include <command.h>
-#include <efi_loader.h>
 #include <mapmem.h>
 #include <net.h>
 #include <net/tftp.h>
@@ -603,7 +602,7 @@ static void tftp_handler(uchar *pkt, unsigned dest, struct in_addr sip,
 		}
 
 		tftp_prev_block = tftp_cur_block;
-		timeout_count_max = tftp_timeout_count_max;
+		timeout_count_max = TIMEOUT_COUNT;
 		net_set_timeout_handler(timeout_ms, tftp_timeout_handler);
 
 		store_block(tftp_cur_block - 1, pkt + 2, len);
@@ -698,19 +697,17 @@ static void tftp_timeout_handler(void)
 
 void tftp_start(enum proto_t protocol)
 {
-#if CONFIG_NET_TFTP_VARS
 	char *ep;             /* Environment pointer */
 
 	/*
 	 * Allow the user to choose TFTP blocksize and timeout.
 	 * TFTP protocol has a minimal timeout of 1 second.
 	 */
-
-	ep = env_get("tftpblocksize");
+	ep = getenv("tftpblocksize");
 	if (ep != NULL)
 		tftp_block_size_option = simple_strtol(ep, NULL, 10);
 
-	ep = env_get("tftptimeout");
+	ep = getenv("tftptimeout");
 	if (ep != NULL)
 		timeout_ms = simple_strtol(ep, NULL, 10);
 
@@ -719,17 +716,6 @@ void tftp_start(enum proto_t protocol)
 		       timeout_ms);
 		timeout_ms = 1000;
 	}
-
-	ep = env_get("tftptimeoutcountmax");
-	if (ep != NULL)
-		tftp_timeout_count_max = simple_strtol(ep, NULL, 10);
-
-	if (tftp_timeout_count_max < 0) {
-		printf("TFTP timeout count max (%d ms) negative, set to 0\n",
-		       tftp_timeout_count_max);
-		tftp_timeout_count_max = 0;
-	}
-#endif
 
 	debug("TFTP blocksize = %i, timeout = %ld ms\n",
 	      tftp_block_size_option, timeout_ms);
@@ -742,8 +728,8 @@ void tftp_start(enum proto_t protocol)
 			(net_ip.s_addr >> 16) & 0xFF,
 			(net_ip.s_addr >> 24) & 0xFF);
 
-		strncpy(tftp_filename, default_filename, DEFAULT_NAME_LEN);
-		tftp_filename[DEFAULT_NAME_LEN - 1] = 0;
+		strncpy(tftp_filename, default_filename, MAX_LEN);
+		tftp_filename[MAX_LEN - 1] = 0;
 
 		printf("*** Warning: no boot file name; using '%s'\n",
 		       tftp_filename);
@@ -805,9 +791,6 @@ void tftp_start(enum proto_t protocol)
 		printf("Load address: 0x%lx\n", load_addr);
 		puts("Loading: *\b");
 		tftp_state = STATE_SEND_RRQ;
-#ifdef CONFIG_CMD_BOOTEFI
-		efi_set_bootdev("Net", "", tftp_filename);
-#endif
 	}
 
 	time_start = get_timer(0);
@@ -824,10 +807,10 @@ void tftp_start(enum proto_t protocol)
 	tftp_our_port = 1024 + (get_timer(0) % 3072);
 
 #ifdef CONFIG_TFTP_PORT
-	ep = env_get("tftpdstp");
+	ep = getenv("tftpdstp");
 	if (ep != NULL)
 		tftp_remote_port = simple_strtol(ep, NULL, 10);
-	ep = env_get("tftpsrcp");
+	ep = getenv("tftpsrcp");
 	if (ep != NULL)
 		tftp_our_port = simple_strtol(ep, NULL, 10);
 #endif
@@ -859,7 +842,7 @@ void tftp_start_server(void)
 
 	puts("Loading: *\b");
 
-	timeout_count_max = tftp_timeout_count_max;
+	timeout_count_max = TIMEOUT_COUNT;
 	timeout_count = 0;
 	timeout_ms = TIMEOUT;
 	net_set_timeout_handler(timeout_ms, tftp_timeout_handler);

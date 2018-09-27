@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2013
  * David Feng <fenghua@phytium.com.cn>
@@ -9,6 +8,8 @@
  * (C) Copyright 2010
  * Texas Instruments, <www.ti.com>
  *	Aneesh V <aneesh@ti.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 MEMORY { .sram : ORIGIN = CONFIG_SPL_TEXT_BASE,
@@ -53,19 +54,17 @@ SECTIONS
 		*(.__end)
 	} >.sram
 
-	_image_binary_end = .;
-
-	.bss_start (NOLOAD) : {
+	.bss_start : {
 		. = ALIGN(8);
 		KEEP(*(.__bss_start));
 	} >.sdram
 
-	.bss (NOLOAD) : {
+	.bss : {
 		*(.bss*)
 		 . = ALIGN(8);
 	} >.sdram
 
-	.bss_end (NOLOAD) : {
+	.bss_end : {
 		KEEP(*(.__bss_end));
 	} >.sdram
 

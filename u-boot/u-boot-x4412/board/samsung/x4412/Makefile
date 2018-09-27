@@ -1,8 +1,8 @@
-# SPDX-License-Identifier: GPL-2.0+
 #
 # Copyright (C) 2011 Samsung Electronics
 #
-# Add by Wang.Yu 2018-09-25. Copy from samsung origen board.
+# SPDX-License-Identifier:	GPL-2.0+
+#
 
 ifdef CONFIG_SPL_BUILD
 # necessary to create built-in.o

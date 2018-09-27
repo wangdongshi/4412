@@ -1,9 +1,10 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  *  Copyright (C) 2012-2015 Samsung Electronics
  *
  *  Rajeshwari Shinde <rajeshwari.s@samsung.com>
  *  Przemyslaw Marczak <p.marczak@samsung.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -14,6 +15,8 @@
 #include <power/pmic.h>
 #include <power/regulator.h>
 #include <power/max77686_pmic.h>
+
+DECLARE_GLOBAL_DATA_PTR;
 
 #define MODE(_id, _val, _name) { \
 	.id = _id, \
@@ -68,8 +71,8 @@ static const char max77686_buck_out[] = {
 
 static int max77686_buck_volt2hex(int buck, int uV)
 {
-	int hex = 0;
-	int hex_max = 0;
+	unsigned int hex = 0;
+	unsigned int hex_max = 0;
 
 	switch (buck) {
 	case 2:
@@ -95,14 +98,14 @@ static int max77686_buck_volt2hex(int buck, int uV)
 	if (hex >= 0 && hex <= hex_max)
 		return hex;
 
-	pr_err("Value: %d uV is wrong for BUCK%d", uV, buck);
+	error("Value: %d uV is wrong for BUCK%d", uV, buck);
 	return -EINVAL;
 }
 
 static int max77686_buck_hex2volt(int buck, int hex)
 {
 	unsigned uV = 0;
-	int hex_max = 0;
+	unsigned int hex_max = 0;
 
 	if (hex < 0)
 		goto bad_hex;
@@ -131,13 +134,13 @@ static int max77686_buck_hex2volt(int buck, int hex)
 	return uV;
 
 bad_hex:
-	pr_err("Value: %#x is wrong for BUCK%d", hex, buck);
+	error("Value: %#x is wrong for BUCK%d", hex, buck);
 	return -EINVAL;
 }
 
 static int max77686_ldo_volt2hex(int ldo, int uV)
 {
-	int hex = 0;
+	unsigned int hex = 0;
 
 	switch (ldo) {
 	case 1:
@@ -157,7 +160,7 @@ static int max77686_ldo_volt2hex(int ldo, int uV)
 	if (hex >= 0 && hex <= MAX77686_LDO_VOLT_MAX_HEX)
 		return hex;
 
-	pr_err("Value: %d uV is wrong for LDO%d", uV, ldo);
+	error("Value: %d uV is wrong for LDO%d", uV, ldo);
 	return -EINVAL;
 }
 
@@ -186,7 +189,7 @@ static int max77686_ldo_hex2volt(int ldo, int hex)
 	return uV;
 
 bad_hex:
-	pr_err("Value: %#x is wrong for ldo%d", hex, ldo);
+	error("Value: %#x is wrong for ldo%d", hex, ldo);
 	return -EINVAL;
 }
 
@@ -316,16 +319,16 @@ static int max77686_ldo_modes(int ldo, struct dm_regulator_mode **modesp,
 
 static int max77686_ldo_val(struct udevice *dev, int op, int *uV)
 {
-	unsigned int adr;
+	unsigned int hex, adr;
 	unsigned char val;
-	int hex, ldo, ret;
+	int ldo, ret;
 
 	if (op == PMIC_OP_GET)
 		*uV = 0;
 
 	ldo = dev->driver_data;
 	if (ldo < 1 || ldo > MAX77686_LDO_NUM) {
-		pr_err("Wrong ldo number: %d", ldo);
+		error("Wrong ldo number: %d", ldo);
 		return -EINVAL;
 	}
 
@@ -357,13 +360,13 @@ static int max77686_ldo_val(struct udevice *dev, int op, int *uV)
 
 static int max77686_buck_val(struct udevice *dev, int op, int *uV)
 {
-	unsigned int mask, adr;
+	unsigned int hex, mask, adr;
 	unsigned char val;
-	int hex, buck, ret;
+	int buck, ret;
 
 	buck = dev->driver_data;
 	if (buck < 1 || buck > MAX77686_BUCK_NUM) {
-		pr_err("Wrong buck number: %d", buck);
+		error("Wrong buck number: %d", buck);
 		return -EINVAL;
 	}
 
@@ -420,7 +423,7 @@ static int max77686_ldo_mode(struct udevice *dev, int op, int *opmode)
 
 	ldo = dev->driver_data;
 	if (ldo < 1 || ldo > MAX77686_LDO_NUM) {
-		pr_err("Wrong ldo number: %d", ldo);
+		error("Wrong ldo number: %d", ldo);
 		return -EINVAL;
 	}
 
@@ -490,7 +493,7 @@ static int max77686_ldo_mode(struct udevice *dev, int op, int *opmode)
 	}
 
 	if (mode == 0xff) {
-		pr_err("Wrong mode: %d for ldo%d", *opmode, ldo);
+		error("Wrong mode: %d for ldo%d", *opmode, ldo);
 		return -EINVAL;
 	}
 
@@ -512,19 +515,25 @@ static int max77686_ldo_enable(struct udevice *dev, int op, bool *enable)
 
 		switch (on_off) {
 		case OPMODE_OFF:
-			*enable = false;
+			*enable = 0;
 			break;
 		case OPMODE_ON:
-			*enable = true;
+			*enable = 1;
 			break;
 		default:
 			return -EINVAL;
 		}
 	} else if (op == PMIC_OP_SET) {
-		if (*enable)
-			on_off = OPMODE_ON;
-		else
+		switch (*enable) {
+		case 0:
 			on_off = OPMODE_OFF;
+			break;
+		case 1:
+			on_off = OPMODE_ON;
+			break;
+		default:
+			return -EINVAL;
+		}
 
 		ret = max77686_ldo_mode(dev, op, &on_off);
 		if (ret)
@@ -542,7 +551,7 @@ static int max77686_buck_mode(struct udevice *dev, int op, int *opmode)
 
 	buck = dev->driver_data;
 	if (buck < 1 || buck > MAX77686_BUCK_NUM) {
-		pr_err("Wrong buck number: %d", buck);
+		error("Wrong buck number: %d", buck);
 		return -EINVAL;
 	}
 
@@ -611,7 +620,7 @@ static int max77686_buck_mode(struct udevice *dev, int op, int *opmode)
 	}
 
 	if (mode == 0xff) {
-		pr_err("Wrong mode: %d for buck: %d\n", *opmode, buck);
+		error("Wrong mode: %d for buck: %d\n", *opmode, buck);
 		return -EINVAL;
 	}
 
@@ -642,10 +651,16 @@ static int max77686_buck_enable(struct udevice *dev, int op, bool *enable)
 			return -EINVAL;
 		}
 	} else if (op == PMIC_OP_SET) {
-		if (*enable)
-			on_off = OPMODE_ON;
-		else
+		switch (*enable) {
+		case 0:
 			on_off = OPMODE_OFF;
+			break;
+		case 1:
+			on_off = OPMODE_ON;
+			break;
+		default:
+			return -EINVAL;
+		}
 
 		ret = max77686_buck_mode(dev, op, &on_off);
 		if (ret)
@@ -685,7 +700,7 @@ static int ldo_set_value(struct udevice *dev, int uV)
 	return max77686_ldo_val(dev, PMIC_OP_SET, &uV);
 }
 
-static int ldo_get_enable(struct udevice *dev)
+static bool ldo_get_enable(struct udevice *dev)
 {
 	bool enable = false;
 	int ret;
@@ -749,7 +764,7 @@ static int buck_set_value(struct udevice *dev, int uV)
 	return max77686_buck_val(dev, PMIC_OP_SET, &uV);
 }
 
-static int buck_get_enable(struct udevice *dev)
+static bool buck_get_enable(struct udevice *dev)
 {
 	bool enable = false;
 	int ret;

@@ -11,19 +11,179 @@
  * from hush: simple_itoa() was lifted from boa-0.93.15
  */
 
-#include <common.h>
-#include <charset.h>
-#include <efi_loader.h>
-#include <div64.h>
-#include <hexdump.h>
-#include <uuid.h>
 #include <stdarg.h>
-#include <linux/ctype.h>
-#include <linux/err.h>
 #include <linux/types.h>
 #include <linux/string.h>
+#include <linux/ctype.h>
+#include <errno.h>
 
+#include <common.h>
+#if !defined(CONFIG_PANIC_HANG)
+#include <command.h>
+#endif
+
+#include <div64.h>
 #define noinline __attribute__((noinline))
+
+unsigned long simple_strtoul(const char *cp, char **endp,
+				unsigned int base)
+{
+	unsigned long result = 0;
+	unsigned long value;
+
+	if (*cp == '0') {
+		cp++;
+		if ((*cp == 'x') && isxdigit(cp[1])) {
+			base = 16;
+			cp++;
+		}
+
+		if (!base)
+			base = 8;
+	}
+
+	if (!base)
+		base = 10;
+
+	while (isxdigit(*cp) && (value = isdigit(*cp) ? *cp-'0' : (islower(*cp)
+	    ? toupper(*cp) : *cp)-'A'+10) < base) {
+		result = result*base + value;
+		cp++;
+	}
+
+	if (endp)
+		*endp = (char *)cp;
+
+	return result;
+}
+
+int strict_strtoul(const char *cp, unsigned int base, unsigned long *res)
+{
+	char *tail;
+	unsigned long val;
+	size_t len;
+
+	*res = 0;
+	len = strlen(cp);
+	if (len == 0)
+		return -EINVAL;
+
+	val = simple_strtoul(cp, &tail, base);
+	if (tail == cp)
+		return -EINVAL;
+
+	if ((*tail == '\0') ||
+		((len == (size_t)(tail - cp) + 1) && (*tail == '\n'))) {
+		*res = val;
+		return 0;
+	}
+
+	return -EINVAL;
+}
+
+long simple_strtol(const char *cp, char **endp, unsigned int base)
+{
+	if (*cp == '-')
+		return -simple_strtoul(cp + 1, endp, base);
+
+	return simple_strtoul(cp, endp, base);
+}
+
+unsigned long ustrtoul(const char *cp, char **endp, unsigned int base)
+{
+	unsigned long result = simple_strtoul(cp, endp, base);
+	switch (**endp) {
+	case 'G':
+		result *= 1024;
+		/* fall through */
+	case 'M':
+		result *= 1024;
+		/* fall through */
+	case 'K':
+	case 'k':
+		result *= 1024;
+		if ((*endp)[1] == 'i') {
+			if ((*endp)[2] == 'B')
+				(*endp) += 3;
+			else
+				(*endp) += 2;
+		}
+	}
+	return result;
+}
+
+unsigned long long ustrtoull(const char *cp, char **endp, unsigned int base)
+{
+	unsigned long long result = simple_strtoull(cp, endp, base);
+	switch (**endp) {
+	case 'G':
+		result *= 1024;
+		/* fall through */
+	case 'M':
+		result *= 1024;
+		/* fall through */
+	case 'K':
+	case 'k':
+		result *= 1024;
+		if ((*endp)[1] == 'i') {
+			if ((*endp)[2] == 'B')
+				(*endp) += 3;
+			else
+				(*endp) += 2;
+		}
+	}
+	return result;
+}
+
+unsigned long long simple_strtoull(const char *cp, char **endp,
+					unsigned int base)
+{
+	unsigned long long result = 0, value;
+
+	if (*cp == '0') {
+		cp++;
+		if ((*cp == 'x') && isxdigit(cp[1])) {
+			base = 16;
+			cp++;
+		}
+
+		if (!base)
+			base = 8;
+	}
+
+	if (!base)
+		base = 10;
+
+	while (isxdigit(*cp) && (value = isdigit(*cp) ? *cp - '0'
+		: (islower(*cp) ? toupper(*cp) : *cp) - 'A' + 10) < base) {
+		result = result * base + value;
+		cp++;
+	}
+
+	if (endp)
+		*endp = (char *) cp;
+
+	return result;
+}
+
+long trailing_strtoln(const char *str, const char *end)
+{
+	const char *p;
+
+	if (!end)
+		end = str + strlen(str);
+	for (p = end - 1; p > str; p--) {
+		if (!isdigit(*p))
+			return simple_strtoul(p + 1, NULL, 10);
+	}
+
+	return -1;
+}
+
+long trailing_strtol(const char *str)
+{
+	return trailing_strtoln(str, NULL);
+}
 
 /* we use this so that we can do without the ctype library */
 #define is_digit(c)	((c) >= '0' && (c) <= '9')
@@ -145,6 +305,7 @@ static noinline char *put_dec(char *buf, uint64_t num)
 #define SMALL	32		/* Must be 32 == 0x20 */
 #define SPECIAL	64		/* 0x */
 
+#ifdef CONFIG_SYS_VSNPRINTF
 /*
  * Macro to add a new character to our output string, but only if it will
  * fit. The macro moves to the next character position in the output string.
@@ -154,6 +315,9 @@ static noinline char *put_dec(char *buf, uint64_t num)
 		*(str) = (ch); \
 	++str; \
 	} while (0)
+#else
+#define ADDCH(str, ch)	(*(str)++ = (ch))
+#endif
 
 static char *number(char *buf, char *end, u64 num,
 		int base, int size, int precision, int type)
@@ -274,48 +438,18 @@ static char *string(char *buf, char *end, char *s, int field_width,
 	return buf;
 }
 
-static char *string16(char *buf, char *end, u16 *s, int field_width,
-		int precision, int flags)
-{
-	u16 *str = s ? s : L"<NULL>";
-	int utf16_len = utf16_strnlen(str, precision);
-	u8 utf8[utf16_len * MAX_UTF8_PER_UTF16];
-	int utf8_len, i;
-
-	utf8_len = utf16_to_utf8(utf8, str, utf16_len) - utf8;
-
-	if (!(flags & LEFT))
-		while (utf8_len < field_width--)
-			ADDCH(buf, ' ');
-	for (i = 0; i < utf8_len; ++i)
-		ADDCH(buf, utf8[i]);
-	while (utf8_len < field_width--)
-		ADDCH(buf, ' ');
-	return buf;
-}
-
-#if defined(CONFIG_EFI_LOADER) && \
-	!defined(CONFIG_SPL_BUILD) && !defined(API_BUILD)
-static char *device_path_string(char *buf, char *end, void *dp, int field_width,
-				int precision, int flags)
-{
-	u16 *str;
-
-	/* If dp == NULL output the string '<NULL>' */
-	if (!dp)
-		return string16(buf, end, dp, field_width, precision, flags);
-
-	str = efi_dp_str((struct efi_device_path *)dp);
-	if (!str)
-		return ERR_PTR(-ENOMEM);
-
-	buf = string16(buf, end, str, field_width, precision, flags);
-	efi_free_pool(str);
-	return buf;
-}
-#endif
-
 #ifdef CONFIG_CMD_NET
+static const char hex_asc[] = "0123456789abcdef";
+#define hex_asc_lo(x)	hex_asc[((x) & 0x0f)]
+#define hex_asc_hi(x)	hex_asc[((x) & 0xf0) >> 4]
+
+static inline char *pack_hex_byte(char *buf, u8 byte)
+{
+	*buf++ = hex_asc_hi(byte);
+	*buf++ = hex_asc_lo(byte);
+	return buf;
+}
+
 static char *mac_address_string(char *buf, char *end, u8 *addr, int field_width,
 				int precision, int flags)
 {
@@ -325,7 +459,7 @@ static char *mac_address_string(char *buf, char *end, u8 *addr, int field_width,
 	int i;
 
 	for (i = 0; i < 6; i++) {
-		p = hex_byte_pack(p, addr[i]);
+		p = pack_hex_byte(p, addr[i]);
 		if (!(flags & SPECIAL) && i != 5)
 			*p++ = ':';
 	}
@@ -344,8 +478,8 @@ static char *ip6_addr_string(char *buf, char *end, u8 *addr, int field_width,
 	int i;
 
 	for (i = 0; i < 8; i++) {
-		p = hex_byte_pack(p, addr[2 * i]);
-		p = hex_byte_pack(p, addr[2 * i + 1]);
+		p = pack_hex_byte(p, addr[2 * i]);
+		p = pack_hex_byte(p, addr[2 * i + 1]);
 		if (!(flags & SPECIAL) && i != 7)
 			*p++ = ':';
 	}
@@ -376,40 +510,6 @@ static char *ip4_addr_string(char *buf, char *end, u8 *addr, int field_width,
 
 	return string(buf, end, ip4_addr, field_width, precision,
 		      flags & ~SPECIAL);
-}
-#endif
-
-#ifdef CONFIG_LIB_UUID
-/*
- * This works (roughly) the same way as linux's, but we currently always
- * print lower-case (ie. we just keep %pUB and %pUL for compat with linux),
- * mostly just because that is what uuid_bin_to_str() supports.
- *
- *   %pUb:   01020304-0506-0708-090a-0b0c0d0e0f10
- *   %pUl:   04030201-0605-0807-090a-0b0c0d0e0f10
- */
-static char *uuid_string(char *buf, char *end, u8 *addr, int field_width,
-			 int precision, int flags, const char *fmt)
-{
-	char uuid[UUID_STR_LEN + 1];
-	int str_format = UUID_STR_FORMAT_STD;
-
-	switch (*(++fmt)) {
-	case 'L':
-	case 'l':
-		str_format = UUID_STR_FORMAT_GUID;
-		break;
-	case 'B':
-	case 'b':
-		/* this is the default */
-		break;
-	default:
-		break;
-	}
-
-	uuid_bin_to_str(addr, uuid, str_format);
-
-	return string(buf, end, uuid, field_width, precision, flags);
 }
 #endif
 
@@ -446,14 +546,8 @@ static char *pointer(const char *fmt, char *buf, char *end, void *ptr,
 			      flags);
 #endif
 
-	switch (*fmt) {
-#if defined(CONFIG_EFI_LOADER) && \
-	!defined(CONFIG_SPL_BUILD) && !defined(API_BUILD)
-	case 'D':
-		return device_path_string(buf, end, ptr, field_width,
-					  precision, flags);
-#endif
 #ifdef CONFIG_CMD_NET
+	switch (*fmt) {
 	case 'a':
 		flags |= SPECIAL | ZEROPAD;
 
@@ -483,15 +577,8 @@ static char *pointer(const char *fmt, char *buf, char *end, void *ptr,
 					       precision, flags);
 		flags &= ~SPECIAL;
 		break;
-#endif
-#ifdef CONFIG_LIB_UUID
-	case 'U':
-		return uuid_string(buf, end, ptr, field_width, precision,
-				   flags, fmt);
-#endif
-	default:
-		break;
 	}
+#endif
 	flags |= SMALL;
 	if (field_width == -1) {
 		field_width = 2*sizeof(void *);
@@ -518,11 +605,13 @@ static int vsnprintf_internal(char *buf, size_t size, const char *fmt,
 				/* 't' added for ptrdiff_t */
 	char *end = buf + size;
 
+#ifdef CONFIG_SYS_VSNPRINTF
 	/* Make sure end is always >= buf - do we want this in U-Boot? */
 	if (end < buf) {
 		end = ((void *)-1);
 		size = end - buf;
 	}
+#endif
 	str = buf;
 
 	for (; *fmt ; ++fmt) {
@@ -609,21 +698,14 @@ repeat:
 			continue;
 
 		case 's':
-			if (qualifier == 'l' && !IS_ENABLED(CONFIG_SPL_BUILD)) {
-				str = string16(str, end, va_arg(args, u16 *),
-					       field_width, precision, flags);
-			} else {
-				str = string(str, end, va_arg(args, char *),
-					     field_width, precision, flags);
-			}
+			str = string(str, end, va_arg(args, char *),
+				     field_width, precision, flags);
 			continue;
 
 		case 'p':
 			str = pointer(fmt + 1, str, end,
 					va_arg(args, void *),
 					field_width, precision, flags);
-			if (IS_ERR(str))
-				return PTR_ERR(str);
 			/* Skip all alphanumeric pointer suffixes */
 			while (isalnum(fmt[1]))
 				fmt++;
@@ -691,16 +773,21 @@ repeat:
 			     flags);
 	}
 
+#ifdef CONFIG_SYS_VSNPRINTF
 	if (size > 0) {
 		ADDCH(str, '\0');
 		if (str > end)
 			end[-1] = '\0';
 		--str;
 	}
+#else
+	*str = '\0';
+#endif
 	/* the trailing null byte doesn't count towards the total */
 	return str - buf;
 }
 
+#ifdef CONFIG_SYS_VSNPRINTF
 int vsnprintf(char *buf, size_t size, const char *fmt,
 			      va_list args)
 {
@@ -743,6 +830,7 @@ int scnprintf(char *buf, size_t size, const char *fmt, ...)
 
 	return i;
 }
+#endif /* CONFIG_SYS_VSNPRINT */
 
 /**
  * Format a string and place it in a buffer (va_list version)
@@ -773,49 +861,43 @@ int sprintf(char *buf, const char *fmt, ...)
 	return i;
 }
 
-#if CONFIG_IS_ENABLED(PRINTF)
-int printf(const char *fmt, ...)
+static void panic_finish(void) __attribute__ ((noreturn));
+
+static void panic_finish(void)
+{
+	putc('\n');
+#if defined(CONFIG_PANIC_HANG)
+	hang();
+#else
+	udelay(100000);	/* allow messages to go out */
+	do_reset(NULL, 0, 0, NULL);
+#endif
+	while (1)
+		;
+}
+
+void panic_str(const char *str)
+{
+	puts(str);
+	panic_finish();
+}
+
+void panic(const char *fmt, ...)
 {
 	va_list args;
-	uint i;
-	char printbuffer[CONFIG_SYS_PBSIZE];
-
 	va_start(args, fmt);
-
-	/*
-	 * For this to work, printbuffer must be larger than
-	 * anything we ever want to print.
-	 */
-	i = vscnprintf(printbuffer, sizeof(printbuffer), fmt, args);
+	vprintf(fmt, args);
 	va_end(args);
-
-	/* Handle error */
-	if (i <= 0)
-		return i;
-	/* Print the string */
-	puts(printbuffer);
-	return i;
+	panic_finish();
 }
 
-int vprintf(const char *fmt, va_list args)
+void __assert_fail(const char *assertion, const char *file, unsigned line,
+		   const char *function)
 {
-	uint i;
-	char printbuffer[CONFIG_SYS_PBSIZE];
-
-	/*
-	 * For this to work, printbuffer must be larger than
-	 * anything we ever want to print.
-	 */
-	i = vscnprintf(printbuffer, sizeof(printbuffer), fmt, args);
-
-	/* Handle error */
-	if (i <= 0)
-		return i;
-	/* Print the string */
-	puts(printbuffer);
-	return i;
+	/* This will not return */
+	panic("%s:%u: %s: Assertion `%s' failed.", file, line, function,
+	      assertion);
 }
-#endif
 
 char *simple_itoa(ulong i)
 {

@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2007,2010 Freescale Semiconductor, Inc.
  * Dave Liu <daveliu@freescale.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -11,15 +12,13 @@
 #include <asm/fsl_mpc83xx_serdes.h>
 #include <spd_sdram.h>
 #include <tsec.h>
-#include <linux/libfdt.h>
+#include <libfdt.h>
 #include <fdt_support.h>
 #include <fsl_esdhc.h>
 #include <fsl_mdio.h>
 #include <phy.h>
 #include "pci.h"
 #include "../common/pq-mds-pib.h"
-
-DECLARE_GLOBAL_DATA_PTR;
 
 int board_early_init_f(void)
 {
@@ -217,13 +216,13 @@ extern void ddr_enable_ecc(unsigned int dram_size);
 #endif
 int fixed_sdram(void);
 
-int dram_init(void)
+phys_size_t initdram(int board_type)
 {
 	volatile immap_t *im = (immap_t *) CONFIG_SYS_IMMR;
 	u32 msize = 0;
 
 	if ((im->sysconf.immrbar & IMMRBAR_BASE_ADDR) != (u32) im)
-		return -ENXIO;
+		return -1;
 
 #if defined(CONFIG_SPD_EEPROM)
 	msize = spd_sdram();
@@ -237,9 +236,7 @@ int dram_init(void)
 #endif
 
 	/* return total bus DDR size(bytes) */
-	gd->ram_size = msize * 1024 * 1024;
-
-	return 0;
+	return (msize * 1024 * 1024);
 }
 
 #if !defined(CONFIG_SPD_EEPROM)
@@ -335,7 +332,7 @@ int ft_board_setup(void *blob, bd_t *bd)
 {
 	ft_cpu_setup(blob, bd);
 	ft_tsec_fixup(blob, bd);
-	fsl_fdt_fixup_dr_usb(blob, bd);
+	fdt_fixup_dr_usb(blob, bd);
 	fdt_fixup_esdhc(blob, bd);
 #ifdef CONFIG_PCI
 	ft_pci_setup(blob, bd);

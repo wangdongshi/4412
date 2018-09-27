@@ -1,8 +1,9 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2013 - 2014 Xilinx, Inc
  *
  * Michal Simek <michal.simek@xilinx.com>
+ *
+ * SPDX-License-Identifier:     GPL-2.0+
  */
 
 #include <common.h>
@@ -10,6 +11,8 @@
 #include <spl.h>
 #include <asm/io.h>
 #include <asm/u-boot.h>
+
+DECLARE_GLOBAL_DATA_PTR;
 
 bool boot_linux;
 
@@ -26,15 +29,15 @@ void spl_board_init(void)
 }
 
 #ifdef CONFIG_SPL_OS_BOOT
-void __noreturn jump_to_image_linux(struct spl_image_info *spl_image)
+void __noreturn jump_to_image_linux(void *arg)
 {
-	debug("Entering kernel arg pointer: 0x%p\n", spl_image->arg);
+	debug("Entering kernel arg pointer: 0x%p\n", arg);
 	typedef void (*image_entry_arg_t)(char *, ulong, ulong)
 		__attribute__ ((noreturn));
 	image_entry_arg_t image_entry =
-		(image_entry_arg_t)spl_image->entry_point;
+		(image_entry_arg_t)spl_image.entry_point;
 
-	image_entry(NULL, 0, (ulong)spl_image->arg);
+	image_entry(NULL, 0, (ulong)arg);
 }
 #endif /* CONFIG_SPL_OS_BOOT */
 

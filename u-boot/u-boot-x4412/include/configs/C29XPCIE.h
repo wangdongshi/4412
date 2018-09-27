@@ -1,6 +1,7 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2013 Freescale Semiconductor, Inc.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /*
@@ -10,8 +11,17 @@
 #ifndef __CONFIG_H
 #define __CONFIG_H
 
+#define CONFIG_PHYS_64BIT
+#define CONFIG_SYS_GENERIC_BOARD
+#define CONFIG_DISPLAY_BOARDINFO
+
+#ifdef CONFIG_C29XPCIE
+#define CONFIG_PPC_C29X
+#endif
+
 #ifdef CONFIG_SPIFLASH
 #define CONFIG_RAMBOOT_SPIFLASH
+#define CONFIG_SYS_TEXT_BASE		0x11000000
 #define CONFIG_RESET_VECTOR_ADDRESS	0x110bfffc
 #endif
 
@@ -19,8 +29,15 @@
 #ifdef CONFIG_TPL_BUILD
 #define CONFIG_SPL_NAND_BOOT
 #define CONFIG_SPL_FLUSH_IMAGE
+#define CONFIG_SPL_ENV_SUPPORT
 #define CONFIG_SPL_NAND_INIT
-#define CONFIG_TPL_DRIVERS_MISC_SUPPORT
+#define CONFIG_SPL_SERIAL_SUPPORT
+#define CONFIG_SPL_LIBGENERIC_SUPPORT
+#define CONFIG_SPL_LIBCOMMON_SUPPORT
+#define CONFIG_SPL_I2C_SUPPORT
+#define CONFIG_SPL_DRIVERS_MISC_SUPPORT
+#define CONFIG_SPL_NAND_SUPPORT
+#define CONFIG_SPL_MPC8XXX_INIT_DDR_SUPPORT
 #define CONFIG_SPL_COMMON_INIT_DDR
 #define CONFIG_SPL_MAX_SIZE		(128 << 10)
 #define CONFIG_SPL_TEXT_BASE		0xf8f81000
@@ -31,6 +48,8 @@
 #define CONFIG_SYS_NAND_U_BOOT_OFFS	((128 + 128) << 10)
 #elif defined(CONFIG_SPL_BUILD)
 #define CONFIG_SPL_INIT_MINIMAL
+#define CONFIG_SPL_SERIAL_SUPPORT
+#define CONFIG_SPL_NAND_SUPPORT
 #define CONFIG_SPL_NAND_MINIMAL
 #define CONFIG_SPL_FLUSH_IMAGE
 #define CONFIG_SPL_TEXT_BASE		0xff800000
@@ -43,7 +62,12 @@
 #define CONFIG_SPL_PAD_TO		0x20000
 #define CONFIG_TPL_PAD_TO		0x20000
 #define CONFIG_SPL_TARGET		"u-boot-with-spl.bin"
+#define CONFIG_SYS_TEXT_BASE		0x11001000
 #define CONFIG_SYS_LDSCRIPT	"arch/powerpc/cpu/mpc85xx/u-boot-nand.lds"
+#endif
+
+#ifndef CONFIG_SYS_TEXT_BASE
+#define CONFIG_SYS_TEXT_BASE		0xeff40000
 #endif
 
 #ifndef CONFIG_RESET_VECTOR_ADDRESS
@@ -61,14 +85,22 @@
 #endif
 
 /* High Level Configuration Options */
+#define CONFIG_BOOKE			/* BOOKE */
+#define CONFIG_E500			/* BOOKE e500 family */
+#define CONFIG_FSL_IFC			/* Enable IFC Support */
+#define CONFIG_FSL_CAAM			/* Enable SEC/CAAM */
 #define CONFIG_SYS_HAS_SERDES		/* common SERDES init code */
 
+#define CONFIG_PCI			/* Enable PCI/PCIE */
 #ifdef CONFIG_PCI
-#define CONFIG_PCIE1			/* PCIE controller 1 (slot 1) */
+#define CONFIG_PCIE1			/* PCIE controler 1 (slot 1) */
 #define CONFIG_FSL_PCI_INIT		/* Use common FSL init code */
 #define CONFIG_PCI_INDIRECT_BRIDGE
 #define CONFIG_FSL_PCIE_RESET		/* need PCIe reset errata */
 #define CONFIG_SYS_PCI_64BIT		/* enable 64-bit PCI resources */
+
+#define CONFIG_CMD_PCI
+
 
 /*
  * PCI Windows
@@ -85,9 +117,14 @@
 #define CONFIG_SYS_PCIE1_IO_SIZE	0x00010000	/* 64k */
 #define CONFIG_SYS_PCIE1_IO_PHYS	0xfffc00000ull
 
+#define CONFIG_PCI_PNP			/* do pci plug-and-play */
+
 #define CONFIG_PCI_SCAN_SHOW		/* show pci devices on startup */
+#define CONFIG_DOS_PARTITION
 #endif
 
+#define CONFIG_FSL_LAW			/* Use common FSL init code */
+#define CONFIG_TSEC_ENET
 #define CONFIG_ENV_OVERWRITE
 
 #define CONFIG_DDR_CLK_FREQ	100000000
@@ -101,6 +138,7 @@
 #define CONFIG_L2_CACHE			/* toggle L2 cache */
 #define CONFIG_BTB			/* toggle branch predition */
 
+#define CONFIG_ADDR_STREAMING		/* toggle addr streaming */
 
 #define CONFIG_ENABLE_36BIT_PHYS
 
@@ -109,8 +147,10 @@
 
 #define CONFIG_SYS_MEMTEST_START	0x00200000
 #define CONFIG_SYS_MEMTEST_END		0x00400000
+#define CONFIG_PANIC_HANG
 
 /* DDR Setup */
+#define CONFIG_SYS_FSL_DDR3
 #define CONFIG_DDR_SPD
 #define CONFIG_SYS_SPD_BUS_NUM		0
 #define SPD_EEPROM_ADDRESS		0x50
@@ -136,6 +176,10 @@
 #define CONFIG_SYS_PLATFORM_SRAM_BASE_PHYS \
 			(0xf00000000ull | CONFIG_SYS_PLATFORM_SRAM_BASE)
 #define CONFIG_SYS_PLATFORM_SRAM_SIZE	(512 << 10)
+
+#ifdef CONFIG_SPL_BUILD
+#define CONFIG_SYS_NO_FLASH
+#endif
 
 /*
  * IFC Definitions
@@ -188,6 +232,7 @@
 #define CONFIG_SYS_NAND_BASE_LIST	{ CONFIG_SYS_NAND_BASE }
 
 #define CONFIG_SYS_MAX_NAND_DEVICE	1
+#define CONFIG_CMD_NAND
 #define CONFIG_SYS_NAND_BLOCK_SIZE	(1024 * 1024)
 
 /* 8Bit NAND Flash - K9F1G08U0B */
@@ -281,11 +326,13 @@
 #define CONFIG_SYS_EXTRA_ENV_RELOC
 #endif
 
+#define CONFIG_BOARD_EARLY_INIT_R
+
 #define CONFIG_SYS_INIT_RAM_LOCK
 #define CONFIG_SYS_INIT_RAM_ADDR	0xffd00000
-#define CONFIG_SYS_INIT_RAM_SIZE	0x00004000
+#define CONFIG_SYS_INIT_RAM_END		0x00004000
 
-#define CONFIG_SYS_GBL_DATA_OFFSET	(CONFIG_SYS_INIT_RAM_SIZE \
+#define CONFIG_SYS_GBL_DATA_OFFSET	(CONFIG_SYS_INIT_RAM_END \
 						- GENERATED_GBL_DATA_SIZE)
 #define CONFIG_SYS_INIT_SP_OFFSET	CONFIG_SYS_GBL_DATA_OFFSET
 
@@ -330,6 +377,8 @@
 #endif
 
 /* Serial Port */
+#define CONFIG_CONS_INDEX	1
+#define CONFIG_SYS_NS16550
 #define CONFIG_SYS_NS16550_SERIAL
 #define CONFIG_SYS_NS16550_REG_SIZE	1
 #define CONFIG_SYS_NS16550_CLK		get_bus_freq(0)
@@ -338,11 +387,27 @@
 #define CONFIG_NS16550_MIN_FUNCTIONS
 #endif
 
+#define CONFIG_SYS_CONSOLE_IS_IN_ENV
+
 #define CONFIG_SYS_BAUDRATE_TABLE	\
 	{300, 600, 1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200}
 
 #define CONFIG_SYS_NS16550_COM1	(CONFIG_SYS_CCSRBAR+0x4500)
 #define CONFIG_SYS_NS16550_COM2	(CONFIG_SYS_CCSRBAR+0x4600)
+
+/* Use the HUSH parser */
+#define CONFIG_SYS_HUSH_PARSER
+
+/*
+ * Pass open firmware flat tree
+ */
+#define CONFIG_OF_LIBFDT
+#define CONFIG_OF_BOARD_SETUP
+#define CONFIG_OF_STDOUT_VIA_ALIAS
+
+/* new uImage format support */
+#define CONFIG_FIT
+#define CONFIG_FIT_VERBOSE	/* enable fit_format_{error,warning}() */
 
 #define CONFIG_SYS_I2C
 #define CONFIG_SYS_I2C_FSL
@@ -355,11 +420,19 @@
 
 /* I2C EEPROM */
 /* enable read and write access to EEPROM */
+#define CONFIG_CMD_EEPROM
+#define CONFIG_SYS_I2C_MULTI_EEPROMS
 #define CONFIG_SYS_I2C_EEPROM_ADDR_LEN 2
 #define CONFIG_SYS_EEPROM_PAGE_WRITE_BITS 3
 #define CONFIG_SYS_EEPROM_PAGE_WRITE_DELAY_MS 5
 
+#define CONFIG_CMD_I2C
+
 /* eSPI - Enhanced SPI */
+#define CONFIG_FSL_ESPI
+#define CONFIG_SPI_FLASH_SPANSION
+#define CONFIG_SPI_FLASH_EON
+#define CONFIG_CMD_SF
 #define CONFIG_SF_DEFAULT_SPEED		10000000
 #define CONFIG_SF_DEFAULT_MODE		SPI_MODE_0
 
@@ -379,6 +452,8 @@
 #define TSEC2_FLAGS		(TSEC_GIGABIT | TSEC_REDUCED)
 
 #define CONFIG_ETHPRIME		"eTSEC1"
+
+#define CONFIG_PHY_GIGE
 #endif	/* CONFIG_TSEC_ENET */
 
 /*
@@ -386,6 +461,7 @@
  */
 #if defined(CONFIG_SYS_RAMBOOT)
 #if defined(CONFIG_RAMBOOT_SPIFLASH)
+#define CONFIG_ENV_IS_IN_SPI_FLASH
 #define CONFIG_ENV_SPI_BUS	0
 #define CONFIG_ENV_SPI_CS	0
 #define CONFIG_ENV_SPI_MAX_HZ	10000000
@@ -395,6 +471,7 @@
 #define CONFIG_ENV_SIZE		0x2000
 #endif
 #elif defined(CONFIG_NAND)
+#define CONFIG_ENV_IS_IN_NAND
 #ifdef CONFIG_TPL_BUILD
 #define CONFIG_ENV_SIZE		0x2000
 #define CONFIG_ENV_ADDR		(CONFIG_SYS_INIT_L2_ADDR + (160 << 10))
@@ -404,6 +481,7 @@
 #endif
 #define CONFIG_ENV_OFFSET	CONFIG_SYS_NAND_BLOCK_SIZE
 #else
+#define CONFIG_ENV_IS_IN_FLASH
 #define CONFIG_ENV_ADDR	(CONFIG_SYS_MONITOR_BASE - CONFIG_ENV_SECT_SIZE)
 #define CONFIG_ENV_SIZE		0x2000
 #define CONFIG_ENV_SECT_SIZE	0x20000
@@ -413,9 +491,34 @@
 #define CONFIG_SYS_LOADS_BAUD_CHANGE
 
 /*
+ * Command line configuration.
+ */
+#define CONFIG_CMD_ERRATA
+#define CONFIG_CMD_ELF
+#define CONFIG_CMD_IRQ
+#define CONFIG_CMD_MII
+#define CONFIG_CMD_PING
+#define CONFIG_CMD_REGINFO
+
+/* Hash command with SHA acceleration supported in hardware */
+#ifdef CONFIG_FSL_CAAM
+#define CONFIG_CMD_HASH
+#define CONFIG_SHA_HW_ACCEL
+#endif
+
+/*
  * Miscellaneous configurable options
  */
+#define CONFIG_SYS_LONGHELP			/* undef to save memory	*/
+#define CONFIG_CMDLINE_EDITING			/* Command-line editing */
+#define CONFIG_AUTO_COMPLETE			/* add autocompletion support */
 #define CONFIG_SYS_LOAD_ADDR	0x2000000	/* default load address */
+
+#define CONFIG_SYS_CBSIZE	256		/* Console I/O Buffer Size */
+#define CONFIG_SYS_PBSIZE (CONFIG_SYS_CBSIZE + sizeof(CONFIG_SYS_PROMPT) + 16)
+						/* Print Buffer Size */
+#define CONFIG_SYS_MAXARGS	16		/* max number of command args */
+#define CONFIG_SYS_BARGSIZE	CONFIG_SYS_CBSIZE/* Boot Argument Buffer Size */
 
 /*
  * For booting Linux, the board info and command line data
@@ -441,6 +544,10 @@
 /* default location for tftp and bootm */
 #define CONFIG_LOADADDR		1000000
 
+#define CONFIG_BOOTDELAY	-1	/* -1 disables auto-boot */
+
+#define CONFIG_BAUDRATE		115200
+
 #define CONFIG_DEF_HWCONFIG	fsl_ddr:ecc=on
 
 #define	CONFIG_EXTRA_ENV_SETTINGS				\
@@ -451,7 +558,7 @@
 	"consoledev=ttyS0\0"				\
 	"ramdiskaddr=2000000\0"				\
 	"ramdiskfile=rootfs.ext2.gz.uboot\0"		\
-	"fdtaddr=1e00000\0"				\
+	"fdtaddr=c00000\0"				\
 	"fdtfile=name/of/device-tree.dtb\0"			\
 	"othbootargs=ramdisk_size=600000\0"		\
 

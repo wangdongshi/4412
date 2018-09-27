@@ -1,6 +1,7 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2015 Freescale Semiconductor
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __LDPAA_WRIOP_H
@@ -39,8 +40,8 @@ enum wriop_port {
 struct wriop_dpmac_info {
 	u8 enabled;
 	u8 id;
+	u8 phy_addr;
 	u8 board_mux;
-	int phy_addr;
 	void *phy_regs;
 	phy_interface_t enet_if;
 	struct phy_device *phydev;
@@ -55,7 +56,6 @@ extern struct wriop_dpmac_info dpmac_info[NUM_WRIOP_PORTS];
 void wriop_init_dpmac(int, int, int);
 void wriop_disable_dpmac(int);
 void wriop_enable_dpmac(int);
-u8 wriop_is_enabled_dpmac(int dpmac_id);
 void wriop_set_mdio(int, struct mii_dev *);
 struct mii_dev *wriop_get_mdio(int);
 void wriop_set_phy_address(int, int);
@@ -67,7 +67,4 @@ phy_interface_t wriop_get_enet_if(int);
 void wriop_dpmac_disable(int);
 void wriop_dpmac_enable(int);
 phy_interface_t wriop_dpmac_enet_if(int, int);
-void wriop_init_dpmac_qsgmii(int, int);
-void wriop_init_rgmii(void);
-void wriop_init_dpmac_enet_if(int , phy_interface_t);
 #endif	/* __LDPAA_WRIOP_H */

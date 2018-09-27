@@ -1,9 +1,10 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2012 Samsung Electronics
  *
  * Author: InKi Dae <inki.dae@samsung.com>
  * Author: Donghwa Lee <dh09.lee@samsung.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef _DSIM_H
@@ -319,7 +320,7 @@ struct mipi_dsim_lcd_device {
 	int			reverse_panel;
 
 	struct mipi_dsim_device *master;
-	struct exynos_platform_mipi_dsim *platform_data;
+	void			*platform_data;
 };
 
 /*
@@ -346,10 +347,9 @@ struct mipi_dsim_lcd_driver {
 };
 
 #ifdef CONFIG_EXYNOS_MIPI_DSIM
-int exynos_mipi_dsi_init(struct exynos_platform_mipi_dsim *dsim_pd);
+int exynos_mipi_dsi_init(void);
 #else
-static inline int exynos_mipi_dsi_init(
-			struct exynos_platform_mipi_dsim *dsim_pd)
+static inline int exynos_mipi_dsi_init(void)
 {
 	return 0;
 }
@@ -369,8 +369,7 @@ int exynos_mipi_dsi_register_lcd_device(struct mipi_dsim_lcd_device
 						*lcd_dev);
 
 void exynos_set_dsim_platform_data(struct exynos_platform_mipi_dsim *pd);
-struct vidinfo;
-void exynos_init_dsim_platform_data(struct vidinfo *vid);
+void exynos_init_dsim_platform_data(vidinfo_t *vid);
 
 /* panel driver init based on mipi dsi interface */
 void s6e8ax0_init(void);

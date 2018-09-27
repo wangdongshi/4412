@@ -1,13 +1,13 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2015 Google, Inc
  * Written by Simon Glass <sjg@chromium.org>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <dm.h>
 #include <errno.h>
-#include <edid.h>
 #include <video_bridge.h>
 
 int video_bridge_set_backlight(struct udevice *dev, int percent)
@@ -45,15 +45,6 @@ int video_bridge_check_attached(struct udevice *dev)
 	return ops->check_attached(dev);
 }
 
-int video_bridge_read_edid(struct udevice *dev, u8 *buf, int buf_size)
-{
-	struct video_bridge_ops *ops = video_bridge_get_ops(dev);
-
-	if (!ops || !ops->read_edid)
-		return -ENOSYS;
-	return ops->read_edid(dev, buf, buf_size);
-}
-
 static int video_bridge_pre_probe(struct udevice *dev)
 {
 	struct video_bridge_priv *uc_priv = dev_get_uclass_priv(dev);
@@ -64,8 +55,7 @@ static int video_bridge_pre_probe(struct udevice *dev)
 				   &uc_priv->sleep, GPIOD_IS_OUT);
 	if (ret) {
 		debug("%s: Could not decode sleep-gpios (%d)\n", __func__, ret);
-		if (ret != -ENOENT)
-			return ret;
+		return ret;
 	}
 	/*
 	 * Drop this for now as we do not have driver model pinctrl support
@@ -80,8 +70,7 @@ static int video_bridge_pre_probe(struct udevice *dev)
 				   GPIOD_IS_OUT);
 	if (ret) {
 		debug("%s: Could not decode reset-gpios (%d)\n", __func__, ret);
-		if (ret != -ENOENT)
-			return ret;
+		return ret;
 	}
 	/*
 	 * Drop this for now as we do not have driver model pinctrl support
@@ -94,10 +83,9 @@ static int video_bridge_pre_probe(struct udevice *dev)
 	 */
 	ret = gpio_request_by_name(dev, "hotplug-gpios", 0, &uc_priv->hotplug,
 				   GPIOD_IS_IN);
-	if (ret) {
+	if (ret && ret != -ENOENT) {
 		debug("%s: Could not decode hotplug (%d)\n", __func__, ret);
-		if (ret != -ENOENT)
-			return ret;
+		return ret;
 	}
 
 	return 0;

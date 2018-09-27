@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2001
  * Denis Peter MPL AG Switzerland. d.peter@mpl.ch
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /*
@@ -13,7 +14,7 @@
 #include <dm.h>
 #include <rtc.h>
 
-#if defined(CONFIG_X86) || defined(CONFIG_MALTA)
+#if defined(__I386__) || defined(CONFIG_MALTA)
 #include <asm/io.h>
 #define in8(p) inb(p)
 #define out8(p, v) outb(v, p)
@@ -99,7 +100,7 @@ static int mc146818_get(struct rtc_time *tmp)
 #ifdef RTC_DEBUG
 	printf("Get RTC year: %02x mon/cent: %02x mday: %02x wday: %02x hr: %02x min: %02x sec: %02x\n",
 	       year, mon, mday, wday, hour, min, sec);
-	printf("Alarms: mday: %02x hour: %02x min: %02x sec: %02x\n",
+	printf("Alarms: month: %02x hour: %02x min: %02x sec: %02x\n",
 	       mc146818_read8(RTC_CONFIG_D) & 0x3f,
 	       mc146818_read8(RTC_HOURS_ALARM),
 	       mc146818_read8(RTC_MINUTES_ALARM),
@@ -191,7 +192,7 @@ static void mc146818_init(void)
 	/* Clear any pending interrupts */
 	mc146818_read8(RTC_CONFIG_C);
 }
-#endif /* CONFIG_CMD_DATE */
+#endif
 
 #ifdef CONFIG_DM_RTC
 
@@ -224,7 +225,7 @@ static int rtc_mc146818_write8(struct udevice *dev, unsigned int reg, int val)
 	return 0;
 }
 
-static int rtc_mc146818_probe(struct udevice *dev)
+static int rtc_mc146818_bind(struct udevice *dev)
 {
 	mc146818_init();
 
@@ -248,7 +249,7 @@ U_BOOT_DRIVER(rtc_mc146818) = {
 	.name = "rtc_mc146818",
 	.id = UCLASS_RTC,
 	.of_match = rtc_mc146818_ids,
-	.probe = rtc_mc146818_probe,
+	.bind = rtc_mc146818_bind,
 	.ops = &rtc_mc146818_ops,
 };
 

@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2010 Samsung Electronics
  * Minkyu Kang <mk7.kang@samsung.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -158,8 +159,8 @@ static int exynos_get_pll_clk(int pllreg, unsigned int r, unsigned int k)
 			div = PLL_DIV_1024;
 		else if (proid_is_exynos4412())
 			div = PLL_DIV_65535;
-		else if (proid_is_exynos5250() || proid_is_exynos5420() ||
-			 proid_is_exynos5422())
+		else if (proid_is_exynos5250() || proid_is_exynos5420()
+			 || proid_is_exynos5800())
 			div = PLL_DIV_65536;
 		else
 			return 0;
@@ -345,7 +346,7 @@ static struct clk_bit_info *get_clk_bit_info(int peripheral)
 	int i;
 	struct clk_bit_info *info;
 
-	if (proid_is_exynos5420() || proid_is_exynos5422())
+	if (proid_is_exynos5420() || proid_is_exynos5800())
 		info = exynos542x_bit_info;
 	else
 		info = exynos5_bit_info;
@@ -557,7 +558,7 @@ static unsigned long exynos542x_get_periph_rate(int peripheral)
 unsigned long clock_get_periph_rate(int peripheral)
 {
 	if (cpu_is_exynos5()) {
-		if (proid_is_exynos5420() || proid_is_exynos5422())
+		if (proid_is_exynos5420() || proid_is_exynos5800())
 			return exynos542x_get_periph_rate(peripheral);
 		return exynos5_get_periph_rate(peripheral);
 	} else {
@@ -1575,7 +1576,7 @@ static unsigned long exynos4_get_i2c_clk(void)
 unsigned long get_pll_clk(int pllreg)
 {
 	if (cpu_is_exynos5()) {
-		if (proid_is_exynos5420() || proid_is_exynos5422())
+		if (proid_is_exynos5420() || proid_is_exynos5800())
 			return exynos542x_get_pll_clk(pllreg);
 		return exynos5_get_pll_clk(pllreg);
 	} else if (cpu_is_exynos4()) {
@@ -1691,7 +1692,7 @@ void set_mmc_clk(int dev_index, unsigned int div)
 		div -= 1;
 
 	if (cpu_is_exynos5()) {
-		if (proid_is_exynos5420() || proid_is_exynos5422())
+		if (proid_is_exynos5420() || proid_is_exynos5800())
 			exynos5420_set_mmc_clk(dev_index, div);
 		else
 			exynos5_set_mmc_clk(dev_index, div);
@@ -1707,7 +1708,7 @@ unsigned long get_lcd_clk(void)
 	} else if (cpu_is_exynos5()) {
 		if (proid_is_exynos5420())
 			return exynos5420_get_lcd_clk();
-		else if (proid_is_exynos5422())
+		else if (proid_is_exynos5800())
 			return exynos5800_get_lcd_clk();
 		else
 			return exynos5_get_lcd_clk();
@@ -1739,7 +1740,7 @@ void set_mipi_clk(void)
 int set_spi_clk(int periph_id, unsigned int rate)
 {
 	if (cpu_is_exynos5()) {
-		if (proid_is_exynos5420() || proid_is_exynos5422())
+		if (proid_is_exynos5420() || proid_is_exynos5800())
 			return exynos5420_set_spi_clk(periph_id, rate);
 		return exynos5_set_spi_clk(periph_id, rate);
 	}

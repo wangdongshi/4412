@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2015 Google, Inc
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  *
  * EFI information obtained here:
  * http://wiki.phoenix.com/wiki/index.php/EFI_BOOT_SERVICES
@@ -19,6 +20,8 @@
 #include <asm/io.h>
 #include <linux/err.h>
 #include <linux/types.h>
+
+DECLARE_GLOBAL_DATA_PTR;
 
 #ifndef CONFIG_X86
 /*
@@ -56,15 +59,12 @@ struct __packed desctab_info {
  * considering if we start needing more U-Boot functionality. Note that we
  * could then move get_codeseg32() to arch/x86/cpu/cpu.c.
  */
-void _debug_uart_init(void)
+void debug_uart_init(void)
 {
 }
 
 void putc(const char ch)
 {
-	if (ch == '\n')
-		putc('\r');
-
 	if (use_uart) {
 		NS16550_t com_port = (NS16550_t)0x3f8;
 
@@ -74,6 +74,8 @@ void putc(const char ch)
 	} else {
 		efi_putc(global_priv, ch);
 	}
+	if (ch == '\n')
+		putc('\r');
 }
 
 void puts(const char *str)
@@ -179,7 +181,7 @@ static int get_codeseg32(void)
 				<< 16;
 		base <<= 12;	/* 4KB granularity */
 		limit <<= 12;
-		if ((desc & GDT_PRESENT) && (desc & GDT_NOTSYS) &&
+		if ((desc & GDT_PRESENT) && (desc && GDT_NOTSYS) &&
 		    !(desc & GDT_LONG) && (desc & GDT_4KB) &&
 		    (desc & GDT_32BIT) && (desc & GDT_CODE) &&
 		    CONFIG_SYS_TEXT_BASE > base &&
@@ -268,25 +270,20 @@ static void add_entry_addr(struct efi_priv *priv, enum efi_entry_t type,
  * This function is called by our EFI start-up code. It handles running
  * U-Boot. If it returns, EFI will continue.
  */
-efi_status_t EFIAPI efi_main(efi_handle_t image,
-			     struct efi_system_table *sys_table)
+efi_status_t efi_main(efi_handle_t image, struct efi_system_table *sys_table)
 {
 	struct efi_priv local_priv, *priv = &local_priv;
 	struct efi_boot_services *boot = sys_table->boottime;
 	struct efi_mem_desc *desc;
 	struct efi_entry_memmap map;
-	struct efi_gop *gop;
-	struct efi_entry_gopmode mode;
-	efi_guid_t efi_gop_guid = EFI_GOP_GUID;
-	efi_uintn_t key, desc_size, size;
+	ulong key, desc_size, size;
 	efi_status_t ret;
 	u32 version;
 	int cs32;
 
 	ret = efi_init(priv, "Payload", image, sys_table);
 	if (ret) {
-		printhex2(ret);
-		puts(" efi_init() failed\n");
+		printhex2(ret); puts(" efi_init() failed\n");
 		return ret;
 	}
 	global_priv = priv;
@@ -299,8 +296,7 @@ efi_status_t EFIAPI efi_main(efi_handle_t image,
 	size = 0;
 	ret = boot->get_memory_map(&size, NULL, &key, &desc_size, &version);
 	if (ret != EFI_BUFFER_TOO_SMALL) {
-		printhex2(EFI_BITS_PER_LONG);
-		putc(' ');
+		printhex2(BITS_PER_LONG);
 		printhex2(ret);
 		puts(" No memory map\n");
 		return ret;
@@ -309,24 +305,12 @@ efi_status_t EFIAPI efi_main(efi_handle_t image,
 	desc = efi_malloc(priv, size, &ret);
 	if (!desc) {
 		printhex2(ret);
-		puts(" No memory for memory descriptor\n");
+		puts(" No memory for memory descriptor: ");
 		return ret;
 	}
 	ret = setup_info_table(priv, size + 128);
 	if (ret)
 		return ret;
-
-	ret = boot->locate_protocol(&efi_gop_guid, NULL, (void **)&gop);
-	if (ret) {
-		puts(" GOP unavailable\n");
-	} else {
-		mode.fb_base = gop->mode->fb_base;
-		mode.fb_size = gop->mode->fb_size;
-		mode.info_size = gop->mode->info_size;
-		add_entry_addr(priv, EFIET_GOP_MODE, &mode, sizeof(mode),
-			       gop->mode->info,
-			       sizeof(struct efi_gop_mode_info));
-	}
 
 	ret = boot->get_memory_map(&size, desc, &key, &desc_size, &version);
 	if (ret) {
@@ -361,17 +345,17 @@ efi_status_t EFIAPI efi_main(efi_handle_t image,
 		}
 	}
 
-	/* The EFI UART won't work now, switch to a debug one */
-	use_uart = true;
-
 	map.version = version;
 	map.desc_size = desc_size;
 	add_entry_addr(priv, EFIET_MEMORY_MAP, &map, sizeof(map), desc, size);
 	add_entry_addr(priv, EFIET_END, NULL, 0, 0, 0);
 
-	memcpy((void *)CONFIG_SYS_TEXT_BASE, _binary_u_boot_bin_start,
-	       (ulong)_binary_u_boot_bin_end -
-	       (ulong)_binary_u_boot_bin_start);
+	/* The EFI UART won't work now, switch to a debug one */
+	use_uart = true;
+
+	memcpy((void *)CONFIG_SYS_TEXT_BASE, _binary_u_boot_dtb_bin_start,
+	       (ulong)_binary_u_boot_dtb_bin_end -
+	       (ulong)_binary_u_boot_dtb_bin_start);
 
 #ifdef DEBUG
 	puts("EFI table at ");

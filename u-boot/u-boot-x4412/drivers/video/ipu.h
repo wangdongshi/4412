@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Porting to u-boot:
  *
@@ -8,6 +7,8 @@
  * Linux IPU driver for MX51:
  *
  * (C) Copyright 2005-2010 Freescale Semiconductor, Inc.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __ASM_ARCH_IPU_H__
@@ -252,7 +253,6 @@ struct clk *clk_get_parent(struct clk *clk);
 
 void ipu_dump_registers(void);
 int ipu_probe(void);
-bool ipu_clk_enabled(void);
 
 void ipu_dmfc_init(int dmfc_type, int first);
 void ipu_init_dc_mappings(void);
