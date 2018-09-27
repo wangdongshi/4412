@@ -5,11 +5,11 @@
 ### 启动模式  
 
 Exynos4412的启动模式有4种：Nand-Flash存储设备、SD/MMC存储设备、eMMC设备、USB设备。  
-eMMC的全称是Embedded-Multi-Media-Card，它是MMC协会说制定的一套标准。主要应用于手机、平板等消费电子，相比于原来的Nand-Flash存储介质，它的最大优点是集成了一个控制器，提高了数据读写效率，并简化了与CPU的连接。  
+eMMC的全称是Embedded-Multi-Media-Card，它是MMC协会所制定的一套标准。主要应用于手机、平板等消费电子，相比于原来的Nand-Flash存储介质，它的最大优点是集成了一个控制器，提高了数据读写效率，并简化了与CPU的连接。  
 本质上，不管是从那种介质启动，最主要的过程仍然是把代码从某种存储介质中拷贝到内存中，而编写或移植与某种存储介质相适应的copy功能函数是uboot移植的关键所在。  
 
 exynos4412上电复位时的启动流程，可参考图1。  
-![图1](https://github.com/wangdongshi/4412/blob/master/res/4412_boot_sequence.png)    
+![图1](https://github.com/wangdongshi/4412/blob/master/res/4412_boot_sequence.jpg)    
 *图1 exynos4412启动流程*  
 
 具体流程如下：  
@@ -93,8 +93,7 @@ apt-get install device-tree-compiler
 DTC是一个设备树生成工具，它的由来很有意思，可以参照下述说明。  
 
 #### ARM/Linux设备树的由来  
-- 设备树(Devicetree)是一套用来描述硬件属相的规则。ARM/Linux采用设备树机制源于2011年3月份Linux创始人Linus发的一封邮件，在这封邮件中他提倡ARM平台应该参考其他平台如PowerPC的设备树机制描述硬件。因为在此之前，ARM平台还是采用旧的机制，在kernel/arch/arm/plat-xxx目录和kernel/arch/arm/mach-xxx目录下用代码描述硬件，如注册platform设备，声明设备的resource等。因为这些代码都是用来描述芯片平台及板级差异的，所以对于内核来讲都是垃圾代码。因为嵌入式平台中很多公司的芯片采用的都是ARM架构，随着Android的成功，这些代码越来越多。据说常见的平台如s3c2410板级目录下边的代码有数万行，难怪Linus会说：  
-This whole ARM thing is a fucking pain in the ass.    内核中关于设备树的文档位于kernel/Documentation/devicetree/目录。设备树是Power.org组织定义的一套规范，在Linux中，它的用法可以参考社区中的[文档](https://elinux.org/Device_Tree_Usage)。  
+- 设备树(Devicetree)是一套用来描述硬件属相的规则。ARM/Linux采用设备树机制源于2011年3月份Linux创始人Linus发的一封邮件，在这封邮件中他提倡ARM平台应该参考其他平台如PowerPC的设备树机制描述硬件。因为在此之前，ARM平台还是采用旧的机制，在kernel/arch/arm/plat-xxx目录和kernel/arch/arm/mach-xxx目录下用代码描述硬件，如注册platform设备，声明设备的resource等。因为这些代码都是用来描述芯片平台及板级差异的，所以对于内核来讲都是垃圾代码。因为嵌入式平台中很多公司的芯片采用的都是ARM架构，随着Android的成功，这些代码越来越多。据说常见的平台如s3c2410板级目录下边的代码有数万行，难怪Linus会说“This whole ARM thing is a fucking pain in the ass.”内核中关于设备树的文档位于kernel/Documentation/devicetree/目录。设备树是Power.org组织定义的一套规范，在Linux中它的用法可以参考社区中的[文档](https://elinux.org/Device_Tree_Usage)。  
 - dts文件（扩展名为.dts）是一种ASCII格式的设备数描述文件，此文本格式非常人性化，适合人类的阅读习惯。基本上，在ARM/Linux上，一个dts文件对应一个ARM的machine，一般放置在内核的arch/arm/boot/dts/目录。由于一个SoC可能对应多个machine（一个SoC可以对应多个产品和电路板），势必这些dts文件需包含许多共同的部分，Linux内核为了简化，把SoC公用的部分或者多个machine共同的部分一般提炼为.dtsi，类似于C语言的头文件。其他的machine对应的dts文件就include这个.dtsi文件。  
 - DTC（device-tree-compiler）就是用于将.dts编译为.dtb的工具。DTC的源代码位于内核的scripts/dtc目录，在Linux内核使能了DeviceTree的情况下，编译内核的时候主机工具dtc会被编译出来，对应scripts/dtc/Makefile中的“hostprogs-y:=dtc”这一hostprogs编译target。在Linux内核的arch/arm/boot/dts/Makefile中，描述了当某种SoC被选中后，哪些.dtb文件会被编译出来。  
 - .dtb文件是.dts被DTC编译后的二进制格式的DeviceTree描述，可由Linux内核解析。通常在我们为电路板制作NAND、SD启动image时，会为.dtb文件单独留下一个很小的区域以存放之，之后bootloader在引导kernel的过程中，会先读取该.dtb到内存。  
