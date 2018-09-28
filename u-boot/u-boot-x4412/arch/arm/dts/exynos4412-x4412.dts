@@ -15,7 +15,7 @@
 	compatible = "samsung,x4412", "samsung,exynos4412";
 
 	chosen  {
-		stdout-path = "serial0";
+		stdout-path = "serial3";
 	};
 
 	aliases {
@@ -27,8 +27,8 @@
 		i2c5 = "/i2c@138b0000";
 		i2c6 = "/i2c@138c0000";
 		i2c7 = "/i2c@138d0000";
-		serial0 = "/serial@13800000";
-		console = "/serial@13800000"; /* Add by Wangyu 2018-09-27 */
+		serial3 = "/serial@13830000";
+		console = "/serial@13830000"; /* Add by Wangyu 2018-09-27 */
 		/*console = "/serial@13810000";*/ /* Delete by Wangyu 2018-09-27 */
 		mmc2 = "sdhci@12530000";
 		mmc4 = "dwmmc@12550000";
@@ -225,7 +225,7 @@
 		};
 	};
 
-	serial@13810000 {
+	serial@13830000 {
 		status = "okay";
 	};
 
