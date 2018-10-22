@@ -69,6 +69,32 @@ save_boot_params_ret:
 	bl	cpu_init_crit
 #endif
 
+	/* PS-Hold high */
+	ldr	r0, =0x1002330c
+	ldr	r1, [r0]
+	orr	r1, r1, #0x300
+	str	r1, [r0]
+
+	/* initialize LED */
+	ldr	r0, =0x11000C20 /* GPX1CON : LED22,LED23 */
+	ldr	r1, =0x11000000 /* D22:GPX1_6, D23:GPX1_7 */
+	str	r1, [r0]
+	ldr	r0, =0x11000C40 /* GPX2CON : LED24,LED25 */
+	ldr	r1, =0x11000000 /* D24:GPX2_6, D25:GPX2_7 */
+	str	r1, [r0]
+	
+	/* switch on LED22 */
+	ldr	r0, =0x11000C24 /* GPX1DAT */
+	ldr	r1, [r0]
+	bic	r1, r1, #0x40
+	orr	r1, r1, #0x80
+	str	r1, [r0]
+	ldr	r0, =0x11000C44 /* GPX2DAT */
+	ldr	r1, [r0]
+	orr	r1, r1, #0x40
+	orr	r1, r1, #0x80
+	str	r1, [r0]
+
 	bl	_main
 
 /*------------------------------------------------------------------------------*/

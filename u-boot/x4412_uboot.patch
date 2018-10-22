@@ -1,6 +1,42 @@
+diff -ruN u-boot-2015.10/arch/arm/cpu/armv7/start.S u-boot-x4412/arch/arm/cpu/armv7/start.S
+--- u-boot-2015.10/arch/arm/cpu/armv7/start.S	2015-10-20 07:59:38.000000000 +0800
++++ u-boot-x4412/arch/arm/cpu/armv7/start.S	2018-09-29 01:02:21.098879007 +0800
+@@ -69,6 +69,32 @@
+ 	bl	cpu_init_crit
+ #endif
+ 
++	/* PS-Hold high */
++	ldr	r0, =0x1002330c
++	ldr	r1, [r0]
++	orr	r1, r1, #0x300
++	str	r1, [r0]
++
++	/* initialize LED */
++	ldr	r0, =0x11000C20 /* GPX1CON : LED22,LED23 */
++	ldr	r1, =0x11000000 /* D22:GPX1_6, D23:GPX1_7 */
++	str	r1, [r0]
++	ldr	r0, =0x11000C40 /* GPX2CON : LED24,LED25 */
++	ldr	r1, =0x11000000 /* D24:GPX2_6, D25:GPX2_7 */
++	str	r1, [r0]
++	
++	/* switch on LED22 */
++	ldr	r0, =0x11000C24 /* GPX1DAT */
++	ldr	r1, [r0]
++	bic	r1, r1, #0x40
++	orr	r1, r1, #0x80
++	str	r1, [r0]
++	ldr	r0, =0x11000C44 /* GPX2DAT */
++	ldr	r1, [r0]
++	orr	r1, r1, #0x40
++	orr	r1, r1, #0x80
++	str	r1, [r0]
++
+ 	bl	_main
+ 
+ /*------------------------------------------------------------------------------*/
 diff -ruN u-boot-2015.10/arch/arm/dts/exynos4412-x4412.dts u-boot-x4412/arch/arm/dts/exynos4412-x4412.dts
 --- u-boot-2015.10/arch/arm/dts/exynos4412-x4412.dts	1970-01-01 08:00:00.000000000 +0800
-+++ u-boot-x4412/arch/arm/dts/exynos4412-x4412.dts	2018-09-27 10:25:47.128270394 +0800
++++ u-boot-x4412/arch/arm/dts/exynos4412-x4412.dts	2018-09-29 01:22:54.239141003 +0800
 @@ -0,0 +1,275 @@
 +/*
 + * X4412 board device tree source
@@ -19,7 +55,7 @@ diff -ruN u-boot-2015.10/arch/arm/dts/exynos4412-x4412.dts u-boot-x4412/arch/arm
 +	compatible = "samsung,x4412", "samsung,exynos4412";
 +
 +	chosen  {
-+		stdout-path = "serial0";
++		stdout-path = "serial3";
 +	};
 +
 +	aliases {
@@ -31,8 +67,8 @@ diff -ruN u-boot-2015.10/arch/arm/dts/exynos4412-x4412.dts u-boot-x4412/arch/arm
 +		i2c5 = "/i2c@138b0000";
 +		i2c6 = "/i2c@138c0000";
 +		i2c7 = "/i2c@138d0000";
-+		serial0 = "/serial@13800000";
-+		console = "/serial@13800000"; /* Add by Wangyu 2018-09-27 */
++		serial3 = "/serial@13830000";
++		console = "/serial@13830000"; /* Add by Wangyu 2018-09-27 */
 +		/*console = "/serial@13810000";*/ /* Delete by Wangyu 2018-09-27 */
 +		mmc2 = "sdhci@12530000";
 +		mmc4 = "dwmmc@12550000";
@@ -229,7 +265,7 @@ diff -ruN u-boot-2015.10/arch/arm/dts/exynos4412-x4412.dts u-boot-x4412/arch/arm
 +		};
 +	};
 +
-+	serial@13810000 {
++	serial@13830000 {
 +		status = "okay";
 +	};
 +
@@ -279,7 +315,7 @@ diff -ruN u-boot-2015.10/arch/arm/dts/exynos4412-x4412.dts u-boot-x4412/arch/arm
 +};
 diff -ruN u-boot-2015.10/arch/arm/dts/Makefile u-boot-x4412/arch/arm/dts/Makefile
 --- u-boot-2015.10/arch/arm/dts/Makefile	2015-10-20 07:59:38.000000000 +0800
-+++ u-boot-x4412/arch/arm/dts/Makefile	2018-09-27 10:12:54.111526797 +0800
++++ u-boot-x4412/arch/arm/dts/Makefile	2018-09-27 23:21:44.075000000 +0800
 @@ -5,8 +5,8 @@
  	exynos4210-universal_c210.dtb \
  	exynos4210-trats.dtb \
@@ -293,7 +329,7 @@ diff -ruN u-boot-2015.10/arch/arm/dts/Makefile u-boot-x4412/arch/arm/dts/Makefil
  	exynos5250-spring.dtb \
 diff -ruN u-boot-2015.10/arch/arm/include/asm/mach-types.h u-boot-x4412/arch/arm/include/asm/mach-types.h
 --- u-boot-2015.10/arch/arm/include/asm/mach-types.h	2015-10-20 07:59:38.000000000 +0800
-+++ u-boot-x4412/arch/arm/include/asm/mach-types.h	2018-09-27 10:14:57.123853828 +0800
++++ u-boot-x4412/arch/arm/include/asm/mach-types.h	2018-09-27 23:21:44.123000000 +0800
 @@ -1062,6 +1062,7 @@
  #define MACH_TYPE_MONCH                3453
  #define MACH_TYPE_CURACAO              3454
@@ -304,7 +340,7 @@ diff -ruN u-boot-2015.10/arch/arm/include/asm/mach-types.h u-boot-x4412/arch/arm
  #define MACH_TYPE_TUNA                 3458
 diff -ruN u-boot-2015.10/arch/arm/mach-exynos/clock_init_exynos4.c u-boot-x4412/arch/arm/mach-exynos/clock_init_exynos4.c
 --- u-boot-2015.10/arch/arm/mach-exynos/clock_init_exynos4.c	2015-10-20 07:59:38.000000000 +0800
-+++ u-boot-x4412/arch/arm/mach-exynos/clock_init_exynos4.c	2018-09-27 10:36:14.590449486 +0800
++++ u-boot-x4412/arch/arm/mach-exynos/clock_init_exynos4.c	2018-09-27 23:21:44.131000000 +0800
 @@ -30,16 +30,282 @@
  #include <asm/arch/clk.h>
  #include <asm/arch/clock.h>
@@ -598,7 +634,7 @@ diff -ruN u-boot-2015.10/arch/arm/mach-exynos/clock_init_exynos4.c u-boot-x4412/
  }
 diff -ruN u-boot-2015.10/arch/arm/mach-exynos/dmc_init_exynos4.c u-boot-x4412/arch/arm/mach-exynos/dmc_init_exynos4.c
 --- u-boot-2015.10/arch/arm/mach-exynos/dmc_init_exynos4.c	2015-10-20 07:59:38.000000000 +0800
-+++ u-boot-x4412/arch/arm/mach-exynos/dmc_init_exynos4.c	2018-09-27 10:53:19.145789897 +0800
++++ u-boot-x4412/arch/arm/mach-exynos/dmc_init_exynos4.c	2018-09-27 23:21:44.131000000 +0800
 @@ -28,6 +28,28 @@
  #include "common_setup.h"
  #include "exynos4_setup.h"
@@ -666,7 +702,7 @@ diff -ruN u-boot-2015.10/arch/arm/mach-exynos/dmc_init_exynos4.c u-boot-x4412/ar
  	dmc_init(dmc);
 diff -ruN u-boot-2015.10/arch/arm/mach-exynos/Kconfig u-boot-x4412/arch/arm/mach-exynos/Kconfig
 --- u-boot-2015.10/arch/arm/mach-exynos/Kconfig	2015-10-20 07:59:38.000000000 +0800
-+++ u-boot-x4412/arch/arm/mach-exynos/Kconfig	2018-09-27 10:16:21.387242073 +0800
++++ u-boot-x4412/arch/arm/mach-exynos/Kconfig	2018-09-27 23:21:44.131000000 +0800
 @@ -19,6 +19,10 @@
  	bool "Exynos4412 Origen board"
  	select SUPPORT_SPL
@@ -686,24 +722,9 @@ diff -ruN u-boot-2015.10/arch/arm/mach-exynos/Kconfig u-boot-x4412/arch/arm/mach
  source "board/samsung/trats2/Kconfig"
  source "board/samsung/odroid/Kconfig"
  source "board/samsung/arndale/Kconfig"
-diff -ruN u-boot-2015.10/arch/arm/mach-exynos/lowlevel_init.c u-boot-x4412/arch/arm/mach-exynos/lowlevel_init.c
---- u-boot-2015.10/arch/arm/mach-exynos/lowlevel_init.c	2015-10-20 07:59:38.000000000 +0800
-+++ u-boot-x4412/arch/arm/mach-exynos/lowlevel_init.c	2018-09-27 10:54:52.460186520 +0800
-@@ -216,8 +216,10 @@
- 	if (actions & DO_CLOCKS) {
- 		system_clock_init();
- #ifdef CONFIG_DEBUG_UART
--		exynos_pinmux_config(PERIPH_ID_UART3, PINMUX_FLAG_NONE);
-+		/*exynos_pinmux_config(PERIPH_ID_UART3, PINMUX_FLAG_NONE);*/
-+		exynos_pinmux_config(PERIPH_ID_UART0, PINMUX_FLAG_NONE);
- 		debug_uart_init();
-+		printascii("UART OK!\n\r");
- #endif
- 		mem_ctrl_init(actions & DO_MEM_RESET);
- 		tzpc_init();
 diff -ruN u-boot-2015.10/arch/arm/mach-exynos/Makefile u-boot-x4412/arch/arm/mach-exynos/Makefile
 --- u-boot-2015.10/arch/arm/mach-exynos/Makefile	2015-10-20 07:59:38.000000000 +0800
-+++ u-boot-x4412/arch/arm/mach-exynos/Makefile	2018-09-27 14:13:32.789697354 +0800
++++ u-boot-x4412/arch/arm/mach-exynos/Makefile	2018-09-27 23:21:44.131000000 +0800
 @@ -12,7 +12,10 @@
  ifdef CONFIG_SPL_BUILD
  obj-$(CONFIG_EXYNOS5)	+= clock_init_exynos5.o
@@ -718,7 +739,7 @@ diff -ruN u-boot-2015.10/arch/arm/mach-exynos/Makefile u-boot-x4412/arch/arm/mac
  endif
 diff -ruN u-boot-2015.10/arch/arm/mach-exynos/spl_boot.c u-boot-x4412/arch/arm/mach-exynos/spl_boot.c
 --- u-boot-2015.10/arch/arm/mach-exynos/spl_boot.c	2015-10-20 07:59:38.000000000 +0800
-+++ u-boot-x4412/arch/arm/mach-exynos/spl_boot.c	2018-09-27 10:58:53.882082104 +0800
++++ u-boot-x4412/arch/arm/mach-exynos/spl_boot.c	2018-09-27 23:21:44.135000000 +0800
 @@ -185,7 +185,7 @@
  {
  	unsigned int bootmode = BOOT_MODE_OM;
@@ -780,7 +801,7 @@ diff -ruN u-boot-2015.10/arch/arm/mach-exynos/spl_boot.c u-boot-x4412/arch/arm/m
  void memzero(void *s, size_t n)
 diff -ruN u-boot-2015.10/arch/arm/mach-exynos/x4412_setup.h u-boot-x4412/arch/arm/mach-exynos/x4412_setup.h
 --- u-boot-2015.10/arch/arm/mach-exynos/x4412_setup.h	1970-01-01 08:00:00.000000000 +0800
-+++ u-boot-x4412/arch/arm/mach-exynos/x4412_setup.h	2018-09-27 14:17:58.457969207 +0800
++++ u-boot-x4412/arch/arm/mach-exynos/x4412_setup.h	2018-09-27 23:21:44.135000000 +0800
 @@ -0,0 +1,227 @@
 +/*
 + * Copyright (C) 2014 Samsung Electronics
@@ -1011,7 +1032,7 @@ diff -ruN u-boot-2015.10/arch/arm/mach-exynos/x4412_setup.h u-boot-x4412/arch/ar
 +#endif /*__X4412_SETUP__ */
 diff -ruN u-boot-2015.10/board/samsung/x4412/Kconfig u-boot-x4412/board/samsung/x4412/Kconfig
 --- u-boot-2015.10/board/samsung/x4412/Kconfig	1970-01-01 08:00:00.000000000 +0800
-+++ u-boot-x4412/board/samsung/x4412/Kconfig	2018-09-27 10:17:01.347416386 +0800
++++ u-boot-x4412/board/samsung/x4412/Kconfig	2018-09-26 23:18:49.006000000 +0800
 @@ -0,0 +1,12 @@
 +if TARGET_X4412
 +
@@ -1027,7 +1048,7 @@ diff -ruN u-boot-2015.10/board/samsung/x4412/Kconfig u-boot-x4412/board/samsung/
 +endif
 diff -ruN u-boot-2015.10/board/samsung/x4412/MAINTAINERS u-boot-x4412/board/samsung/x4412/MAINTAINERS
 --- u-boot-2015.10/board/samsung/x4412/MAINTAINERS	1970-01-01 08:00:00.000000000 +0800
-+++ u-boot-x4412/board/samsung/x4412/MAINTAINERS	2018-09-27 10:09:14.747616278 +0800
++++ u-boot-x4412/board/samsung/x4412/MAINTAINERS	2018-09-25 22:37:15.301668999 +0800
 @@ -0,0 +1,6 @@
 +ORIGEN BOARD
 +M:	Chander Kashyap <k.chander@samsung.com>
@@ -1037,7 +1058,7 @@ diff -ruN u-boot-2015.10/board/samsung/x4412/MAINTAINERS u-boot-x4412/board/sams
 +F:	configs/origen_defconfig
 diff -ruN u-boot-2015.10/board/samsung/x4412/Makefile u-boot-x4412/board/samsung/x4412/Makefile
 --- u-boot-2015.10/board/samsung/x4412/Makefile	1970-01-01 08:00:00.000000000 +0800
-+++ u-boot-x4412/board/samsung/x4412/Makefile	2018-09-27 10:18:35.934630643 +0800
++++ u-boot-x4412/board/samsung/x4412/Makefile	2018-09-27 23:21:44.343000000 +0800
 @@ -0,0 +1,22 @@
 +#
 +# Copyright (C) 2011 Samsung Electronics
@@ -1063,7 +1084,7 @@ diff -ruN u-boot-2015.10/board/samsung/x4412/Makefile u-boot-x4412/board/samsung
 +endif
 diff -ruN u-boot-2015.10/board/samsung/x4412/tools/mkx4412spl.c u-boot-x4412/board/samsung/x4412/tools/mkx4412spl.c
 --- u-boot-2015.10/board/samsung/x4412/tools/mkx4412spl.c	1970-01-01 08:00:00.000000000 +0800
-+++ u-boot-x4412/board/samsung/x4412/tools/mkx4412spl.c	2018-09-27 10:09:14.747616278 +0800
++++ u-boot-x4412/board/samsung/x4412/tools/mkx4412spl.c	2018-09-27 23:21:44.343000000 +0800
 @@ -0,0 +1,110 @@
 +/*
 + * Copyright (C) 2011 Samsung Electronics
@@ -1177,7 +1198,7 @@ diff -ruN u-boot-2015.10/board/samsung/x4412/tools/mkx4412spl.c u-boot-x4412/boa
 +}
 diff -ruN u-boot-2015.10/board/samsung/x4412/x4412.c u-boot-x4412/board/samsung/x4412/x4412.c
 --- u-boot-2015.10/board/samsung/x4412/x4412.c	1970-01-01 08:00:00.000000000 +0800
-+++ u-boot-x4412/board/samsung/x4412/x4412.c	2018-09-27 10:09:14.747616278 +0800
++++ u-boot-x4412/board/samsung/x4412/x4412.c	2018-09-27 23:21:44.343000000 +0800
 @@ -0,0 +1,38 @@
 +/*
 + * Copyright (C) 2011 Samsung Electronics
@@ -1217,28 +1238,36 @@ diff -ruN u-boot-2015.10/board/samsung/x4412/x4412.c u-boot-x4412/board/samsung/
 +	return 0;
 +}
 +#endif
-diff -ruN u-boot-2015.10/common/board_f.c u-boot-x4412/common/board_f.c
---- u-boot-2015.10/common/board_f.c	2015-10-20 07:59:38.000000000 +0800
-+++ u-boot-x4412/common/board_f.c	2018-09-27 11:01:26.158682508 +0800
-@@ -58,6 +58,7 @@
- #endif
- #include <dm/root.h>
- #include <linux/compiler.h>
-+#include <debug_uart.h>
- 
- /*
-  * Pointer to initial global data area
-@@ -977,6 +978,7 @@
- 	zero_global_data();
- #endif
- 
-+	printascii("Uboot running.\r\n");
- 	gd->flags = boot_flags;
- 	gd->have_console = 0;
- 
+diff -ruN u-boot-2015.10/.checkpatch.conf u-boot-x4412/.checkpatch.conf
+--- u-boot-2015.10/.checkpatch.conf	2015-10-20 07:59:38.000000000 +0800
++++ u-boot-x4412/.checkpatch.conf	1970-01-01 08:00:00.000000000 +0800
+@@ -1,23 +0,0 @@
+-# Not Linux, so don't expect a Linux tree.
+---no-tree
+-
+-# Temporary for false positive in checkpatch
+---ignore COMPLEX_MACRO
+-
+-# For CONFIG_SYS_I2C_NOPROBES
+---ignore MULTISTATEMENT_MACRO_USE_DO_WHILE
+-
+-# For simple_strtoul
+---ignore CONSIDER_KSTRTO
+-
+-# For min/max
+---ignore MINMAX
+-
+-# enable more tests
+---strict
+-
+-# Not Linux, so we don't recommend usleep_range() over udelay()
+---ignore USLEEP_RANGE
+-
+-# Ignore networking block comment style
+---ignore NETWORKING_BLOCK_COMMENT_STYLE
 diff -ruN u-boot-2015.10/configs/x4412_defconfig u-boot-x4412/configs/x4412_defconfig
 --- u-boot-2015.10/configs/x4412_defconfig	1970-01-01 08:00:00.000000000 +0800
-+++ u-boot-x4412/configs/x4412_defconfig	2018-09-27 13:19:37.181235246 +0800
++++ u-boot-x4412/configs/x4412_defconfig	2018-09-26 23:18:49.010000000 +0800
 @@ -0,0 +1,15 @@
 +CONFIG_ARM=y
 +CONFIG_ARCH_EXYNOS=y
@@ -1257,7 +1286,7 @@ diff -ruN u-boot-2015.10/configs/x4412_defconfig u-boot-x4412/configs/x4412_defc
 +CONFIG_DM_USB=y
 diff -ruN u-boot-2015.10/drivers/serial/serial_s5p.c u-boot-x4412/drivers/serial/serial_s5p.c
 --- u-boot-2015.10/drivers/serial/serial_s5p.c	2015-10-20 07:59:38.000000000 +0800
-+++ u-boot-x4412/drivers/serial/serial_s5p.c	2018-09-27 11:05:36.758806835 +0800
++++ u-boot-x4412/drivers/serial/serial_s5p.c	2018-09-27 23:21:44.491000000 +0800
 @@ -62,12 +62,14 @@
  static void __maybe_unused s5p_serial_init(struct s5p_uart *uart)
  {
@@ -1277,7 +1306,7 @@ diff -ruN u-boot-2015.10/drivers/serial/serial_s5p.c u-boot-x4412/drivers/serial
  static void __maybe_unused s5p_serial_baud(struct s5p_uart *uart, uint uclk,
 diff -ruN u-boot-2015.10/include/configs/x4412.h u-boot-x4412/include/configs/x4412.h
 --- u-boot-2015.10/include/configs/x4412.h	1970-01-01 08:00:00.000000000 +0800
-+++ u-boot-x4412/include/configs/x4412.h	2018-09-27 13:25:17.817947955 +0800
++++ u-boot-x4412/include/configs/x4412.h	2018-09-29 01:18:37.194682998 +0800
 @@ -0,0 +1,137 @@
 +/* Copyright (C) 2011 Samsung Electronics
 + *
@@ -1299,7 +1328,7 @@ diff -ruN u-boot-2015.10/include/configs/x4412.h u-boot-x4412/include/configs/x4
 +#define CONFIG_SPL_GPIO_SUPPORT
 +#define CONFIG_DEBUG_UART
 +#define CONFIG_DEBUG_UART_S5P
-+#define CONFIG_DEBUG_UART_BASE 		0x13800000	/* UART0 base address  */
++#define CONFIG_DEBUG_UART_BASE 		0x13830000	/* UART3 base address  */
 +#define CONFIG_DEBUG_UART_CLOCK 	(100000000)	/* SCLK_UART0 is 100MHz  */
 +
 +#define CONFIG_SYS_DCACHE_OFF		1
@@ -1418,7 +1447,7 @@ diff -ruN u-boot-2015.10/include/configs/x4412.h u-boot-x4412/include/configs/x4
 +#endif	/* __CONFIG_H */
 diff -ruN u-boot-2015.10/Makefile u-boot-x4412/Makefile
 --- u-boot-2015.10/Makefile	2015-10-20 07:59:38.000000000 +0800
-+++ u-boot-x4412/Makefile	2018-09-27 13:51:43.336470593 +0800
++++ u-boot-x4412/Makefile	2018-09-27 23:21:44.051000000 +0800
 @@ -238,8 +238,8 @@
  #########################################################################
  
@@ -1430,9 +1459,453 @@ diff -ruN u-boot-2015.10/Makefile u-boot-x4412/Makefile
  endif
  
  KCONFIG_CONFIG	?= .config
+Binary files u-boot-2015.10/tools/E4412_N.bl1.bin and u-boot-x4412/tools/E4412_N.bl1.bin differ
+Binary files u-boot-2015.10/tools/mkbl2 and u-boot-x4412/tools/mkbl2 differ
+diff -ruN u-boot-2015.10/tools/mktools.c u-boot-x4412/tools/mktools.c
+--- u-boot-2015.10/tools/mktools.c	1970-01-01 08:00:00.000000000 +0800
++++ u-boot-x4412/tools/mktools.c	2018-09-28 00:30:13.655774000 +0800
+@@ -0,0 +1,90 @@
++/*
++请在Linux/GNU环境下编译此文件：
++	gcc mktools.c -o mkbl2
++该工具的实际用法:
++	mkbl2 u-boot.bin bl2.bin 14336
++*/
++
++#include <stdio.h>
++#include <string.h>
++#include <stdlib.h>
++
++int main (int argc, char *argv[])
++{
++	FILE		*fp;
++	unsigned char	src;
++	char		*Buf, *a;
++	int		BufLen;
++	int		nbytes, fileLen;
++	int		count;
++	unsigned int	checksum = 0;
++	int		i;
++
++	if (argc != 4)		/* 如果参数个数不等于3，则打印使用帮助信息 */
++	{
++		printf("Usage: mkbl2 <source file> <destination file> <size> \n");
++		return -1;
++	}
++
++	BufLen = atoi(argv[3]);		/* 把字符串(14336)转换成整型数 */
++	Buf = (char *)malloc(BufLen);	/* 分配14K的缓存 */
++	memset(Buf, 0x00, BufLen);	/* 将该缓存清为0 */
++
++	fp = fopen(argv[1], "r");	/* 以只读的方式打开原始bin文件(如u-boot.bin) */
++	if( fp == NULL)			/* 如果为空，则表示打开失败 */
++	{
++		printf("source file open error\n");
++		free(Buf);		/* 释放刚刚分配的缓存 */
++		return -1;
++	}
++
++	fseek(fp, 0L, SEEK_END);	/* 让文件位置指针指向文件末尾，便于下行的统计大小的操作 */
++	fileLen = ftell(fp);		/* 用于得到文件位置指针当前位置相对于文件首的偏移字节数,即文件大小 */
++	fseek(fp, 0L, SEEK_SET);	/* 让文件位置指针指向文件开始 */
++
++	/* 如果old.bin文件的大小小于规定的最大大小，则count等于该文件的大小，否则等于最大大小 */
++	count = (fileLen < BufLen)? fileLen : BufLen;
++
++	nbytes = fread(Buf, 1, count, fp); /* 从原始的bin文件(如u-boot.bin)中读取count大小的数据到Buf中 */
++
++	if ( nbytes != count )		/* 判断是否读取成功 */
++	{
++		printf("source file read error\n");
++		free(Buf);
++		fclose(fp);
++		return -1;
++	}
++
++	fclose(fp);			/* 关闭刚刚打开的原始bin文件 */
++
++	/* 得到BL2 + Signature */	/* 校验码就是将整个文件的每个字节全部加起来得到一个４字节整形数 */
++	for(i = 0;i < (14 * 1024) - 4;i++)
++	{
++		checksum += (unsigned char)(Buf[i]);
++	}
++	*(unsigned int*)(Buf+i) = checksum; /* 将校验码写入到最后四个字节 */
++	
++	fp = fopen(argv[2], "w");
++	if (fp == NULL)
++	{
++		printf("destination file open error\n");
++		free(Buf);
++		return -1;
++	}
++
++	a	= Buf;			/* 指向Buf的首地址 */
++	nbytes	= fwrite( a, 1, BufLen, fp);	/* 将得的到BL2 + Signature写入到目标文件中(bl2.bin) */
++
++	if ( nbytes != BufLen )		/* 判断是否写入成功 */
++	{
++		printf("destination file write error\n");
++		free(Buf);
++		fclose(fp);
++		return -1;
++	}
++
++	free(Buf);			/* 做清理工作 */
++	fclose(fp);
++
++	return 0;
++}
+diff -ruN u-boot-2015.10/tools/sd_fusing.sh u-boot-x4412/tools/sd_fusing.sh
+--- u-boot-2015.10/tools/sd_fusing.sh	1970-01-01 08:00:00.000000000 +0800
++++ u-boot-x4412/tools/sd_fusing.sh	2018-09-28 00:28:32.514370001 +0800
+@@ -0,0 +1,120 @@
++#!/bin/sh
++
++if [ -z $1 ]  #判断参数1的字符串是否为空，如果为空，则打印出帮助信息
++then
++    echo "usage: sd_fusing.sh <SD Reader's device file>"
++    exit 0
++fi
++
++if [ -b $1 ]  #判断参数1所指向的设备节点是否存在
++then
++    echo "$1 reader is identified."
++else
++    echo "$1 is NOT identified."
++    exit -1
++fi
++
++####################################
++#<verify device>
++
++#清楚掉最后一个'/'前面的内容
++BDEV_NAME=`basename $1`
++#通过linux内核的虚拟文件系统获得设备文件的ｂｌｏｃｋ数
++BDEV_SIZE=`cat /sys/block/${BDEV_NAME}/size`
++
++#如果卡的容量小于0，则打印失败信息，并退出
++if [ ${BDEV_SIZE} -le 0 ]; then 
++ echo "Error: NO media found in card reader."
++ exit 1
++fi
++
++#如果卡的容量大于32000000，则打印失败信息，并退出
++if [ ${BDEV_SIZE} -gt 32000000 ]; then                               
++ echo "Error: Block device size (${BDEV_SIZE}) is too large"
++ exit 1
++fi
++
++####################################
++# check files
++
++E4412_BL1=./E4412_N.bl1.bin
++E4412_BL2=./bl2.bin
++E4412_SPL=../spl/u-boot-spl.bin
++E4412_UBOOT=../u-boot-dtb.bin
++MKBL2=./mkbl2
++
++#检查source file是否存在
++if [ ! -f ${E4412_SPL} ]; then                                     
++ echo "Error: $2 NOT found, please build it & try again."
++ exit -1
++fi
++
++
++#<make bl2>
++#使用my_mkbl2工具来处理传入的spl，从而生成bl2.bin
++${MKBL2} ${E4412_SPL} ${E4412_BL2} 14336                                
++
++####################################
++# fusing images
++
++signed_bl1_position=1  #bl1的镜像烧写到SD卡的第1个扇区
++bl2_position=17        #bl2的镜像烧写到SD卡的第17个扇区
++uboot_position=81      #U-boot的镜像烧写到SD卡的第81个扇区
++
++#<BL1 fusing>
++echo "---------------------------------------"
++echo "BL1 fusing"
++# 烧写bl1到SD卡512字节处,第一个sector
++dd iflag=dsync oflag=dsync if=${E4412_BL1} of=$1 seek=$signed_bl1_position
++
++# 如果失败则退出
++if [ $? -ne 0 ]
++then
++   echo Write BL1 Error!
++   exit -1
++fi
++
++#<BL2 fusing>
++echo "---------------------------------------"
++echo "BL2 fusing"
++# 烧写bl2到SD卡(512+8K)字节处, 512+8K=17x512,即第17个block
++dd iflag=dsync oflag=dsync if=${E4412_BL2} of=$1 seek=$bl2_position
++
++# 如果失败则退出
++if [ $? -ne 0 ]
++then
++   echo Write BL2 Error!
++   exit -1
++fi
++
++#<u-boot fusing>
++echo "---------------------------------------"
++echo "u-boot fusing"
++dd iflag=dsync oflag=dsync if=${E4412_UBOOT} of=$1 seek=$uboot_position
++
++# 如果失败则退出
++if [ $? -ne 0 ]
++then
++   echo Write BL2 Error!
++   exit -1
++fi
++
++#块设备的写入操作会经由电梯算法进行缓冲，实际写入的时机往往远远晚于应用层的写入操作时间。要避免出现dd之后没有写入的现象，这里补上sync
++#<flush to disk>
++# 同步文件
++sync
++
++rm bl2.bin
++
++####################################
++#<Message Display>
++echo "---------------------------------------"
++echo "source file image is fused successfully."
++echo "Eject SD card and insert it to Exynos 4412 board again."
++
++
++umount /dev/mmcblk0p1
++#eject /dev/mmcblk0
++#if [ $? -eq 0 ];then
++#	echo "Eject SD card successfully."
++#fi
+diff -ruN u-boot-2015.10/.travis.yml u-boot-x4412/.travis.yml
+--- u-boot-2015.10/.travis.yml	2015-10-20 07:59:38.000000000 +0800
++++ u-boot-x4412/.travis.yml	1970-01-01 08:00:00.000000000 +0800
+@@ -1,220 +0,0 @@
+-# Copyright Roger Meier <r.meier@siemens.com>
+-# SPDX-License-Identifier:	GPL-2.0+
+-
+-# build U-Boot on Travis CI - https://travis-ci.org/
+-
+-language: c
+-
+-cache:
+- - apt
+-
+-install:
+- # install U-Boot build dependencies
+- - sudo apt-get install -qq cppcheck sloccount sparse bc libsdl-dev build-essential
+- # install latest device tree compiler
+- - git clone --depth=1 https://git.kernel.org/pub/scm/utils/dtc/dtc.git /tmp/dtc
+- - make -j4 -C /tmp/dtc
+- # prepare buildman environment
+- - export BUILDMAN_ROOT="root:"
+- - export BUILDMAN_MIPS="mips:"
+- - export BUILDMAN_PPC="ppc:"
+- - export BUILDMAN_ARM="arm:"
+- - export BUILDMAN_SANDBOX="sandbox:"
+- - echo -e "[toolchain]\n${BUILDMAN_ROOT} /\n" > ~/.buildman
+- - echo -e "${BUILDMAN_MIPS} /opt/eldk-5.4/mips/sysroots/i686-eldk-linux/usr/bin/mips32-linux/\n" >> ~/.buildman
+- - echo -e "${BUILDMAN_PPC} /opt/eldk-5.4/powerpc/sysroots/i686-eldk-linux/usr/bin/powerpc-linux/\n" >> ~/.buildman
+- - echo -e "${BUILDMAN_ARM} /opt/eldk-5.4/armv5te/sysroots/i686-eldk-linux/usr/bin/armv5te-linux-gnueabi/\n" >> ~/.buildman
+- - echo -e "${BUILDMAN_SANDBOX} /usr/bin/gcc\n" >> ~/.buildman
+- - export BUILDMAN_ALIAS="x86:"
+- - export BUILDMAN_ALIAS_ARM="arm:"
+- - echo -e "\n\n[toolchain-alias]\n${BUILDMAN_ALIAS} i386\n" >> ~/.buildman
+- - echo -e "${BUILDMAN_ALIAS_ARM} armv5te\n" >> ~/.buildman
+- - cat ~/.buildman
+-
+-env:
+-  global:
+-    - PATH=/tmp/dtc:$PATH
+-    - BUILD_DIR=build
+-    - CROSS_COMPILE=""
+-    - HOSTCC="cc"
+-    - HOSTCXX="c++"
+-    - TEST_CONFIG_CMD=""
+-
+-before_script:
+-  # install toolchains based on INSTALL_TOOLCHAIN} variable
+-  - if [[ "${INSTALL_TOOLCHAIN}" == *arm* ]]; then wget ftp://ftp.denx.de/pub/eldk/5.4/targets/armv5te/eldk-eglibc-i686-arm-toolchain-gmae-5.4.sh ; fi
+-  - if [[ "${INSTALL_TOOLCHAIN}" == *arm* ]]; then sh eldk-eglibc-i686-arm-toolchain-gmae-5.4.sh -y ; fi
+-  - if [[ "${INSTALL_TOOLCHAIN}" == *arm* ]]; then ls -al /opt/eldk-5.4/armv5te/sysroots/i686-eldk-linux/usr/bin/armv5te-linux-gnueabi ; fi
+-  - if [[ "${INSTALL_TOOLCHAIN}" == *avr32* ]]; then ./tools/buildman/buildman --fetch-arch avr32 ; fi
+-  - if [[ "${INSTALL_TOOLCHAIN}" == *i386* ]]; then ./tools/buildman/buildman sandbox --fetch-arch i386 ; fi
+-  - if [[ "${INSTALL_TOOLCHAIN}" == *m68k* ]]; then ./tools/buildman/buildman --fetch-arch m68k ; fi
+-  - if [[ "${INSTALL_TOOLCHAIN}" == *mips* ]]; then wget ftp://ftp.denx.de/pub/eldk/5.4/targets/mips/eldk-eglibc-i686-mips-toolchain-gmae-5.4.sh ; fi
+-  - if [[ "${INSTALL_TOOLCHAIN}" == *mips* ]]; then sh eldk-eglibc-i686-mips-toolchain-gmae-5.4.sh -y ; fi
+-  - if [[ "${INSTALL_TOOLCHAIN}" == *ppc* ]]; then wget ftp://ftp.denx.de/pub/eldk/5.4/targets/powerpc/eldk-eglibc-i686-powerpc-toolchain-gmae-5.4.sh ; fi
+-  - if [[ "${INSTALL_TOOLCHAIN}" == *ppc* ]]; then sh eldk-eglibc-i686-powerpc-toolchain-gmae-5.4.sh -y ; fi
+-
+-script:
+- # the execution sequence for each test
+- - echo ${TEST_CONFIG_CMD}
+- - ${TEST_CONFIG_CMD}
+- - echo ${TEST_CMD}
+- - ${TEST_CMD}
+-
+-matrix:
+-  include:
+-  # we need to build by vendor due to 50min time limit for builds
+-  # each env setting here is a dedicated build
+-    - env:
+-        - TEST_CMD="./MAKEALL -a arm -v atmel"
+-          INSTALL_TOOLCHAIN="arm"
+-          CROSS_COMPILE="/opt/eldk-5.4/armv5te/sysroots/i686-eldk-linux/usr/bin/armv5te-linux-gnueabi/arm-linux-gnueabi-"
+-    - env:
+-        - TEST_CMD="./MAKEALL -a arm -v denx"
+-          INSTALL_TOOLCHAIN="arm"
+-          CROSS_COMPILE="/opt/eldk-5.4/armv5te/sysroots/i686-eldk-linux/usr/bin/armv5te-linux-gnueabi/arm-linux-gnueabi-"
+-    - env:
+-        - TEST_CMD="./MAKEALL -a arm -v freescale"
+-          INSTALL_TOOLCHAIN="arm"
+-          CROSS_COMPILE="/opt/eldk-5.4/armv5te/sysroots/i686-eldk-linux/usr/bin/armv5te-linux-gnueabi/arm-linux-gnueabi-"
+-    - env:
+-        - TEST_CMD="./MAKEALL -a arm -v siemens"
+-          INSTALL_TOOLCHAIN="arm"
+-          CROSS_COMPILE="/opt/eldk-5.4/armv5te/sysroots/i686-eldk-linux/usr/bin/armv5te-linux-gnueabi/arm-linux-gnueabi-"
+-    - env:
+-        - TEST_CMD="./MAKEALL -a arm -v ti"
+-          INSTALL_TOOLCHAIN="arm"
+-          CROSS_COMPILE="/opt/eldk-5.4/armv5te/sysroots/i686-eldk-linux/usr/bin/armv5te-linux-gnueabi/arm-linux-gnueabi-"
+-    - env:
+-        - TEST_CONFIG_CMD="make sandbox_defconfig"
+-          TEST_CMD="make -j4"
+-          HOSTCC  = "gcc"
+-          HOSTCXX  = "g++"
+-    - env:
+-        - TEST_CONFIG_CMD="make sandbox_defconfig"
+-          TEST_CMD="make -j4"
+-          HOSTCC  = "clang"
+-          HOSTCXX  = "clang++"
+-    - env:
+-        - TEST_CMD="./MAKEALL -a mips"
+-          INSTALL_TOOLCHAIN="mips"
+-          CROSS_COMPILE="/opt/eldk-5.4/mips/sysroots/i686-eldk-linux/usr/bin/mips32-linux/mips-linux-"
+-    - env:
+-        - TEST_CONFIG_CMD="tools/buildman/buildman --list-tool-chains"
+-          TEST_CMD="tools/buildman/buildman --list-error-boards arm1136"
+-          INSTALL_TOOLCHAIN="arm"
+-    - env:
+-        - TEST_CONFIG_CMD="tools/buildman/buildman --list-tool-chains"
+-          TEST_CMD="tools/buildman/buildman --list-error-boards arm1176"
+-          INSTALL_TOOLCHAIN="arm"
+-    - env:
+-        - TEST_CONFIG_CMD="tools/buildman/buildman --list-tool-chains"
+-          TEST_CMD="tools/buildman/buildman --list-error-boards arm720t"
+-          INSTALL_TOOLCHAIN="arm"
+-    - env:
+-        - TEST_CONFIG_CMD="tools/buildman/buildman --list-tool-chains"
+-          TEST_CMD="tools/buildman/buildman --list-error-boards arm920t"
+-          INSTALL_TOOLCHAIN="arm"
+-    - env:
+-        - TEST_CONFIG_CMD="tools/buildman/buildman --list-tool-chains"
+-          TEST_CMD="tools/buildman/buildman --list-error-boards atmel -x avr32"
+-          INSTALL_TOOLCHAIN="arm"
+-    - env:
+-        - TEST_CONFIG_CMD="tools/buildman/buildman --list-tool-chains"
+-          TEST_CMD="tools/buildman/buildman --list-error-boards avr32"
+-          INSTALL_TOOLCHAIN="avr32"
+-    - env:
+-        - TEST_CONFIG_CMD="tools/buildman/buildman --list-tool-chains"
+-          TEST_CMD="tools/buildman/buildman --list-error-boards davinci"
+-          INSTALL_TOOLCHAIN="arm"
+-    - env:
+-        - TEST_CONFIG_CMD="tools/buildman/buildman --list-tool-chains"
+-          TEST_CMD="tools/buildman/buildman --list-error-boards denx"
+-          INSTALL_TOOLCHAIN="arm"
+-    - env:
+-        - TEST_CONFIG_CMD="tools/buildman/buildman --list-tool-chains"
+-          TEST_CMD="tools/buildman/buildman --list-error-boards freescale -x powerpc,m68k,aarch64"
+-          INSTALL_TOOLCHAIN="arm"
+-    - env:
+-        - TEST_CONFIG_CMD="tools/buildman/buildman --list-tool-chains"
+-          TEST_CMD="tools/buildman/buildman --list-error-boards freescale -x arm,m68k,aarch64"
+-          INSTALL_TOOLCHAIN="ppc"
+-    - env:
+-        - TEST_CONFIG_CMD="tools/buildman/buildman --list-tool-chains"
+-          TEST_CMD="tools/buildman/buildman --list-error-boards sandbox x86"
+-          INSTALL_TOOLCHAIN="i386"
+-    - env:
+-        - TEST_CONFIG_CMD="tools/buildman/buildman --list-tool-chains"
+-          TEST_CMD="tools/buildman/buildman --list-error-boards kirkwood"
+-          INSTALL_TOOLCHAIN="arm"
+-    - env:
+-        - TEST_CONFIG_CMD="tools/buildman/buildman --list-tool-chains"
+-          TEST_CMD="tools/buildman/buildman --list-error-boards m68k"
+-          INSTALL_TOOLCHAIN="m68k"
+-    - env:
+-        - TEST_CONFIG_CMD="tools/buildman/buildman --list-tool-chains"
+-          TEST_CMD="tools/buildman/buildman mips"
+-          INSTALL_TOOLCHAIN="mips"
+-    - env:
+-        - TEST_CONFIG_CMD="tools/buildman/buildman --list-tool-chains"
+-          TEST_CMD="tools/buildman/buildman mpc512x"
+-          INSTALL_TOOLCHAIN="ppc"
+-    - env:
+-        - TEST_CONFIG_CMD="tools/buildman/buildman --list-tool-chains"
+-          TEST_CMD="tools/buildman/buildman mpc5xx"
+-          INSTALL_TOOLCHAIN="ppc"
+-    - env:
+-        - TEST_CONFIG_CMD="tools/buildman/buildman --list-tool-chains"
+-          TEST_CMD="tools/buildman/buildman mpc5xxx"
+-          INSTALL_TOOLCHAIN="ppc"
+-    - env:
+-        - TEST_CONFIG_CMD="tools/buildman/buildman --list-tool-chains"
+-          TEST_CMD="tools/buildman/buildman mpc8260"
+-          INSTALL_TOOLCHAIN="ppc"
+-    - env:
+-        - TEST_CONFIG_CMD="tools/buildman/buildman --list-tool-chains"
+-          TEST_CMD="tools/buildman/buildman mpc83xx"
+-          INSTALL_TOOLCHAIN="ppc"
+-    - env:
+-        - TEST_CONFIG_CMD="tools/buildman/buildman --list-tool-chains"
+-          TEST_CMD="tools/buildman/buildman mpc85xx"
+-          INSTALL_TOOLCHAIN="ppc"
+-    - env:
+-        - TEST_CONFIG_CMD="tools/buildman/buildman --list-tool-chains"
+-          TEST_CMD="tools/buildman/buildman mpc86xx"
+-          INSTALL_TOOLCHAIN="ppc"
+-    - env:
+-        - TEST_CONFIG_CMD="tools/buildman/buildman --list-tool-chains"
+-          TEST_CMD="tools/buildman/buildman mpc8xx"
+-          INSTALL_TOOLCHAIN="ppc"
+-    - env:
+-        - TEST_CONFIG_CMD="tools/buildman/buildman --list-tool-chains"
+-          TEST_CMD="tools/buildman/buildman --list-error-boards siemens"
+-          INSTALL_TOOLCHAIN="arm"
+-    - env:
+-        - TEST_CONFIG_CMD="tools/buildman/buildman --list-tool-chains"
+-          TEST_CMD="tools/buildman/buildman --list-error-boards ti"
+-          INSTALL_TOOLCHAIN="arm"
+-
+-    # QA jobs for code analytics
+-    # static code analysis with cppcheck (we can add --enable=all later)
+-    - env:
+-        - TEST_CMD="cppcheck --force --quiet --inline-suppr ."
+-    # search for TODO within source tree
+-    - env:
+-        - TEST_CMD="grep -r TODO ."
+-    # search for FIXME within source tree
+-    - env:
+-        - TEST_CMD="grep -r FIXME ."
+-    # search for HACK within source tree and ignore HACKKIT board
+-    - env:
+-        - TEST_CMD="grep -r HACK . | grep -v HACKKIT"
+-      script:
+-        - grep -r HACK . | grep -v HACKKIT
+-    # some statistics about the code base
+-    - env:
+-        - TEST_CMD="sloccount ."
+-
+-notifications:
+-  email: false
+-
+-# TODO make it perfect ;-r
 diff -ruN u-boot-2015.10/x4412.config u-boot-x4412/x4412.config
 --- u-boot-2015.10/x4412.config	1970-01-01 08:00:00.000000000 +0800
-+++ u-boot-x4412/x4412.config	2018-09-27 13:59:51.072847266 +0800
++++ u-boot-x4412/x4412.config	2018-09-27 23:21:44.739000000 +0800
 @@ -0,0 +1,519 @@
 +#
 +# Automatically generated file; DO NOT EDIT.

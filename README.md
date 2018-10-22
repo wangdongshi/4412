@@ -71,7 +71,11 @@ sync
 
 ### U-boot移植  
 
-经过上面的裸机程序移植，我们已经对开发的基本情况有所了解，接下来直接搞个U-boot试一下吧！这个移植过程基本参照彭东林博客上的移植步骤，他写得比较全面了。  
+经过上面的裸机程序移植，我们已经对开发的基本情况有所了解，接下来直接搞个U-boot试一下吧！这个移植过程基本参照彭东林博客上的移植步骤，他写得比较全面了。主要有一点不同，我的板子调试串口用的就是UART3，和U-Boot默认的相同，而彭东林那个用的是串口0，这个需要修改下。  
+
+这次U-Boot调试的比较顺利，放张U-Boot截图作为纪念吧。  
+![图6](https://github.com/wangdongshi/4412/blob/master/res/x4412_uboot.jpg)   
+*图6 4412开发板上运行的U-Boot*    
 
 这里有几点注意事项再强调一下。
 
@@ -97,6 +101,7 @@ DTC是一个设备树生成工具，它的由来很有意思，可以参照下�
 - dts文件（扩展名为.dts）是一种ASCII格式的设备数描述文件，此文本格式非常人性化，适合人类的阅读习惯。基本上，在ARM/Linux上，一个dts文件对应一个ARM的machine，一般放置在内核的arch/arm/boot/dts/目录。由于一个SoC可能对应多个machine（一个SoC可以对应多个产品和电路板），势必这些dts文件需包含许多共同的部分，Linux内核为了简化，把SoC公用的部分或者多个machine共同的部分一般提炼为.dtsi，类似于C语言的头文件。其他的machine对应的dts文件就include这个.dtsi文件。  
 - DTC（device-tree-compiler）就是用于将.dts编译为.dtb的工具。DTC的源代码位于内核的scripts/dtc目录，在Linux内核使能了DeviceTree的情况下，编译内核的时候主机工具dtc会被编译出来，对应scripts/dtc/Makefile中的“hostprogs-y:=dtc”这一hostprogs编译target。在Linux内核的arch/arm/boot/dts/Makefile中，描述了当某种SoC被选中后，哪些.dtb文件会被编译出来。  
 - .dtb文件是.dts被DTC编译后的二进制格式的DeviceTree描述，可由Linux内核解析。通常在我们为电路板制作NAND、SD启动image时，会为.dtb文件单独留下一个很小的区域以存放之，之后bootloader在引导kernel的过程中，会先读取该.dtb到内存。  
+
 
 
 
