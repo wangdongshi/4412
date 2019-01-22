@@ -4,8 +4,8 @@
 
 ### 移植环境
 
-- 开发环境 ：Win7（64位） + Virtualbox + Ubuntu16.04（64位）
-- 主开发板 ：九鼎创展X4412
+- 开发环境 ： Win7（64位） + Virtualbox + Ubuntu16.04（64位）
+- 主开发板 ： 九鼎创展X4412
 
 | 器件 | 型号             | 厂商    | 描述                                          |
 | ---- | ---------------- | ------- | --------------------------------------------- |
@@ -13,8 +13,8 @@
 | DDR  | NT5CB128M16FP-D1 | Nanya   | DDR3x4, 2Gb, 128Mx16, 800MHz, BGA96           |
 | eMMC | THGBMBG6D1KBAIL  | Toshiba | MLC NAND, Serial, 3.3V, 64G-bit, 153-Pin FBGA |
 
-- 基础u-boot版本 ：u-boot-2015-10
-- 交叉编译工具链 ：友善之臂提供的arm-linux-gcc-4.5.1-v6-vfp-20101103.tgz
+- 基础u-boot版本 ： u-boot-2015-10
+- 交叉编译工具链 ： 友善之臂提供的arm-linux-gcc-4.5.1-v6-vfp-20101103.tgz
 
 ### U-boot入口
 
@@ -49,7 +49,23 @@ _start:
 到哪里去找这些include头文件呢？一般是下面两个目录：
 1. 根目录下的include目录
 2. arch/arm/include目录
-这两个目录都是直接在Makefile文件中显示指定的。
+这两个目录都是直接在Makefile配置文件中显示指定的。
+
+比如上面的system.h头文件，它保存在arch/arm/include/asm目录下，而linkage.h头文件则保存在include/linux目录下。
+
+现在回过头来看上面的中断向量表第一句是b reset，这个reset在start.S中，它的定义如下：
+```armasm
+reset:
+	/* Allow the board to save important registers */
+	b	save_boot_params
+	
+……
+
+ENTRY(save_boot_params)
+	b	save_boot_params_ret		@ back to my caller
+ENDPROC(save_boot_params)
+	.weak	save_boot_params
+```
 
 
 https://blog.csdn.net/u013904227/article/details/51648179
