@@ -806,8 +806,15 @@ void board_init_f(ulong boot_flags)
 }
 ```  
 
-注意，进入board_init_f之前，GD结构刚刚被全部清了零，传入的boot_flags也是0，因此，board_init_f中给出的处理都是清零。initcall_run_list函数会逐个执行在init_sequence_f列表中定义的一系列函数。这里面的处理大部分也是对GD项目的设定，就不一一展开了。  
+注意，进入board_init_f之前，GD结构刚刚被全部清了零，传入的boot_flags也是0，因此，board_init_f中给出的处理都是清零。initcall_run_list函数会逐个执行在init_sequence_f列表中定义的一系列函数。这里面的处理大部分也是对GD项目的设定，就不挨个展开了。  
 
+开发板的配置在哪里可以找到呢？基本上全在include/configs/x4412.h这个文件下定义。  
+
+通常有两种方式对bootloader程序进行调试，第一是采用在线调试工具，比如jlink或open-jtag等；第二是完全依靠开发板上的硬件，在最初阶段什么都不具备的时候，使用板上的LED灯来表示运行步骤，在串口初始化完毕后采用串口信息协助调试。  
+
+这两种方法比较的话，在线调试当然是最方便的，可以随时打断点、dump内存信息等，但是在bootloader阶段的程序，这种方案通常未必可行，因为这种调试方法所需的一些基本条件在bootloaer阶段都还尚未具备。借助串口调试的方法虽然灵活性比较差、效率低下，但是在bootloader程序调试阶段却往往比较有效。  
+
+总结一下，如果某个平台已经具备了成熟的在线调试方案，当然要选在线调试，但如果在线调试存在许多问题，本身的稳定性很差，则不如退回到串口调试方案，虽然麻烦一点，但是绝对是可行的。  
 
 
 #### <board_init_r函数>   
@@ -815,4 +822,9 @@ void board_init_f(ulong boot_flags)
 ### 参考文献  
 [麦子学院：看懂uboot的神秘面容](http://www.maiziedu.com/course/34-2512/)  
 [基于ARM Cortex A9的嵌入式Linux内核移植研究与实现](https://www.scribd.com/document/376681396/%E5%9F%BA%E4%BA%8EARM-Cortex-A9%E7%9A%84%E5%B5%8C%E5%85%A5%E5%BC%8FLinux%E5%86%85%E6%A0%B8%E7%A7%BB%E6%A4%8D%E7%A0%94%E7%A9%B6%E4%B8%8E%E5%AE%9E%E7%8E%B0)  
-[uboot-2015-07的start.S的文件启动过程](https://blog.csdn.net/u013904227/article/details/51648179)  
+[uboot-2015-07的start.S的文件启动过程](https://blog.csdn.net/u013904227/article/details/51648179)   
+
+http://www.cnblogs.com/humaoxiao/p/4166230.html  
+https://blog.csdn.net/xzg10202/article/details/77884289  
+https://yq.aliyun.com/articles/48307/  
+https://blog.csdn.net/hfyutdg/article/details/84101707  
