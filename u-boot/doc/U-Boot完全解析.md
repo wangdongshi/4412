@@ -419,7 +419,7 @@ ENDPROC(cpu_init_cp15)
 - DSB ： 废弃多核CPU之间的数据同步结果  
 - ISB ： 废弃同一个内核中的指令同步结果，即放弃流水线中已经取到的指令，重新取指令  
 
-这里面比较陌生的是TLB，这是个什么东东呢？TLB和MMU相关，但MMU本身要做的事好理解，但是TLB所对应的页表概念却不好理解。为了理解TLB，我们从头来梳理一下CPU内存寻址的分页机制。  
+这里面比较陌生的是TLB，这是个什么东东呢？TLB和MMU相关，但MMU本身要做的事好理解，而TLB所对应的页表概念却不好理解。为了理解TLB，我们从头来梳理一下CPU内存寻址的分页机制。  
 
 大家可能听说过内存管理的分段和分页。这两个机制虽然名称非常相似，但是本质上没有一毛钱关系。  
 
@@ -441,7 +441,19 @@ ENDPROC(cpu_init_cp15)
 
 好了，费了半天劲，总算是把TLB这个家伙的来龙去脉给基本说清楚了。在U-Boot的初始化阶段，这类旨在提高速度的CPU机制会产生一些意想不到的结果。比如Catch等功能是通过CP15管理的，刚上电时，CPU还未初始化它们，所以此时这类功能导致的结果必须废弃，否则可能想从数据Catch里面取，而此时RAM中数据还没有加载至Cache，而导致数据预取发生异常。分支预测、多核同步、TLB结果的废弃都是基于这个理由。  
 
-下面再来看看禁用MMU的处理。首先，为啥要禁用MMU呢？因为MMU是一个把虚拟地址转化为物理地址的机制，在U-Boot的初始化阶段，固件程序所要做的是设置控制寄存器，而控制寄存器采用的是实地址（物理地址），不是虚拟地址，使能MMU反而是南辕北辙的操作。  
+下面再来说说Cache的问题。要理解Cache的由来，需要先理解CPU的哈佛结构和冯诺依曼结构的区别。事实上，哈佛结构的出现要早于冯诺依曼结构，它是在1944年IBM的霍华德·艾肯给哈佛大学设计的一台计算机Mark 1（马克一型）时采用的结构，该机器被视为现代计算机的鼻祖，它的ROM部分是用打孔带实现的（图灵的设想），RAM部分是用继电器实现的。这种结构的特点是将程序码与程序数据分开进行放置的，也就是说，CPU连接外部ROM（存放代码）时需要一组地址总线，CPU连接外部RAM时需要另外一组地址总线。  
+
+如果是在一块芯片的内部实现CPU、RAM和ROM，哈佛结构并没有什么特别的问题，但是，现代计算机的CPU和ROM、RAM通常是分开设计的，因此CPU和ROM/RAM间就需要外部总线来连接（在PCB上走线），这样的话，哈佛总线的劣势——地址线数目过多，就显现出来了。  
+
+在比Mark 1稍晚时候在宾夕法尼亚大学制造的另一台伟大的计算机——ENIAC（埃尼阿克）上，冯诺依曼提出了另一种结构。冯诺依曼敏锐的意识到，其实代码从另一种角度看也可以视为一种数据，这样，计算机硬件结构中就不必强行将RAM和ROM与CPU的连接区分为两种不同的总线，使用统一的总线即可。ENIAC同时采用了真空管作为存储介质，这也为后来计算机的发展奠定了基础。  
+
+冯诺依曼结构CPU在后来的微型计算机时代大行其道，其主要原因就是这种结构有效的减少了CPU与外部存储器的连接，在缩小机器体积的同时实现了很好的可制造性。但是，冯诺依曼结构有个很大的问题，就是指令的读取和数据的读取常常发生冲突，为了缓解这一问题，后来的CPU设计中又引入了Cache的设计，其实就是把指令和数据缓存在CPU的片上RAM中，以此来提高指令和数据的访问速度。  
+
+因为U-Boot最初运行时，Cache中生成的内容是不可控的，因此，必须要在U-Boot初始化阶段先废弃掉Cache中的内容，这里的invalidate icache这句代码就是这个意思了。  
+
+下面还有两句指令，一个注释为DSB，另一个注释为ISB，它们的含义是清空已经预取到流水线中的指令。有趣的是，在旧的ARM处理器版本中，这两个动作是通过cp15协处理器的设定完成的，而在新版的ARM处理器手册中，ARM强烈建议直接使用DSB和ISB这两句指令来替代过去对于cp15协处理器的操作，显然，这个版本的U-Boot还没有来得及对此进行修改与测试。  
+
+接下来再来看看禁用MMU的处理。首先，为啥要禁用MMU呢？因为MMU是一个把虚拟地址转化为物理地址的机制，在U-Boot的初始化阶段，固件程序所要做的是设置控制寄存器，而控制寄存器采用的是实地址（物理地址），不是虚拟地址，使能MMU反而是南辕北辙的操作。  
 
 再来看所谓的禁用MMU的具体操作，按照上述对cp15寄存器的操作分析，这次操作的是VMSA的SCTLR（参考我手册版本的1707页），这里进行了下面几个操作：  
 - clear bits 13 (--V-)  
@@ -502,7 +514,7 @@ ldr这句ARM汇编伪指令对于ARM初学者经常是一大杀手，原因有�
 
 好了，搞了这么多，终于要来到U-Boot的第一个C函数s_init了，它在哪儿呢？它没有实现！没错在Cortex-A9系列的U-Boot中，并不使用这个s_init这个函数（这个函数定义到底在什么地方？），因此我们还是重新掉头回来研读汇编吧。  
 
-#### <进入_main函数> 
+#### <_main函数里到底是什么> 
 
 哇，终于看到了下面这句代码，来到了_main函数！  
 ```armasm
@@ -514,21 +526,291 @@ bl	_main
 
 这个文件的开头，有一段非常详尽的注释，值得好好研读一下，下面把这段注释翻译为中文。  
 
----
-
-*该文件进行的是U-Boot的位置无关代码部分进入C运行环境之前的准备工作。它的入口点是start.S文件中的_main函数调用。*  
+>*该文件进行的是U-Boot的位置无关代码部分进入C运行环境之前的准备工作。它的入口点是start.S文件中的_main函数调用。*  
 *_main函数的执行顺序如下：*  
 *1.  设置调用board_init_f函数的的初始环境。该环境仅提供堆栈和一个保存GD（全局变量）的空间，两者都被定位在已经准备好的RAM区域（包括SRAM，已经锁定了的高速缓存等）。在当前的上下文环境中，全局变量，无论是初始化过的还是未初始化的（BSS），都是不可用的。只有常数这种已经初始化了的数据是可用的。GD应该在调用board_init_f函数之前被清零。*  
 *2.  调用board_init_f函数。该函数为在系统内存（包括DRAM、DDR等存储设备）上执行而进行硬件准备。因为当前系统RAM尚不可以使用，board_init_f函数必须使用GD结构来存储后来运行阶段要用到的一些信息。这些信息包括重定位的目标地址、将来的堆栈位置、将来的GD结构位置等。*  
 *3.  设置一个临时环境，在该环境下board_init_f函数在系统内存上分配了堆栈和存储GD的空间，但是BSS和已初始化的非常量数据仍然无法使用。*  
-*4a.  对于正式的U-Boot（不是SPL），调用relocate_code函数。该函数将U-Boot从当前位置加载到由board_init_f函数计算的目的地址。*  
+*4a. 对于正式的U-Boot（不是SPL），调用relocate_code函数。该函数将U-Boot从当前位置加载到由board_init_f函数计算的目的地址。*  
 *4b. 对于SPL，board_init_f函数只返回到crt0，不存在代码的重定位。*  
 *5.  调用board_init_r函数设置最终运行环境。该环境包括定位在系统RAM上的BSS（初始化为0）、已初始化的非常量数据、以及系统堆栈（在SPL中可以通过CONFIG_SPL_STACK_R宏来定义是否需要堆栈和GD结构）。GD结构将仍然保留在board_init_f函数中设定的信息。*  
 *6.  对于正式的U-Boot（不是SPL），部分CPU关于内存配置还有一些特别的工作要做，所以它们需要调用c_runtime_cpu_setup函数。*  
 *7.  跳转到board_init_r函数。*  
 *更多信息，请参考README中的“电路板初始化流程”。*  
 
----
+这个README文件是位于U-Boot根目录下的，既然提到了这个文件，也顺便说一下，这个文件对于理解U-Boot处理流程也是有很大帮助的，可以考虑全文仔细阅读一番。这里只是简单总结一下README中“电路板初始化流程”的主要内容。  
+
+>*板级初始化分为三个阶段：*  
+*1. lowlevel_init函数*  
+*- 函数功能定位：允许执行到达board_init_f（C语言执行环境）的必要初始化*  
+*- 没有GD或BSS*  
+*- 没有堆栈（ARMv7可能有一个但很快就会删除）*  
+*- 不得设置SDRAM或使用控制台*  
+*- 必须只做最低限度以允许继续执行*  
+*2. board_init_f函数*  
+*- 函数功能定位：设置机器准备好运行board_init_r（即使用SDRAM和串行UART）*  
+*- GD可用*  
+*- 堆栈在SRAM中*  
+*- BSS不可用，不能使用全局/静态变量，只有堆栈变量和GD*  
+*3. board_init_r函数：*
+*- 函数功能定位：准备通用C代码执行所需要的环境*  
+*- GD可用*  
+*- SDRAM可用*  
+*- BSS可用，可以使用所有静态/全局变量*  
+*- 将处理跳转至main_loop*  
+
+上面这一段说明清楚的解释了U-Boot在初始化阶段不同系统资源准备完成的时刻，主要包括SRAM堆栈、SDRAM堆栈、GD、BSS、UART。理解这一点非常重要，因为它是我们在移植一个新系统时判断处理应该加入何处的重要依据。  
+
+#### <_main函数结构>   
+仔细来观察_main函数的内部，这里其实就是上面README中所说的lowlevel_init函数（不同平台的U-Boot在这里的函数命名有所不同，这里还是按照4412的代码，称为_main函数）。  
+
+我们将crt0.S这个文件分解成了三段，并去除了一些和主体初始化处理无关的代码。可以很清晰的理解这部分处理的轮廓：在第一段的末尾，_main函数主动的调用了board_init_f函数，在第三段的末尾，_main函数永久的跳转至了board_init_r函数，不再返回了，C语言运行环境的初始化就此完成！  
+
+下面详细来说明这三段代码究竟在干什么。先来看第一段代码：  
+```armasm
+ENTRY(_main)
+	ldr	sp, =(CONFIG_SYS_INIT_SP_ADDR)
+	
+	bic	sp, sp, #7	/* 8-byte alignment for ABI compliance */
+	mov	r2, sp
+	sub	sp, sp, #GD_SIZE	/* allocate one GD above SP */
+	bic	sp, sp, #7	/* 8-byte alignment for ABI compliance */
+	
+	mov	r9, sp		/* GD is above SP */
+	mov	r1, sp
+	mov	r0, #0
+clr_gd:
+	cmp	r1, r2			/* while not at end of GD */
+	
+	strlo	r0, [r1]		/* clear 32-bit GD word */
+	addlo	r1, r1, #4		/* move to next */
+	blo	clr_gd
+	
+	/* mov r0, #0 not needed due to above code */
+	bl	board_init_f
+```
+第一段代码的开头我们是似曾相识的，没错，它和s_init中的处理是一样的：准备一个栈空间，其地址为CONFIG_SYS_INIT_SP_ADDR（SPL中有所不同），并强制将其修改为8字节对齐。  
+
+和s_init不同的是，这里的处理需要在栈空间之上，再准备一块称之为GD（全局数据）的空间，其大小为GD_SIZE，并将此空间全部清零，这样一来在board_init_f函数中，我们就可以使用GD和SRAM上的栈空间了。注意，在这部分代码运行时，是没有任何可用的存储空间的（除寄存器以外）！    
+
+board_init_f函数中的处理稍后再进行说明，先来看看_main中的第二段代码又作了些什么。  
+```armasm
+#if ! defined(CONFIG_SPL_BUILD)
+/*
+ * Set up intermediate environment (new sp and gd) and call
+ * relocate_code(addr_moni). Trick here is that we'll return
+ * 'here' but relocated.
+ */
+	ldr	sp, [r9, #GD_START_ADDR_SP]	/* sp = gd->start_addr_sp */
+	
+	bic	sp, sp, #7	/* 8-byte alignment for ABI compliance */
+	
+	ldr	r9, [r9, #GD_BD]		/* r9 = gd->bd */
+	sub	r9, r9, #GD_SIZE		/* new GD is below bd */
+
+	adr	lr, here
+	ldr	r0, [r9, #GD_RELOC_OFF]		/* r0 = gd->reloc_off */
+	add	lr, lr, r0
+	
+	ldr	r0, [r9, #GD_RELOCADDR]		/* r0 = gd->relocaddr */
+	b	relocate_code
+here:
+/*
+ * now relocate vectors
+ */
+	bl	relocate_vectors
+/* Set up final (full) environment */
+	bl	c_runtime_cpu_setup	/* we still call old routine here */
+#endif
+```  
+注意第二段代码是在非spl的情况下才有效的，它其实是控制U-Boot代码重定向的关键！  
+
+说到这儿，首先要搞明白一件事情，U-Boot最初会被加载到SDRAM的某个特定地址（通常是0x34800000）运行，直到运行到这段代码，它会神奇的将自己搬移到SDRAM的顶部然后继续运行，这就是所谓的U-Boot重定位。为啥U-Boot需要重定位自己呢？这个问题我想了好久，总算有个可以说服自己的解释。  
+
+事情是这样，U-Boot的设计者希望将U-Boot放在SDRAM的顶端，而将Linux内核放在SDRAM的底端，这样一来Linux内核就不容易“误伤”U-Boot了。但是，U-Boot代码在设计时，并不知道自己将来编译出来之后会有多大，也就是说无法在U-Boot链接时就指定出这个值（链接后就知道了，这是问题的关键！）。这一方面是由于U-Boot会不断升级，另一方面是由于U-Boot会支持种类丰富的各种开发板，因此，在编写代码时，当然不可能确切的指导U-Boot的大小了。  
+
+如果不能预知U-Boot的大小，这就不方便直接定位出U-Boot的加载地址，因为要将其加载至SDRAM顶部的话，起始地址过高，存储空间会不够用；起始地址过高，存储空间又浪费太多。因此U-Boot的设计者考虑了一个高级的办法——先将U-Boot加载到一个固定地址，然后根据计算出的U-Boot尺寸，再将U-Boot整体搬移到SDRAM顶部，这样就一举解决了上面所说的那个两难的问题。  
+
+理解了这一设计思想，我们再来看看它究竟是如何实现的。  
+
+在_main函数的第二部分处理中，U-Boot会在中途强制跳转至relocate_code函数，该函数在arch/arm/lib/relocate.S中，其主要功能是将spl这段程序代码整体由SRAM搬移至SDRAM。下面摘抄一下该函数的主要逻辑：  
+```armasm
+	ldr	r1, =__image_copy_start	/* r1 <- SRC &__image_copy_start */
+	subs	r4, r0, r1		/* r4 <- relocation offset */
+	beq	relocate_done		/* skip relocation */
+	ldr	r2, =__image_copy_end	/* r2 <- SRC &__image_copy_end */
+copy_loop:
+	ldmia	r1!, {r10-r11}		/* copy from source address [r1]    */
+	stmia	r0!, {r10-r11}		/* copy to   target address [r0]    */
+	cmp	r1, r2			/* until source end address [r2]    */
+	blo	copy_loop
+```   
+代码中的\_\_image_copy_start和\_\_image_copy_end又指得是什么呢？这个可以在U-Boot的链接脚本文件中得知： 
+```
+ENTRY(_start)
+SECTIONS
+{
+	. = 0x00000000;
+	. = ALIGN(4);
+	.text :
+	{
+		*(.__image_copy_start)
+		*(.vectors)
+		CPUDIR/start.o (.text*)
+		*(.text*)
+	}
+	. = ALIGN(4);
+	.rodata : { *(SORT_BY_ALIGNMENT(SORT_BY_NAME(.rodata*))) }
+	. = ALIGN(4);
+	.data : {
+		*(.data*)
+	}
+	. = ALIGN(4);
+	. = .;
+	. = ALIGN(4);
+	.u_boot_list : {
+		KEEP(*(SORT(.u_boot_list*)));
+	}
+	. = ALIGN(4);
+	.image_copy_end :
+	{
+		*(.__image_copy_end)
+	}
+	.rel_dyn_start :
+	{
+		*(.__rel_dyn_start)
+	}
+	.rel.dyn : {
+		*(.rel*)
+	}
+	.rel_dyn_end :
+	{
+		*(.__rel_dyn_end)
+	}
+	……
+	. = ALIGN(4);
+	__image_copy_end = .;
+	……
+```  
+在该函数的结尾，它会以下述形式返回。  
+```armasm
+bx	lr
+```  
+也就是说，虽然调用的地方未使用bl（带返回）的方式，但由于手工对lr寄存器进行了赋值，并且在函数执行的结尾，依然按照lr寄存器的地址进行返回，理论上，这个操作好像和跳转时采用bl是同样的效果。  
+
+但是这里有个问题。如果采用bl方式进行函数调用，CPU在进行指令地址跳转之前，是自动将bl指令后的地址以绝对地址的形式压入lr寄存器，在函数执行结尾，使用bx lr指令则会跳转到之前压入lr的那个绝对地址，完成函数调用的返回。  
+
+在这里（第二段代码）我们希望的是在relocate_code函数返回时，直接跳转到重定位后的U-Boot代码，这样一来，后面所有的操作，都将在重定位后的地址上进行，程序从此抛弃了重定位前的U-Boot代码，完全进入到重定位后的地址环境运行。  
+
+如何实现这一跨越呢？显然，要将U-Boot代码由重定位前的地址搬移到重定位后的地址，那无疑此时我们已经知道了重定位前后的代码地址（之前为啥不知道？），也就是说，如果在relocate_code函数返回时，我们硬把这个重定位后的地址塞给它，不就可以让程序神不知鬼不觉的跳转到重定位后的地址上去运行了吗？  
+
+顺着这个思路，我们再回头来看这第二段代码中的操作，核心其实是下面这几句代码。  
+```armasm
+adr	lr, here
+ldr	r0, [r9, #GD_RELOC_OFF]		/* r0 = gd->reloc_off */
+add	lr, lr, r0
+```  
+这里首先要理解adr这个指令。在学习ARM指令时，很多人都会对adr和ldr这两个命令产生疑惑，它们究竟有什么区别呢？adr是伪指令，ldr可以是伪指令也可以是实际的机器指令（上文已经说明过ldr指令与伪指令的区别）。adr加载的是一个基于当前运行地址加上一个相对与标号地址的偏移量得到的地址，这个地址是基于运行时环境的，因此可以用来判定程序当前处于重定位前还是重定位后。ldr则只能根据链接地址加载，因此它不能判定当前代码是否处于重定位前或者重定位后。  
+
+为了更好的理解，我找到了这样一个通俗易懂的例子来说明ldr和adr的不同。   
+```armasm
+ldr	r0, _start
+adr	r0, _start
+ldr	r0, =_start
+_start:
+b	_start
+```  
+加入链接脚本指定起始地址（RO）为0x30000000，反汇编结果如下：  
+```
+0x00000000: e59f0004  ldr r0, [pc, #4]	; 0xc
+0x00000004: e28f0000  add r0, pc, #0	; 0x0
+0x00000008: e59f0000  ldr r0, [pc, #0]	; 0x10
+0x0000000c: eafffffe  b 0xc
+```  
+1． 第一条ldr指令是读取指定地址中的值。执行这句指令后，r0中的值为0xeafffffe。  
+2． 第二条adr伪指令是将指定地址赋到r0中。假如整段代码在0x30000000运行，那么执行这句指令后r0中的值为0x3000000c；假如整段代码在地址0x00000000运行，那么执行这句指令后r0中的值为0x0000000c。  
+3． 第二条ldr伪指令是将指定标号的值赋给r0。无论代码在何处运行执行这句指令后，r0中的值都是0x3000000c。  
+
+现在可以上述代码的意思了，先求出here标号处的地址相对于运行地址的位置，再取得重定位前后U-Boot代码地址的偏移量，将这两个值相加设定给lr寄存器，这样，relocate_code返回时，就会跳转到SDRAM中here标号的位置（链接地址）了。  
+
+在完成了上述最主要的重定位工作后，第二部分代码最后还调用了relocate_vectors和c_runtime_cpu_setup两个函数。第一个函数自然是去根据新的中断向量表位置设置VBAR寄存器，第二个函数在start.S文件中，主要功能就是打开指令Cache。  
+
+终于来到了_main的最后一部分了，先给出代码。    
+```armasm  
+#if !defined(CONFIG_SPL_BUILD) || defined(CONFIG_SPL_FRAMEWORK)
+# ifdef CONFIG_SPL_BUILD
+	/* Use a DRAM stack for the rest of SPL, if requested */
+	bl	spl_relocate_stack_gd
+	cmp	r0, #0
+	movne	sp, r0
+# endif
+	ldr	r0, =__bss_start	/* this is auto-relocated! */
+	ldr	r1, =__bss_end		/* this is auto-relocated! */
+	mov	r2, #0x00000000		/* prepare zero to clear BSS */
+clbss_l:cmp	r0, r1			/* while not at end of BSS */
+	strlo	r2, [r0]		/* clear 32-bit BSS word */
+	addlo	r0, r0, #4		/* move to next */
+	blo	clbss_l
+
+#if ! defined(CONFIG_SPL_BUILD)
+	bl coloured_LED_init
+	bl red_led_on
+#endif
+	/* call board_init_r(gd_t *id, ulong dest_addr) */
+	mov     r0, r9                  /* gd_t */
+	ldr	r1, [r9, #GD_RELOCADDR]	/* dest_addr */
+	/* call board_init_r */
+	ldr	pc, =board_init_r	/* this is auto-relocated! */
+	/* we should not return here. */
+#endif
+ENDPROC(_main)
+```  
+
+这部分代码主要是为在新地址上的（重定位后的）U-Boot清空BSS段，然后跳转至board_init_r函数，就这么简单，没啥需要进一步解释的了。  
+
+#### <board_init_f函数>   
+通过上述说明，我们知道，board_init_f和board_init_r函数分别可以看作是U-Boot重定向前后的板级初始化函数。board_init_f在spl和正式的U-Boot当中都存在，board_init_r只在正式的U-Boot当中存在。  
+
+board_init_f和board_init_r函数最大的不同是运行环境的不同。board_init_r函数运行时，C语言环境（堆栈、全局变量等）已经完全准备好了，但是board_init_f运行时，我们只能在C语言函数中使用堆栈（局部变量、函数调用）和GD结构。  
+
+是时候来说说GD是个什么东西了。要理解GD（global data）的意义，需要先理解这样一个事实，U-Boot是一个bootloader，在有些情况下，它可能位于系统的只读存储器（ROM或者Flash）中，并从那里开始执行。因此，这种情况下，在U-Boot执行的前期（在将自己copy到可读写的存储器之前），它所在的存储空间，是不可写的。这样会造成两个问题：  
+1. 堆栈无法使用，无法执行函数调用，也即C环境不可用。  
+2. 没有data段（或者正确初始化的data段）可用，不同函数或者代码之间，无法通过全局变量的形式共享数据。  
+
+对于问题1，通常的解决方案是在U-Boot运行起来之后，在那些不需要执行任何初始化动作即可使用的、可读写的存储区域内开辟一段堆栈（stack）空间。一般来说，大部分的平台（如很多ARM平台），都有自己的SRAM，可用作堆栈空间。如果实在不行，也有可借用CPU的Cache（用法不详）。  
+
+对于问题2，解决方案要复杂一些。首先，对于开发者来说，在U-Boot被拷贝到可读写的RAM之前，永远不要使用全局变量。其次，在将自己拷贝到RAM之前，不同模块之间，确实有通过全局变量的形式传递数据的需求时，采用GD结构（global data）来解决。  
+
+为了在将自己拷贝到RAM前通过全局变量传递数据，U-Boot设计了一个巧妙的方法，具体来说它是这么做的：   
+1. 定义一个名为global_data的结构体，里面保存了各色各样需要传递的数据。该结构体的具体内容，可以参考include/asm-generic/global_data.h文件中的定义。  
+2. 堆栈配置好之后，在堆栈开始的位置留出一段，作为GD结构的使用空间，并将GD的开始地址（就是一个struct global_data指针）保存在一个固定的寄存器中，在后续需要对GD进行访问时，均通过该指针进行。  
+
+那个对于GD的开始地址的定义，可以参考下面的代码：  
+```C  
+#define DECLARE_GLOBAL_DATA_PTR     register volatile gd_t *gd asm ("r8")
+```  
+
+理解了GD的使用方法，我们再来阅读board_init_f中的代码。  
+```C   
+void board_init_f(ulong boot_flags)
+{
+#ifdef CONFIG_SYS_GENERIC_GLOBAL_DATA
+	gd_t data;
+	gd = &data;
+	zero_global_data();
+#endif
+	gd->flags = boot_flags;
+	gd->have_console = 0;
+	if (initcall_run_list(init_sequence_f))
+		hang();
+}
+```  
+
+注意，进入board_init_f之前，GD结构刚刚被全部清了零，传入的boot_flags也是0，因此，board_init_f中给出的处理都是清零。initcall_run_list函数会逐个执行在init_sequence_f列表中定义的一系列函数。这里面的处理大部分也是对GD项目的设定，就不一一展开了。  
+
+
+
+#### <board_init_r函数>   
 
 ### 参考文献  
 [麦子学院：看懂uboot的神秘面容](http://www.maiziedu.com/course/34-2512/)  
