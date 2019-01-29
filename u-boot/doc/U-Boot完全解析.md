@@ -327,7 +327,7 @@ CPSR有4个8位区域：标志域（F）、状态域（S）、扩展域（X）�
 
 观察上面关于cp15寄存器的操作指令，可以知道，读写协处理器寄存器的方法和读写通用寄存器基本是相同的，都是采用所谓“读/修改/写”方式，只不过具体的读写指令参数有些不同。  
 
-mrc指令（读取协处理器寄存器的值，写入到通用寄存器中）的格式像下面这样：
+mrc指令（读取协处理器寄存器的值，写入到通用寄存器中）的格式像下面这样：  
 ```armasm
 mrc p15, <opc1>, <Rd>, <CRn>, <CRm>, <opc2>
 ```
@@ -339,7 +339,7 @@ mrc p15, <opc1>, <Rd>, <CRn>, <CRm>, <opc2>
 
 现在再来看上面的最先出现的一对mrc和mcr指令所对应的寄存器，因为CRn=C1，ocp1=0，CRm=c0，opc2=0，因此可以查询到对应的是要操作“System control registers”，继续看手册后面的说明，得知先头这几句主要是要将SCTLR的V位清空，也就是将中断向量表设定为使用低地址（0x00000000），此时系统可以进行Remap（中断向量表重映射）。  
 
-后面还有一句mcr的操作：
+后面还有一句mcr的操作：  
 ```armasm
 ldr	r0, =_start
 mcr	p15, 0, r0, c12, c0, 0	@Set VBAR
@@ -358,8 +358,12 @@ mcr	p15, 0, r0, c12, c0, 0	@Set VBAR
 	bl	cpu_init_crit
 #endif
 ```
-这两个函数都要以CONFIG_SKIP_LOWLEVEL_INIT这个宏作为编译的选项，这又是什么原因呢？  
+这两个函数都要以CONFIG_SKIP_LOWLEVEL_INIT这个宏作为编译的选项，这种以“CONFIG_”或“CONFIG_SYS_”开头的宏定义就是俗称的开发板配置选项。这些配置选项在哪里可以找到呢？基本上全在include/configs/x4412.h这个文件下定义。打开这个x4412.h文件，看到它又包含了configs/exynos4-common.h文件，再打开exynos4-common.h文件，发现它又包含了exynos-common.h文件，在exynos-common.h文件中，可以找到CONFIG_SKIP_LOWLEVEL_INIT的定义。      
 
+这也就是说，以上两个初始化操作不被调用！一开始我在这里走了很长的弯路，一定要小心啊。  
+
+虽说如此，我还是想在这里稍微分析一下这个cpu_init_cp15函数，因为它包含了很多有趣的概念。  
+  
 前面我们已经提到过，目前的U-boot都会分成spl和真正的u-boot两个部分，其中spl先在片内RAM运行，然后它把u-boot加载到片外RAM上运行。所以，关于时钟、MMU之类的初始化，在spl执行阶段已经运行了，在真正的u-boot，也就是片外RAM中运行的那个u-boot执行时就不需要再执行一遍，这正是上面那个编译开关存在的意义。  
 
 那为什么这里又分成了两个函数呢？我们看看两个函数里面的处理内容会发现，第一个函数主要是做一些必须使用汇编进行的动作，第二个函数是调用一个lowlevel_init函数，而这实际上是一个C语言写成的函数，因为这些处理不涉及特殊功能寄存器，因此直接用C语言进行编程更为方便。像lowlevel_init这种调用方式我们俗称为钩子函数，在Boot程序中非常常见。  
@@ -808,7 +812,7 @@ void board_init_f(ulong boot_flags)
 
 注意，进入board_init_f之前，GD结构刚刚被全部清了零，传入的boot_flags也是0，因此，board_init_f中给出的处理都是清零。initcall_run_list函数会逐个执行在init_sequence_f列表中定义的一系列函数。这里面的处理大部分也是对GD项目的设定，就不挨个展开了。  
 
-开发板的配置在哪里可以找到呢？基本上全在include/configs/x4412.h这个文件下定义。  
+
 
 通常有两种方式对bootloader程序进行调试，第一是采用在线调试工具，比如jlink或open-jtag等；第二是完全依靠开发板上的硬件，在最初阶段什么都不具备的时候，使用板上的LED灯来表示运行步骤，在串口初始化完毕后采用串口信息协助调试。  
 
