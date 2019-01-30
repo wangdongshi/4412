@@ -5,10 +5,10 @@
 PS. 童老师的视频是我迄今见到过的所有讲解U-Boot的书籍和课程中最好的一份资料，没有之一！  
 我本人从中获益良多，也借此表示对童老师深深的敬意！  
 
-### 移植环境
+### 移植环境  
 
-- 开发环境 ： Win7（64位） + Virtualbox + Ubuntu16.04（64位）
-- 主开发板 ： [九鼎创展X4412](http://www.9tripod.com/index.php)
+- 开发环境 ： Win7（64位） + Virtualbox + Ubuntu16.04（64位）  
+- 主开发板 ： [九鼎创展X4412](http://www.9tripod.com/index.php)  
 
 | 器件  | 型号              | 厂商     | 描述                                           |
 | ---- | ---------------- | ------- | --------------------------------------------- |
@@ -16,12 +16,19 @@ PS. 童老师的视频是我迄今见到过的所有讲解U-Boot的书籍和课�
 | DDR  | NT5CB128M16FP-D1 | Nanya   | DDR3x4, 2Gb, 128Mx16, 800MHz, BGA96           |
 | eMMC | THGBMBG6D1KBAIL  | Toshiba | MLC NAND, Serial, 3.3V, 64G-bit, 153-Pin FBGA |
 
-- 基础u-boot版本 ： u-boot-2015-10
-- 交叉编译工具链 ： 友善之臂提供的arm-linux-gcc-4.5.1-v6-vfp-20101103.tgz
+- 基础u-boot版本 ： u-boot-2015-10  
+- 交叉编译工具链 ： 友善之臂提供的arm-linux-gcc-4.5.1-v6-vfp-20101103.tgz  
 
-简单说下，Exynos 4412这个CPU是Cortex-A9内核的，而网络上教程比较多的S5PV210是Cortex-A8内核的，这两款CPU都是基于ARMv7架构的。A9支持多核，市面上流行的ARM多核基本是A9起步。目前最新的Cortex-A系列已经是基于ARMv8架构的了，ARMv8架构开始支持64bit。
+简单说下，Exynos 4412这个CPU是Cortex-A9内核的，而网络上教程比较多的S5PV210是Cortex-A8内核的，这两款CPU都是基于ARMv7架构的。A9支持多核，市面上流行的ARM多核基本是A9起步。目前最新的Cortex-A系列已经是基于ARMv8架构的了，ARMv8架构开始支持64bit。  
 
-### 中断向量表
+### 如何调试U-Boot  
+通常有两种方式对bootloader程序进行调试，第一是采用在线调试工具，比如jlink或open-jtag等；第二是完全依靠开发板上的硬件，在最初阶段什么都不具备的时候，使用板上的LED灯来表示运行步骤，在串口初始化完毕后采用串口信息协助调试。  
+
+这两种方法比较的话，在线调试当然是最方便的，可以随时打断点、dump内存信息等，但是在bootloader阶段的程序，这种方案通常未必可行，因为这种调试方法所需的一些基本条件在bootloaer阶段都还尚未具备。借助串口调试的方法虽然灵活性比较差、效率低下，但是在bootloader程序调试阶段却往往比较有效。  
+
+总结一下，如果某个平台已经具备了成熟的在线调试方案，当然要选在线调试，但如果在线调试环境本身存在许多问题，稳定性很差，则不如退回到串口调试方案，虽然麻烦一点，但绝对是可行的。  
+
+### 中断向量表  
 
 u-boot-2015-10工程中，入口地址应该是哪里？传统的U-Boot的入口都是arch/arm/cpu/armv7/start.S这个文件，但是打开u-boot-2015-10工程的这个文件，会发现最前面的部分竟然不是中断向量！入口地址处难道不是中断向量吗？绝无可能，那么想找到线索，还是要回头来查看arch/arm/cpu/u-boot.lds文件，在这个链接脚本文件会看到，整个工程的入口是“_start”，参考下面这句：
 ```
@@ -360,7 +367,7 @@ mcr	p15, 0, r0, c12, c0, 0	@Set VBAR
 ```
 这两个函数都要以CONFIG_SKIP_LOWLEVEL_INIT这个宏作为编译的选项，这种以“CONFIG_”或“CONFIG_SYS_”开头的宏定义就是俗称的开发板配置选项。这些配置选项在哪里可以找到呢？基本上全在include/configs/x4412.h这个文件下定义。打开这个x4412.h文件，看到它又包含了configs/exynos4-common.h文件，再打开exynos4-common.h文件，发现它又包含了exynos-common.h文件，在exynos-common.h文件中，可以找到CONFIG_SKIP_LOWLEVEL_INIT的定义。      
 
-这也就是说，以上两个初始化操作不被调用！一开始我在这里走了很长的弯路，一定要小心啊。  
+这也就是说，以上两个初始化操作不被调用！一开始我在这里走了很长的弯路，一定要小心啊。为啥这里非常重要的cp15寄存器的初始化不做了呢？因为后面会看到它在其它的处理中被执行了！    
 
 虽说如此，我还是想在这里稍微分析一下这个cpu_init_cp15函数，因为它包含了很多有趣的概念。  
   
@@ -516,8 +523,6 @@ ldr这句ARM汇编伪指令对于ARM初学者经常是一大杀手，原因有�
 
 无论如何，我们一定要注意ldr指令和ldr伪指令是两个完全不同的东西~~  
 
-好了，搞了这么多，终于要来到U-Boot的第一个C函数s_init了，它在哪儿呢？它没有实现！没错在Cortex-A9系列的U-Boot中，并不使用这个s_init这个函数（这个函数定义到底在什么地方？），因此我们还是重新掉头回来研读汇编吧。  
-
 #### <_main函数里到底是什么> 
 
 哇，终于看到了下面这句代码，来到了_main函数！  
@@ -565,15 +570,19 @@ bl	_main
 
 上面这一段说明清楚的解释了U-Boot在初始化阶段不同系统资源准备完成的时刻，主要包括SRAM堆栈、SDRAM堆栈、GD、BSS、UART。理解这一点非常重要，因为它是我们在移植一个新系统时判断处理应该加入何处的重要依据。  
 
-#### <_main函数结构>   
+#### <_main函数中的第一部分>   
 仔细来观察_main函数的内部，这里其实就是上面README中所说的lowlevel_init函数（不同平台的U-Boot在这里的函数命名有所不同，这里还是按照4412的代码，称为_main函数）。  
 
 我们将crt0.S这个文件分解成了三段，并去除了一些和主体初始化处理无关的代码。可以很清晰的理解这部分处理的轮廓：在第一段的末尾，_main函数主动的调用了board_init_f函数，在第三段的末尾，_main函数永久的跳转至了board_init_r函数，不再返回了，C语言运行环境的初始化就此完成！  
 
-下面详细来说明这三段代码究竟在干什么。先来看第一段代码：  
+_main函数中第一部分代码如下：  
 ```armasm
 ENTRY(_main)
+#if defined(CONFIG_SPL_BUILD) && defined(CONFIG_SPL_STACK)
+	ldr	sp, =(CONFIG_SPL_STACK)
+#else
 	ldr	sp, =(CONFIG_SYS_INIT_SP_ADDR)
+#endif
 	
 	bic	sp, sp, #7	/* 8-byte alignment for ABI compliance */
 	mov	r2, sp
@@ -593,11 +602,184 @@ clr_gd:
 	/* mov r0, #0 not needed due to above code */
 	bl	board_init_f
 ```
-第一段代码的开头我们是似曾相识的，没错，它和s_init中的处理是一样的：准备一个栈空间，其地址为CONFIG_SYS_INIT_SP_ADDR（SPL中有所不同），并强制将其修改为8字节对齐。  
+第一段代码的开头我们是似曾相识的，没错，它和s_init中的处理是一样的：准备一个栈空间，其地址在spl中为CONFIG_SPL_STACK，在正式的u-boot中为CONFIG_SYS_INIT_SP_ADDR，并强制将其修改为8字节对齐。  
 
 和s_init不同的是，这里的处理需要在栈空间之上，再准备一块称之为GD（全局数据）的空间，其大小为GD_SIZE，并将此空间全部清零，这样一来在board_init_f函数中，我们就可以使用GD和SRAM上的栈空间了。注意，在这部分代码运行时，是没有任何可用的存储空间的（除寄存器以外）！    
 
-board_init_f函数中的处理稍后再进行说明，先来看看_main中的第二段代码又作了些什么。  
+是不是看上去很简单？但是，在这看似平淡无奇的代码上，发生了U-Boot的第一次重要转折！  
+
+到此为止，spl和正式的u-boot代码基本上走的都是相同的路径，只有少数处理靠CONFIG_SPL_BUILD宏区分开来。但是，从这个board_init_f函数开始，spl和正式的u-boot开始分道扬镳！在spl中，这个board_init_f是定义在arch/arm/mach-exynos/spl_boot.c当中的，但在正式的u-boot中，该函数定义在common/board_f.c中。   
+
+#### <spl中的board_init_f函数>   
+提示一句，此时已经进入C语言的世界，采用Source Insight来读代码的话会更省力一些。注意，前面的汇编部分之所以没采用Source Insight，是因为它只能识别x86的汇编，而无法解析ARM的汇编！  
+
+先来看看spl当中的board_init_f函数，因为这里就是spl的终结了，所以在该函数的最后，它会将正式的u-boot拷贝至外部RAM，并采用一个强制跳转，进入正式的u-boot的处理流程。该函数的主体处理如下。  
+```c
+void board_init_f(unsigned long bootflag)
+{
+	__aligned(8) gd_t local_gd;
+	__attribute__((noreturn)) void (*uboot)(void);
+
+	setup_global_data(&local_gd);
+
+	if (do_lowlevel_init())
+		power_exit_wakeup();
+
+	copy_uboot_to_ram();
+
+	/* Jump to U-Boot image */
+	uboot = (void *)CONFIG_SYS_TEXT_BASE;
+	(*uboot)();
+	/* Never returns Here */
+}
+```
+
+这里面主要做了三件事情：  
+1. 准备GD结构；  
+2. 进行低级初始化；  
+3. 拷贝正式的U-Boot到外部RAM，并跳转到外部RAM上执行。  
+
+第三步很好理解，只有两点需要说明：  
+1. __attribute__((noreturn))这个用法的意思是指明函数没有返回值；  
+2. CONFIG_SYS_TEXT_BASE定义为0x43E00000，在x4412.h文件中，这是一个外部RAM的地址。  
+
+下面来分析一下第一步的setup_global_data和第二步的do_lowlevel_init函数主要做了些什么。  
+
+#### <setup_global_data函数>  
+setup_global_data函数的实际代码非常简单。  
+```c
+static void setup_global_data(gd_t *gdp)
+{
+	gd = gdp;
+	memzero((void *)gd, sizeof(gd_t));
+	gd->flags |= GD_FLG_RELOC;
+	gd->baudrate = CONFIG_BAUDRATE;
+	gd->have_console = 1;
+}
+```
+
+函数的代码虽然简单，但是GD的概念却不好理解，是时候来说说GD是个什么东西了。  
+
+要理解GD（global data）的意义，需要先理解这样一个事实，U-Boot是一个bootloader，在有些情况下，它可能位于系统的只读存储器（ROM或者Flash）中，并从那里开始执行。因此，这种情况下，在U-Boot执行的前期（在将自己copy到可读写的存储器之前），它所在的存储空间，是不可写的。这样会造成两个问题：  
+1. 堆栈无法使用，无法执行函数调用，也即C环境不可用。  
+2. 没有data段（或者正确初始化的data段）可用，不同函数或者代码之间，无法通过全局变量的形式共享数据。  
+
+对于问题1，通常的解决方案是在U-Boot运行起来之后，在那些不需要执行任何初始化动作即可使用的、可读写的存储区域内开辟一段堆栈（stack）空间。一般来说，大部分的平台（如很多ARM平台），都有自己的SRAM，可用作堆栈空间。如果实在不行，也有可借用CPU的Cache（用法不详）。栈空间的起始地址在哪里呢？还记得之前的_main函数吗，它一开始就设置了这个地址，spl中为CONFIG_SPL_STACK，在正式的u-boot中为CONFIG_SYS_INIT_SP_ADDR。    
+
+对于问题2，解决方案要复杂一些。首先，对于开发者来说，在U-Boot本身被拷贝到可读写的RAM之前，永远不要使用全局变量。其次，在将自己拷贝到RAM之前，不同模块之间，确实有通过全局变量的形式传递数据的需求时，采用GD结构（global data）来解决。  
+
+为了在将自己拷贝到RAM前通过全局变量传递数据，U-Boot设计了一个巧妙的方法，具体来说它是怎么做的：   
+1. 定义一个名为global_data的结构体（代码中的结构体名为gd_t），里面保存了各色各样需要传递的数据（预先定义好，因为要使用片上SRAM，因此容量是有限的，一定理解这一点）。该结构体的具体内容，可以参考include/asm-generic/global_data.h文件中的定义。  
+2. 堆栈配置好之后，在堆栈开始的位置留出一段，作为GD结构的使用空间，并将GD的开始地址（就是一个struct global_data指针）保存在一个固定的寄存器中，在后续需要对GD进行访问时，均通过该指针进行。  
+
+GD的访问是使用r8寄存器来实现的，可以参考下面的代码：  
+```C  
+#define DECLARE_GLOBAL_DATA_PTR     register volatile gd_t *gd asm ("r8")
+```  
+
+GD结构包含的项目确实很多，下面把不带编译选项的项目都列出来解释一下吧，因为这家伙在U-Boot移植中太重要了！  
+- bd : 
+- flags : 这是一个表示GD数据自身可靠程度的一个标志，目前定义了12种状态  
+- baudrate : 串口波特率  
+- cpu_clk : CPU时钟频率（以Hz为单位）  
+- bus_clk : （内部/外部？）总线时钟频率（以Hz为单位）  
+- pci_clk : PCI总线时钟频率（以Hz为单位）  
+- mem_clk : 内存工作频率（以Hz为单位）  
+- have_console : 要不要调用serial_init函数  
+- env_addr : 环境变量结构体的地址  
+- env_valid : 环境变量的Checksum检查是否通过？  
+- ram_top : U-Boot使用RAM的结束地址  
+- relocaddr : U-Boot使用RAM的开始地址  
+- ram_size : U-Boot使用RAM的总容量  
+- mon_len : Monitor的长度？  
+- irq_sp : IRQ栈指针  
+- start_addr_sp : 栈指针（U-Boot的C语言程序）  
+- reloc_off :   
+- new_gd : 重定向后的GD结构体的地址  
+- fdt_blob : 设备树  
+- new_fdt : 重定向后的FDT  
+- fdt_size : FDT的尺寸  
+- jt : 跳转表  
+- env_buf[32] : 重定向之前的getenv函数所使用的缓冲区  
+- timebase_h : 基准时刻的高32位  
+- timebase_l : 基准时刻的高32位  
+- cur_serial_dev : 当前的串行设备  
+- arch : CPU架构信息（很大一个结构体）  
+
+回头看setup_global_data中的处理，它是把定位后的GD结构全部清零，然后将GD的flags置为GD_FLG_RELOC（代码重定位至RAM），然后设定串口为可用，并设定其波特率。关于这些设定，可以在后续处理中看到它们是如何被应用的。    
+
+#### <do_lowlevel_init函数>   
+先贴上do_lowlevel_init的代码。  
+```c
+int do_lowlevel_init(void)
+{
+	uint32_t reset_status;
+	int actions = 0;
+
+	arch_cpu_init();
+	
+	configure_l2_ctlr();
+	configure_l2_actlr();
+	dsb();
+	isb();
+
+	relocate_wait_code();
+
+	/* Reconfigure secondary cores */
+	secondary_cores_configure();
+
+	reset_status = get_reset_status();
+
+	switch (reset_status) {
+	case S5P_CHECK_SLEEP:
+		actions = DO_CLOCKS | DO_WAKEUP;
+		break;
+	case S5P_CHECK_DIDLE:
+	case S5P_CHECK_LPA:
+		actions = DO_WAKEUP;
+		break;
+	default:
+		/* This is a normal boot (not a wake from sleep) */
+		actions = DO_CLOCKS | DO_MEM_RESET | DO_POWER;
+	}
+
+	if (actions & DO_POWER)
+		set_ps_hold_ctrl();
+
+	if (actions & DO_CLOCKS) {
+		system_clock_init();
+#ifdef CONFIG_DEBUG_UART
+		exynos_pinmux_config(PERIPH_ID_UART3, PINMUX_FLAG_NONE);
+		debug_uart_init();
+#endif
+		mem_ctrl_init(actions & DO_MEM_RESET);
+		tzpc_init();
+	}
+
+	return actions & DO_WAKEUP;
+}
+```
+
+上面几乎粘贴了do_lowlevel_init的所有代码，为啥呢？因为此处的处理实在是太重要了，尤其是在X4412开发板的spl处理中这其实实现了大部分spl打算完成的功能。需要逐个逐个进行分析。  
+
+有些函数的处理比较简单，就在下面简单列出其功能。  
+1.  arch_cpu_init ： 使能指令Cache  
+2.  configure_l2_ctlr ：   
+3.  configure_l2_actlr ：   
+4.  dsb ： 操作cp15协处理器，废弃多核CPU之间的数据同步结果  
+5.  isb ： 操作cp15协处理器，废弃同一个内核中的指令同步结果，即放弃流水线中已经取到的指令，重新取指令  
+6.  relocate_wait_code ：   
+7.  secondary_cores_configure ：   
+8.  get_reset_status ：   
+9.  set_ps_hold_ctrl ：   
+10. system_clock_init ：   
+11. exynos_pinmux_config ：   
+12. debug_uart_init ：   
+13. mem_ctrl_init ：   
+14. tzpc_init ：   
+
+#### <正式U-Boot中_main函数的其余部分>   
+正式的u-boot在将上述spl的路重走一遍之后，一样会来到crt0.S中的_main函数。在这里，我们暂且先把board_init_f函数的详细处理放一放，来看看_main中的其它部分又作了些什么。  
 ```armasm
 #if ! defined(CONFIG_SPL_BUILD)
 /*
@@ -772,27 +954,12 @@ ENDPROC(_main)
 
 这部分代码主要是为在新地址上的（重定位后的）U-Boot清空BSS段，然后跳转至board_init_r函数，就这么简单，没啥需要进一步解释的了。  
 
-#### <board_init_f函数>   
+#### <u-boot中的board_init_f函数>   
 通过上述说明，我们知道，board_init_f和board_init_r函数分别可以看作是U-Boot重定向前后的板级初始化函数。board_init_f在spl和正式的U-Boot当中都存在，board_init_r只在正式的U-Boot当中存在。  
 
 board_init_f和board_init_r函数最大的不同是运行环境的不同。board_init_r函数运行时，C语言环境（堆栈、全局变量等）已经完全准备好了，但是board_init_f运行时，我们只能在C语言函数中使用堆栈（局部变量、函数调用）和GD结构。  
 
-是时候来说说GD是个什么东西了。要理解GD（global data）的意义，需要先理解这样一个事实，U-Boot是一个bootloader，在有些情况下，它可能位于系统的只读存储器（ROM或者Flash）中，并从那里开始执行。因此，这种情况下，在U-Boot执行的前期（在将自己copy到可读写的存储器之前），它所在的存储空间，是不可写的。这样会造成两个问题：  
-1. 堆栈无法使用，无法执行函数调用，也即C环境不可用。  
-2. 没有data段（或者正确初始化的data段）可用，不同函数或者代码之间，无法通过全局变量的形式共享数据。  
 
-对于问题1，通常的解决方案是在U-Boot运行起来之后，在那些不需要执行任何初始化动作即可使用的、可读写的存储区域内开辟一段堆栈（stack）空间。一般来说，大部分的平台（如很多ARM平台），都有自己的SRAM，可用作堆栈空间。如果实在不行，也有可借用CPU的Cache（用法不详）。  
-
-对于问题2，解决方案要复杂一些。首先，对于开发者来说，在U-Boot被拷贝到可读写的RAM之前，永远不要使用全局变量。其次，在将自己拷贝到RAM之前，不同模块之间，确实有通过全局变量的形式传递数据的需求时，采用GD结构（global data）来解决。  
-
-为了在将自己拷贝到RAM前通过全局变量传递数据，U-Boot设计了一个巧妙的方法，具体来说它是这么做的：   
-1. 定义一个名为global_data的结构体，里面保存了各色各样需要传递的数据。该结构体的具体内容，可以参考include/asm-generic/global_data.h文件中的定义。  
-2. 堆栈配置好之后，在堆栈开始的位置留出一段，作为GD结构的使用空间，并将GD的开始地址（就是一个struct global_data指针）保存在一个固定的寄存器中，在后续需要对GD进行访问时，均通过该指针进行。  
-
-那个对于GD的开始地址的定义，可以参考下面的代码：  
-```C  
-#define DECLARE_GLOBAL_DATA_PTR     register volatile gd_t *gd asm ("r8")
-```  
 
 理解了GD的使用方法，我们再来阅读board_init_f中的代码。  
 ```C   
@@ -814,11 +981,7 @@ void board_init_f(ulong boot_flags)
 
 
 
-通常有两种方式对bootloader程序进行调试，第一是采用在线调试工具，比如jlink或open-jtag等；第二是完全依靠开发板上的硬件，在最初阶段什么都不具备的时候，使用板上的LED灯来表示运行步骤，在串口初始化完毕后采用串口信息协助调试。  
 
-这两种方法比较的话，在线调试当然是最方便的，可以随时打断点、dump内存信息等，但是在bootloader阶段的程序，这种方案通常未必可行，因为这种调试方法所需的一些基本条件在bootloaer阶段都还尚未具备。借助串口调试的方法虽然灵活性比较差、效率低下，但是在bootloader程序调试阶段却往往比较有效。  
-
-总结一下，如果某个平台已经具备了成熟的在线调试方案，当然要选在线调试，但如果在线调试存在许多问题，本身的稳定性很差，则不如退回到串口调试方案，虽然麻烦一点，但是绝对是可行的。  
 
 
 #### <board_init_r函数>   
