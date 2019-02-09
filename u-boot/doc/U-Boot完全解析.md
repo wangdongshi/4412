@@ -367,7 +367,7 @@ mcr	p15, 0, r0, c12, c0, 0	@Set VBAR
 ```
 这两个函数都要以CONFIG_SKIP_LOWLEVEL_INIT这个宏作为编译的选项，这种以“CONFIG_”或“CONFIG_SYS_”开头的宏定义就是俗称的开发板配置选项。这些配置选项在哪里可以找到呢？基本上全在include/configs/x4412.h这个文件下定义。打开这个x4412.h文件，看到它又包含了configs/exynos4-common.h文件，再打开exynos4-common.h文件，发现它又包含了exynos-common.h文件，在exynos-common.h文件中，可以找到CONFIG_SKIP_LOWLEVEL_INIT的定义。      
 
-这也就是说，以上两个初始化操作不被调用！一开始我在这里走了很长的弯路，一定要小心啊。为啥这里非常重要的cp15寄存器的初始化不做了呢？因为后面会看到它在其它的处理中被执行了！    
+这也就是说，以上两个初始化操作不被调用！一开始我在这里走了很长的弯路，一定要小心啊。为啥这里非常重要的cp15寄存器的初始化不做了呢？因为后面会看到它在其它的处理中被执行了！（好像后面也没有执行相应操作！）    
 
 虽说如此，我还是想在这里稍微分析一下这个cpu_init_cp15函数，因为它包含了很多有趣的概念。  
   
@@ -639,13 +639,11 @@ void board_init_f(unsigned long bootflag)
 2. 进行低级初始化；  
 3. 拷贝正式的U-Boot到外部RAM，并跳转到外部RAM上执行。  
 
-第三步很好理解，只有两点需要说明：  
-1. __attribute__((noreturn))这个用法的意思是指明函数没有返回值；  
-2. CONFIG_SYS_TEXT_BASE定义为0x43E00000，在x4412.h文件中，这是一个外部RAM的地址。  
+该函数中出现了\_\_attribute\_\_((noreturn))，这个用法的意思是指明函数没有返回值，另外，CONFIG_SYS_TEXT_BASE定义为0x43E00000，在x4412.h文件中，这是一个外部RAM的地址。  
 
-下面来分析一下第一步的setup_global_data和第二步的do_lowlevel_init函数主要做了些什么。  
+下面来逐步分析这三个步骤的处理中主要都干了些什么。  
 
-#### <setup_global_data函数>  
+#### <setup_global_data函数>   
 setup_global_data函数的实际代码非常简单。  
 ```c
 static void setup_global_data(gd_t *gdp)
@@ -678,7 +676,7 @@ GD的访问是使用r8寄存器来实现的，可以参考下面的代码：
 ```  
 
 GD结构包含的项目确实很多，下面把不带编译选项的项目都列出来解释一下吧，因为这家伙在U-Boot移植中太重要了！  
-- bd : 
+- bd : 这是一个用于保存开发板的相关参数的结构体，后面用到的时候再讲  
 - flags : 这是一个表示GD数据自身可靠程度的一个标志，目前定义了12种状态  
 - baudrate : 串口波特率  
 - cpu_clk : CPU时钟频率（以Hz为单位）  
@@ -709,7 +707,7 @@ GD结构包含的项目确实很多，下面把不带编译选项的项目都列
 回头看setup_global_data中的处理，它是把定位后的GD结构全部清零，然后将GD的flags置为GD_FLG_RELOC（代码重定位至RAM），然后设定串口为可用，并设定其波特率。关于这些设定，可以在后续处理中看到它们是如何被应用的。    
 
 #### <do_lowlevel_init函数>   
-先贴上do_lowlevel_init的代码。  
+spl中的board_init_f的第二步是执行低级初始化，即调用do_lowlevel_init函数。这个函数位于arch/arm/exynos/lowlevel_init.c文件之中。先贴上do_lowlevel_init函数的代码。  
 ```c
 int do_lowlevel_init(void)
 {
@@ -717,16 +715,6 @@ int do_lowlevel_init(void)
 	int actions = 0;
 
 	arch_cpu_init();
-	
-	configure_l2_ctlr();
-	configure_l2_actlr();
-	dsb();
-	isb();
-
-	relocate_wait_code();
-
-	/* Reconfigure secondary cores */
-	secondary_cores_configure();
 
 	reset_status = get_reset_status();
 
@@ -760,23 +748,160 @@ int do_lowlevel_init(void)
 }
 ```
 
-上面几乎粘贴了do_lowlevel_init的所有代码，为啥呢？因为此处的处理实在是太重要了，尤其是在X4412开发板的spl处理中这其实实现了大部分spl打算完成的功能。需要逐个逐个进行分析。  
+此处的处理完成了大部分spl打算完成的功能。下面简单列出其中主要函数的功能。  
+1. arch_cpu_init ：该函数位于arch/arm/cpu/armv7/s5p-common/cpu_info.c，主要功能就是配置cpu_id，这样后面就可以使用cpu_is_xxx之类的接口选择外设的不同基地址或寄存器组。具体做法就是将CPU的0xE0000000寄存器中写入0xC100，也就是S5P系列CPU的ID。（注意，configure_l2_ctlr到secondary_cores_configure这一系列函数因为编译宏的原因其实不会被包含进spl工程，这点可根据spl的反汇编看到。）   
+2. get_reset_status ：该函数位于arch/arm/mach-exynos/power.c中，它的作用是判断CPU启动时处于什么模式。如果是从普通关机状态启动，那么需要初始化电源、存储部分、时钟；如果是从睡眠状态唤醒，需要初始化时钟、执行唤醒流程；如果是从空闲或LPA模式唤醒，只需要执行唤醒流程。这里大概说下Exynos系列CPU的一个特点，该系列CPU有一个名叫LPA（Low Power Audio）的子系统，专门用于在节电模式下播放音频，这个对于手机来说很重要。在LPA模式下，存储模块一直是处于带电状态的。在此我们只讨论从普通关机状态启动，因此下面的一系列函数都需要执行（只有UART部分需要看编译宏的情况，在我们的U-Boot中，这个部分也是要执行的）。  
+根据不同的CPU型号来初始化CPU和时钟，这个操作要借助SAMSUNG_BASE系列宏，而这个宏又要用到上面取得的CPU的ID。顺着这个函数追踪下去，会发现一个samsung_get_base_##device的家伙（这个不太好找，因为是在宏定义中，这也可以看出使用宏定义虽然提高了编码的效率，但是对程序整体的可读性造成了破坏），它定义在arch/arm/mach-exynos/include/mach/cpu.h中，原型如下面的代码所示。可以看出，它会返回一个EXYNOS4X12_##base形式的地址，这里其实就是EXYNOS4_POWER_BASE，对应的地址是0x10020000。也就是说，通过这个寄存器可以查询到上述CPU启动时的状态。   
+```c
+#define SAMSUNG_BASE(device, base)				\
+static inline unsigned int __attribute__((no_instrument_function)) \
+	samsung_get_base_##device(void) \
+{								\
+	if (cpu_is_exynos4()) {				\
+		if (proid_is_exynos4412())			\
+			return EXYNOS4X12_##base;		\
+		return EXYNOS4_##base;				\
+	} else if (cpu_is_exynos5()) {				\
+		if (proid_is_exynos5420() || proid_is_exynos5800())	\
+			return EXYNOS5420_##base;		\
+		return EXYNOS5_##base;				\
+	}							\
+	return 0;						\
+}
+```
+3. set_ps_hold_ctrl ：片上的PS Hold功能只在Exynos5XXX系列CPU中被支持（九鼎的Exynos4412开发板中，PS Hold功能是通过片外的电路实现的），因此该函数在Exynos4412开发板中不会被执行。   
+4. system_clock_init ：该函数定义在arch/arm/mach-exynos/clock_init_exynos4.c中。可以看到，相对于其它Exynos4XXX系列CPU来说，Exynos4412的时钟初始化处理是比较特殊的，详细处理这里就不讨论了。   
+（exynos_pinmux_config和debug_uart_init两个函数是用于初始化调试用串口的，这里不再分析。）     
+7. mem_ctrl_init ：该函数定义在arch/arm/mach-exynos/dmc_common.c中。这里是对外部RAM，也就是DDR的初始化。童佳音老师的视频中对DDR进行了详尽的介绍，这里不再多说。有一点要强调的是，在完成这个函数的处理后，外部DDR第一次处在了可用状态！   
+8. tzpc_init ：该函数定义在arch/arm/mach-exynos/tzpc.c中。这里是对Trust Zone进行初始化，关于Trust Zone是个什么东西，这实在又是一个太大的话题，就不在这里展开讲了，可以参考[《一篇了解Trust Zone》](https://blog.csdn.net/guyongqiangx/article/details/78020257)。   
 
-有些函数的处理比较简单，就在下面简单列出其功能。  
-1.  arch_cpu_init ： 使能指令Cache  
-2.  configure_l2_ctlr ：   
-3.  configure_l2_actlr ：   
-4.  dsb ： 操作cp15协处理器，废弃多核CPU之间的数据同步结果  
-5.  isb ： 操作cp15协处理器，废弃同一个内核中的指令同步结果，即放弃流水线中已经取到的指令，重新取指令  
-6.  relocate_wait_code ：   
-7.  secondary_cores_configure ：   
-8.  get_reset_status ：   
-9.  set_ps_hold_ctrl ：   
-10. system_clock_init ：   
-11. exynos_pinmux_config ：   
-12. debug_uart_init ：   
-13. mem_ctrl_init ：   
-14. tzpc_init ：   
+在do_lowlevel_init函数全部完成之后，程序要判断是不是需要执行power_exit_wakeup，因为我们这里不是讨论从睡眠状态唤醒，所以不会进入power_exit_wakeup中的处理。  
+
+#### <copy_uboot_to_ram函数>    
+这一步骤是将正式的U-Boot代码拷贝至已经准备好的外部DDR内存中。注意，U-Boot工程中有好几处copy_uboot_to_ram，这里是指/arch/arm/mach-exynos/spl_boot.c中的copy_uboot_to_ram函数！先把该函数的主要处理贴在这里。  
+```c
+void copy_uboot_to_ram(void)
+{
+	unsigned int bootmode = BOOT_MODE_OM;
+	u32 (*copy_uboot)(u32 offset, u32 nblock, u32 dst) = NULL;
+	u32 offset = 0, size = 0;
+
+	if (bootmode == BOOT_MODE_OM)
+		bootmode = get_boot_mode();
+	switch (bootmode) {
+	case BOOT_MODE_SD:
+		offset = UBOOT_START_OFFSET;
+		size = UBOOT_SIZE_BLOC_COUNT;
+		copy_uboot = (MMC_INDEX);
+		break;
+	default:
+		break;
+	}
+
+#ifdef CONFIG_X4412
+	if (copy_uboot)
+	{
+		/*
+		 * Here I use iram 0x020250000-0x020260000 (64k)
+		 * as an buffer, and copy u-boot from sd card to 
+		 * this buffer, then copy it to dram started 
+		 * from 0x43e00000.
+		 *
+		 */
+		unsigned int i, count = 0;
+		unsigned char *buffer = (unsigned char *)0x02050000;
+		unsigned char *dst = (unsigned char *)CONFIG_SYS_TEXT_BASE;
+		unsigned int step = (0x10000 / 512);
+
+		for (count = 0; count < UBOOT_SIZE_BLOC_COUNT; count+=step) {
+			/* copy u-boot from sdcard to iram firstly.  */
+			copy_uboot((u32)(UBOOT_START_OFFSET+count), (u32)step, (u32)buffer);
+			/* then copy u-boot from iram to dram. */
+			for (i=0; i<0x10000; i++) {
+				*dst++ = buffer[i];
+			}
+		}
+	}
+#endif
+}
+```
+我们这里假定系统是从板上的SD卡启动的，因此略去了其它启动模式的代码。  
+
+#### <正式U-Boot中的board_init_f函数>   
+将init_sequence_f函数中未定义的编译宏去掉之后，函数列表可以精简为如下内容：  
+```c
+static init_fnc_t init_sequence_f[] = {
+	setup_mon_len,
+#ifdef CONFIG_OF_CONTROL // defined in x4412_defconfig
+	fdtdec_setup,
+#endif
+	initf_malloc,
+	arch_cpu_init,		/* basic arch cpu dependent setup */
+	mark_bootstage,
+	initf_dm,
+	arch_cpu_init_dm,
+#if defined(CONFIG_BOARD_EARLY_INIT_F) // defined in esynos-common.h
+	board_early_init_f,
+#endif
+	env_init,		/* initialize environment */
+	init_baud_rate,		/* initialze baudrate settings */
+	serial_init,		/* serial communications setup */
+	console_init_f,		/* stage 1 init of console */
+#ifdef CONFIG_OF_CONTROL // defined in x4412_defconfig
+	fdtdec_prepare_fdt,
+#endif
+	display_options,	/* say that we are here */
+	display_text_info,	/* show debugging info if required */
+	print_cpuinfo,		/* display cpu info (and speed) */
+#if defined(CONFIG_DISPLAY_BOARDINFO) // defined in esynos-common.h
+	show_board_info,
+#endif
+	INIT_FUNC_WATCHDOG_INIT
+	INIT_FUNC_WATCHDOG_RESET
+	announce_dram_init,
+	/* TODO: unify all these dram functions? */
+#if defined(CONFIG_ARM) || defined(CONFIG_X86) || defined(CONFIG_NDS32) || \
+		defined(CONFIG_MICROBLAZE) || defined(CONFIG_AVR32) // defined in x4412_defconfig
+	dram_init,		/* configure available RAM banks */
+#endif
+	/*
+	 * Now that we have DRAM mapped and working, we can
+	 * relocate the code and continue running from DRAM.
+	 *
+	 * Reserve memory at end of RAM for (top down in that order):
+	 *  - area that won't get touched by U-Boot and Linux (optional)
+	 *  - kernel log buffer
+	 *  - protected RAM
+	 *  - LCD framebuffer
+	 *  - monitor code
+	 *  - board info struct
+	 */
+	setup_dest_addr,
+	reserve_round_4k,
+#if !(defined(CONFIG_SYS_ICACHE_OFF) && defined(CONFIG_SYS_DCACHE_OFF)) && \
+		defined(CONFIG_ARM) // defined in x4412_defconfig
+	reserve_mmu,
+#endif
+	reserve_trace,
+	/* TODO: Why the dependency on CONFIG_8xx? */
+#ifndef CONFIG_SPL_BUILD // don't execute when spl
+	reserve_malloc,
+	reserve_board,
+#endif
+	setup_machine,
+	reserve_global_data,
+	reserve_fdt,
+	reserve_arch,
+	reserve_stacks,
+	setup_dram_config,
+	show_dram_config,
+	display_new_sp,
+	reloc_fdt,
+	setup_reloc,
+	NULL,
+};
+```
+
 
 #### <正式U-Boot中_main函数的其余部分>   
 正式的u-boot在将上述spl的路重走一遍之后，一样会来到crt0.S中的_main函数。在这里，我们暂且先把board_init_f函数的详细处理放一放，来看看_main中的其它部分又作了些什么。  
