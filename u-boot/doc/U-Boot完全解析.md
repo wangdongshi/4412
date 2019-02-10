@@ -367,12 +367,10 @@ mcr	p15, 0, r0, c12, c0, 0	@Set VBAR
 ```
 这两个函数都要以CONFIG_SKIP_LOWLEVEL_INIT这个宏作为编译的选项，这种以“CONFIG_”或“CONFIG_SYS_”开头的宏定义就是俗称的开发板配置选项。这些配置选项在哪里可以找到呢？基本上全在include/configs/x4412.h这个文件下定义。打开这个x4412.h文件，看到它又包含了configs/exynos4-common.h文件，再打开exynos4-common.h文件，发现它又包含了exynos-common.h文件，在exynos-common.h文件中，可以找到CONFIG_SKIP_LOWLEVEL_INIT的定义。      
 
-这也就是说，以上两个初始化操作不被调用！一开始我在这里走了很长的弯路，一定要小心啊。为啥这里非常重要的cp15寄存器的初始化不做了呢？因为后面会看到它在其它的处理中被执行了！（好像后面也没有执行相应操作！）    
+这也就是说，以上两个初始化操作不被调用！一开始我在这里走了很长的弯路，一定要小心啊。为啥这里非常重要的cp15寄存器的初始化不做了呢？要注意CONFIG_SKIP_LOWLEVEL_INIT这个宏是在exynos-common.h文件中定义的，也就是说，Exynos系列CPU的CP15协处理器中的相关寄存器的默认值一定和U-Boot需要设定的值是相同的，比如开机后MMU的关闭状态等。    
 
-虽说如此，我还是想在这里稍微分析一下这个cpu_init_cp15函数，因为它包含了很多有趣的概念。  
+虽说如此，我还是想在这里稍微分析一下这个cpu_init_cp15函数，因为这个函数在其它一些Cortex-A9的CPU中基本是必须执行的函数。  
   
-前面我们已经提到过，目前的U-boot都会分成spl和真正的u-boot两个部分，其中spl先在片内RAM运行，然后它把u-boot加载到片外RAM上运行。所以，关于时钟、MMU之类的初始化，在spl执行阶段已经运行了，在真正的u-boot，也就是片外RAM中运行的那个u-boot执行时就不需要再执行一遍，这正是上面那个编译开关存在的意义。  
-
 那为什么这里又分成了两个函数呢？我们看看两个函数里面的处理内容会发现，第一个函数主要是做一些必须使用汇编进行的动作，第二个函数是调用一个lowlevel_init函数，而这实际上是一个C语言写成的函数，因为这些处理不涉及特殊功能寄存器，因此直接用C语言进行编程更为方便。像lowlevel_init这种调用方式我们俗称为钩子函数，在Boot程序中非常常见。  
 
 先来仔细分析一下cpu_init_cp15这个函数。  
@@ -778,7 +776,7 @@ static inline unsigned int __attribute__((no_instrument_function)) \
 在do_lowlevel_init函数全部完成之后，程序要判断是不是需要执行power_exit_wakeup，因为我们这里不是讨论从睡眠状态唤醒，所以不会进入power_exit_wakeup中的处理。  
 
 #### <copy_uboot_to_ram函数>    
-这一步骤是将正式的U-Boot代码拷贝至已经准备好的外部DDR内存中。注意，U-Boot工程中有好几处copy_uboot_to_ram，这里是指/arch/arm/mach-exynos/spl_boot.c中的copy_uboot_to_ram函数！先把该函数的主要处理贴在这里。  
+这一步骤是将正式的U-Boot代码拷贝至已经准备好的外部DDR内存中。注意，U-Boot工程中有好几处copy_uboot_to_ram，这里是指arch/arm/mach-exynos/spl_boot.c中的copy_uboot_to_ram函数！先把该函数的主要处理贴在这里。  
 ```c
 void copy_uboot_to_ram(void)
 {
@@ -792,13 +790,13 @@ void copy_uboot_to_ram(void)
 	case BOOT_MODE_SD:
 		offset = UBOOT_START_OFFSET;
 		size = UBOOT_SIZE_BLOC_COUNT;
-		copy_uboot = (MMC_INDEX);
+		copy_uboot = get_irom_func(MMC_INDEX);
 		break;
 	default:
 		break;
 	}
 
-#ifdef CONFIG_X4412
+#ifdef CONFIG_X4412 // 这段代码是彭东林写的
 	if (copy_uboot)
 	{
 		/*
@@ -822,10 +820,27 @@ void copy_uboot_to_ram(void)
 			}
 		}
 	}
+#else // 这段代码是U-Boot本来的代码
+	if (copy_uboot)
+		copy_uboot(offset, size, CONFIG_SYS_TEXT_BASE);
 #endif
 }
 ```
-我们这里假定系统是从板上的SD卡启动的，因此略去了其它启动模式的代码。  
+我们这里假定系统是从板上的SD卡启动的，因此略去了其它启动模式的代码。这里其实很清楚，借用了片上SRAM的0x020250000-0x020260000的一段空间作为Buffer，将U-Boot的正是代码拷贝到了以0x43e00000开始的片外DDR上。这里需要说明的是，拷贝用到的函数，也就是copy_uboot这个东东，是一个在片上ROM中存在的一段代码，片上ROM其实提供了几个这样的拷贝函数，可以参考arch/arm/mach-exynos/spl_boot.c中的下面一段代码。  
+```c
+/* IROM Function Pointers Table */
+u32 irom_ptr_table[] = {
+	[MMC_INDEX] = 0x02020030,	/* iROM Function Pointer-SDMMC boot */
+	[EMMC44_INDEX] = 0x02020044,	/* iROM Function Pointer-EMMC4.4 boot*/
+	[EMMC44_END_INDEX] = 0x02020048,/* iROM Function Pointer
+						-EMMC4.4 end boot operation */
+	[SPI_INDEX] = 0x02020058,	/* iROM Function Pointer-SPI boot */
+	[USB_INDEX] = 0x02020070,	/* iROM Function Pointer-USB boot*/
+	};
+```
+可以看到，序号为MMC_INDEX的那个地址，对应的是从SD卡或MMC卡进行拷贝的函数。彭东林的博客上有讲过，其实这里可以直接向DDR进行拷贝，但是因为DDR驱动的问题，这里貌似不能拷贝，取而代之的是像现在这样借助片上SRAM向片外DDR进行间接拷贝，这个问题值得继续研究。  
+
+还有一点需要说明，spl运行到这里，U-Boot代码是拷贝到了以0x43e00000开始的片外DDR上，但是U-Boot代码的运行环境却还没有准备好。所谓运行环境，就是指U-Boot的C代码运行需要的堆栈、静态存储区，以及U-Boot本身需要的环境变量等等，这些都需要在片外DDR中进行规划。程序跳转到片外DDR上以后，正式的U-Boot会从最初的b reset那段汇编指令开始起重新在DDR上执行，届时，它将一步步的准备好上面所说的那些环境，而在准备好正式的堆栈之前，在片上SRAM的顶部会预留一块空间（从0x02040000开始），作为这个阶段U-Boot的C代码执行的栈空间。  
 
 #### <正式U-Boot中的board_init_f函数>   
 将init_sequence_f函数中未定义的编译宏去掉之后，函数列表可以精简为如下内容：  
