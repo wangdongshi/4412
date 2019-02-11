@@ -747,7 +747,7 @@ int do_lowlevel_init(void)
 ```
 
 此处的处理完成了大部分spl打算完成的功能。下面简单列出其中主要函数的功能。  
-1. arch_cpu_init ：该函数位于arch/arm/cpu/armv7/s5p-common/cpu_info.c，主要功能就是配置cpu_id，这样后面就可以使用cpu_is_xxx之类的接口选择外设的不同基地址或寄存器组。具体做法就是将CPU的0xE0000000寄存器中写入0xC100，也就是S5P系列CPU的ID。（注意，configure_l2_ctlr到secondary_cores_configure这一系列函数因为编译宏的原因其实不会被包含进spl工程，这点可根据spl的反汇编看到。）   
+1. arch_cpu_init ：该函数位于arch/arm/cpu/armv7/s5p-common/cpu_info.c，主要功能就是配置pro_id、cpu_id和cpu_rev，这样后面就可以使用cpu_is_xxx之类的接口选择外设的不同基地址或寄存器组。该处理的主要部分可参考arch/arm/mach-exynos/include/mach/cpu.h，在Exynos4412的情况下CPU的ID为0x412。（注意，configure_l2_ctlr到secondary_cores_configure这一系列函数因为编译宏的原因其实不会被包含进spl工程，这点可根据spl的反汇编看到。）   
 2. get_reset_status ：该函数位于arch/arm/mach-exynos/power.c中，它的作用是判断CPU启动时处于什么模式。如果是从普通关机状态启动，那么需要初始化电源、存储部分、时钟；如果是从睡眠状态唤醒，需要初始化时钟、执行唤醒流程；如果是从空闲或LPA模式唤醒，只需要执行唤醒流程。这里大概说下Exynos系列CPU的一个特点，该系列CPU有一个名叫LPA（Low Power Audio）的子系统，专门用于在节电模式下播放音频，这个对于手机来说很重要。在LPA模式下，存储模块一直是处于带电状态的。在此我们只讨论从普通关机状态启动，因此下面的一系列函数都需要执行（只有UART部分需要看编译宏的情况，在我们的U-Boot中，这个部分也是要执行的）。  
 根据不同的CPU型号来初始化CPU和时钟，这个操作要借助SAMSUNG_BASE系列宏，而这个宏又要用到上面取得的CPU的ID。顺着这个函数追踪下去，会发现一个samsung_get_base_##device的家伙（这个不太好找，因为是在宏定义中，这也可以看出使用宏定义虽然提高了编码的效率，但是对程序整体的可读性造成了破坏），它定义在arch/arm/mach-exynos/include/mach/cpu.h中，原型如下面的代码所示。可以看出，它会返回一个EXYNOS4X12_##base形式的地址，这里其实就是EXYNOS4_POWER_BASE，对应的地址是0x10020000。也就是说，通过这个寄存器可以查询到上述CPU启动时的状态。   
 ```c
@@ -826,7 +826,7 @@ void copy_uboot_to_ram(void)
 #endif
 }
 ```
-我们这里假定系统是从板上的SD卡启动的，因此略去了其它启动模式的代码。这里其实很清楚，借用了片上SRAM的0x020250000-0x020260000的一段空间作为Buffer，将U-Boot的正是代码拷贝到了以0x43e00000开始的片外DDR上。这里需要说明的是，拷贝用到的函数，也就是copy_uboot这个东东，是一个在片上ROM中存在的一段代码，片上ROM其实提供了几个这样的拷贝函数，可以参考arch/arm/mach-exynos/spl_boot.c中的下面一段代码。  
+我们这里假定系统是从板上的SD卡启动的，因此略去了其它启动模式的代码。这里其实很清楚，借用了片上SRAM的0x020250000-0x020260000的一段空间作为Buffer，将U-Boot的正式代码拷贝到了以0x43e00000开始的片外DDR上。这里需要说明的是，拷贝用到的函数，也就是copy_uboot这个东东，是一个在片上ROM中存在的一段代码，片上ROM其实提供了几个这样的拷贝函数，可以参考arch/arm/mach-exynos/spl_boot.c中的下面一段代码。  
 ```c
 /* IROM Function Pointers Table */
 u32 irom_ptr_table[] = {
@@ -843,7 +843,27 @@ u32 irom_ptr_table[] = {
 还有一点需要说明，spl运行到这里，U-Boot代码是拷贝到了以0x43e00000开始的片外DDR上，但是U-Boot代码的运行环境却还没有准备好。所谓运行环境，就是指U-Boot的C代码运行需要的堆栈、静态存储区，以及U-Boot本身需要的环境变量等等，这些都需要在片外DDR中进行规划。程序跳转到片外DDR上以后，正式的U-Boot会从最初的b reset那段汇编指令开始起重新在DDR上执行，届时，它将一步步的准备好上面所说的那些环境，而在准备好正式的堆栈之前，在片上SRAM的顶部会预留一块空间（从0x02040000开始），作为这个阶段U-Boot的C代码执行的栈空间。  
 
 #### <正式U-Boot中的board_init_f函数>   
-将init_sequence_f函数中未定义的编译宏去掉之后，函数列表可以精简为如下内容：  
+截止到_main函数的第一部分，在正式的U-Boot启动后，这些处理都会全部重新执行一遍，当然，这些指令的执行已经需要从DDR的0x43e00000开始的地址处取址了，直到哪里会和spl发生分歧了呢？是从board_init_f函数。为啥在这里会发生分歧呢？因为spl工程和正式的U-Boot工程所采用的源文件压根儿是不同的。要区分spl工程和正式U-Boot工程的代码树，最好是直接去看二者的lds（链接文件，位于arch/arm/cpu目录下），这还比较复杂，就不在此处分析了。现在只需要知道，在正式的U-Boot工程中，board_init_f函数位于common/board_f.c文件中，而不是arch/arm/mach-exynos/spl_boot.c文件。   
+
+来看看正式U-Boot中的board_init_f函数中究竟做了些什么？  
+```c
+gd->flags = boot_flags;
+gd->have_console = 0;
+
+if (initcall_run_list(init_sequence_f))
+	hang();
+```
+
+以上便是正式U-Boot中的board_init_f处理的主体，前面有两个赋值。第一个赋值将gd->flags赋为boot_flags，这是什么，是board_init_f函数带进来的参数，那么在调用board_init_f之前，这个参数赋的是什么值呢？可以回头再看看crt0.S中的代码。  
+```armasm
+	/* mov r0, #0 not needed due to above code */
+	bl	board_init_f
+```
+
+没错，这句注释写得很清楚，r0中的值是0，也就是说boot_flags的值为0。0代表什么呢？看看include/asm-generic/global_data.h中关于“Global Data Flags”的定义，没错，0没有被定义，也就是说，这是一个不具备含义的gd->flags值。  
+后面的一句赋值是将gd->have_console置为0，也就是关闭了串口。结合前面的赋值来看，这显然是将GD中这两个相关值进行了初始化。  
+
+好了，除去前两句赋值，剩下的便是initcall_run_list函数了，它其实就是逐一执行init_sequence_f列表中的函数。我们将init_sequence_f中未定义的编译宏去掉之后，函数列表可以精简为如下内容：  
 ```c
 static init_fnc_t init_sequence_f[] = {
 	setup_mon_len,
@@ -917,6 +937,81 @@ static init_fnc_t init_sequence_f[] = {
 };
 ```
 
+下面来一一剖析这些函数的处理细节。  
+1.  setup_mon_len  
+这个函数在我们开发板中的处理就下面一句话：  
+```c
+	gd->mon_len = (ulong)&__bss_end - CONFIG_SYS_MONITOR_BASE;
+```
+从这里看，gd->mon_len保存的就是整个为U-Boot分配的空间，包括text、data、bss等所有段所占的空间。    
+
+2.  fdtdec_setup  
+这里是对设备树的设置。设备树本来是Linux中的概念，但是U-Boot在结构上深度借鉴了Linux，因此对于驱动的支持，也采用了设备树的形式。设备树的概念是从2012年之后逐步引入Linux的，因此在较晚的版本中才会有所体现。  
+总体上来说，设备树是独立于U-Boot核心代码的一个二进制文件，可以单独对其进行编译，并且可以用固定的命令对其进行操作，比如查看具体的设备、列表等等。  
+方便起见这里还是给出一篇介绍U-Boot设备树的Blog，需要的话可以自行理解一下。[《uboot常用的函式》](https://www.itread01.com/content/1545053172.html)  
+具体来说该函数的有效代码如下：  
+```c
+#  ifdef CONFIG_SPL_BUILD
+	/* FDT is at end of BSS */
+	gd->fdt_blob = (ulong *)&__bss_end;
+#  else
+	/* FDT is at end of image */
+	gd->fdt_blob = (ulong *)&_end;
+#  endif
+# ifndef CONFIG_SPL_BUILD
+	/* Allow the early environment to override the fdt address */
+	gd->fdt_blob = (void *)getenv_ulong("fdtcontroladdr", 16,
+						(uintptr_t)gd->fdt_blob);
+# endif
+	return fdtdec_prepare_fdt();
+```
+gd->fdt_blob中保存的是设备树的起始地址，它紧挨着bss段或是_end标号之后。  
+这里有一个好玩的事情，就是_end这个标号是从哪里来的。在此U-Boot的作者玩了一个很有创意的技巧，因为类似__bss_end这样的标号通常会在链接文件中进行定义，但是这样一来在很多集成开发环境中，比如Source Insight，就无法将这些符号和程序中的变量链接在一起。为了解决这个问题，U-Boot中作了一个名为arch/arm/lib/sections.c的文件，在该文件中，它把每个在程序中会使用到的标号都在这里以0长度char型数组的形式定义一个变量实体，这样一来，在集成开发环境中，就可以将这些标号链接到这些个数组变量名上来，给程序员查找这些标号带来很多方便（这家伙可能会导致编译时的警告）。  
+下面的getenv_ulong这个处理的意思是：上面的处理给gd->fdt_blob设定了一个初始值，但是如果环境变量中存在一个名为“fdtcontroladdr”的参数，那么用该地址覆盖之前gd->fdt_blob指向的地址。  
+最后的fdtdec_prepare_fdt是检查fdt的一些基本信息是否符合规则，比如“魔数”域、版本信息等。  
+
+3.  initf_malloc  
+这个函数的主要处理如下。  
+```c
+	gd->malloc_limit = CONFIG_SYS_MALLOC_F_LEN;
+	gd->malloc_ptr = 0;
+```
+当CONFIG_SYS_MALLOC_F_LEN存在的时候，从栈区再拿掉一块内存，用于在U—Boot重定向前给malloc函数提供内存池。这里指定义了长度，尚未定义起始地址。  
+
+4.  arch_cpu_init  
+该函数在spl的do_lowlevel_init中也曾被调用，是完全一样的。  
+
+5.  mark_bootstage  
+6.  initf_dm  
+7.  arch_cpu_init_dm  
+8.  board_early_init_f  
+9.  env_init  
+10. init_baud_rate  
+11. serial_init  
+12. console_init_f  
+13. fdtdec_prepare_fdt  
+14. display_options  
+15. display_text_info  
+16. print_cpuinfo  
+17. show_board_info  
+18. announce_dram_init  
+19. dram_init  
+20. setup_dest_addr  
+21. reserve_round_4k  
+22. reserve_mmu  
+23. reserve_trace  
+24. reserve_malloc  
+25. reserve_board  
+26. setup_machine  
+27. reserve_global_data  
+28. reserve_fdt  
+29. reserve_arch  
+30. reserve_stacks  
+31. setup_dram_config  
+32. show_dram_config  
+33. display_new_sp  
+34. reloc_fdt  
+35. setup_reloc  
 
 #### <正式U-Boot中_main函数的其余部分>   
 正式的u-boot在将上述spl的路重走一遍之后，一样会来到crt0.S中的_main函数。在这里，我们暂且先把board_init_f函数的详细处理放一放，来看看_main中的其它部分又作了些什么。  
@@ -1130,6 +1225,7 @@ void board_init_f(ulong boot_flags)
 [麦子学院：看懂uboot的神秘面容](http://www.maiziedu.com/course/34-2512/)  
 [基于ARM Cortex A9的嵌入式Linux内核移植研究与实现](https://www.scribd.com/document/376681396/%E5%9F%BA%E4%BA%8EARM-Cortex-A9%E7%9A%84%E5%B5%8C%E5%85%A5%E5%BC%8FLinux%E5%86%85%E6%A0%B8%E7%A7%BB%E6%A4%8D%E7%A0%94%E7%A9%B6%E4%B8%8E%E5%AE%9E%E7%8E%B0)  
 [uboot-2015-07的start.S的文件启动过程](https://blog.csdn.net/u013904227/article/details/51648179)   
+[uboot流程系列](https://blog.csdn.net/ooonebook/article/details/52939100)  
 
 http://www.cnblogs.com/humaoxiao/p/4166230.html  
 https://blog.csdn.net/xzg10202/article/details/77884289  
