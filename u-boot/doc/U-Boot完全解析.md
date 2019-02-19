@@ -977,7 +977,7 @@ gd->fdt_blob中保存的是设备树的起始地址，它紧挨着bss段或是_e
 	gd->malloc_limit = CONFIG_SYS_MALLOC_F_LEN;
 	gd->malloc_ptr = 0;
 ```
-当CONFIG_SYS_MALLOC_F_LEN存在的时候，从栈区再拿掉一块内存，用于在U—Boot重定向前给malloc函数提供内存池。这里指定义了长度，尚未定义起始地址。  
+当CONFIG_SYS_MALLOC_F_LEN存在的时候，从栈区再拿掉一块内存，用于在U-Boot重定向前给malloc函数提供内存池。这里指定义了长度，尚未定义起始地址。  
 
 4.  arch_cpu_init  
 该函数在spl的do_lowlevel_init中也曾被调用，是完全一样的。  
@@ -985,177 +985,27 @@ gd->fdt_blob中保存的是设备树的起始地址，它紧挨着bss段或是_e
 5.  mark_bootstage  
 该函数表示U-Boot目前运行在board_init_f这个阶段。它会将gd->flags设定为BOOTSTAGEF_ALLOC。因为该函数没有太多实质的硬件操作，这里也不详细分析。  
 
-
 6.  initf_dm  
-该函数是初始化DM的第一步，内部处理十分复杂。这里要先理解一个概念——DM，即driver module，也就是驱动模型。  
-U-Boot为啥要引入驱动模型呢？首先该模型的两个基本概念——设备和驱动，也就是device和driver。device持有物理设备的资源信息，而driver实现对设备的管理。  
-以RTC芯片为例，I2C控制器引出I2C总线，RTC连在I2C总线上。device持有RTC的资源信息，包括I2C地址，位宽，这些信息要么是接口相关的，要么是跟硬件设计相关的，而driver则负责对RTC的管理，如将从RTC中读出来的时间值解析为用户可以识别的时间值，以及将时间编码后写入RTC芯片，driver和device结合起来才能实现RTC芯片的访问和管理。RTC的资源信息不只有I2C地址和寄存器位宽，还有寄存器定义。那寄存器定义是否也需要放入device中呢？可放可不放。其实硬件设备信息是否要放入device中有一个关键的原则——如果该资源信息影响driver的通用性，就把它放到device中。拿RTC来说，I2C地址是跟硬件设计相关的，不同的硬件设计下I2C地址会不一样，此信息就应该放在device中，这样做的话不同的硬件只需要修改device中的信息即可，而不需要修改driver。寄存器位宽和寄存器定义都是跟硬件设计无关的，完全是RTC自身的参数，所以可以不放在device中，直接在driver中编码即可。其实对于哪些硬件资源信息需要放入device，并无统一的规则，要看需求而定。  
-把device和driver区分开以后，可以正式分析DM模型了。这里有几个关键的概念，分别是：uclass、device定义、device和driver绑定，设备层级关系。  
-- <uclass> uclass是DM模型的精华所在，uclass代表着一个类，同一类设备属于同一个uclass，拥有相同的uclass ID。还是拿RTC来说事，市面上RTC芯片很多，由不同的厂家生产，其内存寄存器定义甚至访问接口都不一样，所以RTC的driver肯定是不一样的，但是从功能的角度来说，他们都是用来记录时间的，所他们都属于rtc-class。从设备的角度来看，同一类的设备拥有相同的uclass ID，并全部挂在该uclass下。从驱动的角度来看，uclass driver实现通用的处理逻辑。  
-- <device定义> device持有设备资源，device的定义方式有三种，通过硬编码的方式或者设备树的方式或者传参的方式。硬编码的方式就是在代码中调用U_BOOT_DEVICE宏来定义设备资源，实际上是一个设备实例；设备树的方式就是将设备描述信息写在对应的DTS文件中，DTS文件被编译成DTB文件，然后跟uboot 二进制合并在一起，uboot启动的时候，会解析DTB文件，将所有的设备描述信息解析出来，以设备树的方式定义设备资源信息是目前比较流行的方案；参数的方式就是通过命令行或者接口将设备资源信息传递进来，非常灵活。  
-- <device和driver绑定> 通过U_BOOT_DEVICE或者设备树定义的设备资源，实际上代表着一个设备实例，该设备实例必须找到对应的driver才能实现设备管理，为设备实例查找driver的过程其实就是device和driver的绑定过程。那么device和driver如何才能绑定在一起呢？如果是通过U_BOOT_DEVICE定义的设备实例，通过name来进行匹配具有相同名字的driver，如果是通过设备树定义的设备实例，则需要通过compatible来匹配compatible相同的driver。一个device和driver匹配后，就会创建对应的struct udevice结构体，它会同时指向设备资源和driver，这样设备资源和driver就绑定在一起了。 
-其主要目的是初始化DM资源，绑定DM驱动到GD中，扫描设备树中DM设备的内容。  
+该函数是初始化DM的第一步，这里需要先理解一个概念——DM，即driver module，也就是U-Boot驱动模型。这个概念可以参考一篇Blog，[《U-Boot Driver Model领域模型设计》](https://www.cnblogs.com/wahaha02/p/5987350.html)这里不再详细说明。  
 下面列举该函数主要由以下三块组成：  
-dm_init()：创建udevice和uclass空链表，创建根设备（root device）。  
-dm_scan_platdata()：扫描U_BOOT_DEVICE定义的设备，创建对应的udevice和uclass对象，查找并绑定相应driver，并调用probe流程。  
-dm_scan_fdt()：扫描由FDT设备树文件定义的设备，创建对应的udevice和uclass对象，查找并绑定相应driver，并调用probe流程。   
-
-```
-initf_dm // 执行bind操作，初始化一个DM模型的树形结构
- |
- |_ dm_init_and_scan(true)  // 初始化根节点设备，并bind根节点的带有u-boot,dm-pre-reloc属性的一级子节点。
-     |
-	 |_ dm_init // 将根节点绑定到gd->dm_root上，初始化根节点设备
-	 |   |
-	 |   |_ device_bind_by_name
-	 |   |
-	 |   |_ 
-	 |
-	 |_ dm_scan_platdata // 搜索使用宏U_BOOT_DEVICE定义的设备进行驱动匹配，也就是bind子节点
-	     |
-		 |_ lists_bind_drivers
-		     |
-			 |_ device_bind_by_name // 循环处理，
-			 |   |
-			 |   |_ device_bind // 
-		     |
-			 |_ device_probe // 
-			 |   |
-			 |   |_ device_probe_child // 递归调用device_probe
-	     |
-		 |_ 
-            
-            dm_extended_scan_fdt//在其他地方（设备树）搜索设备并进行驱动匹配，然后bind
-                dm_scan_fdt//在设备树种搜索设备并进行驱动匹配，然后bind
-                    dm_scan_fdt_node//具体绑定设备的入口，在该函数中会确定设备是否具有boot,dm-pre-reloc属性，如果没有则不会绑定
-                        lists_bind_fdt // 搜索可以匹配到该设备的驱动
-                            device_bind_with_driver_data//如果匹配到进行绑定
-                                device_bind_common//匹配设备和驱动，并将设备节点和parent节点建立联系，也就是建立树形结构
-                                    uclass_bind_device//将该设备挂在对应的U_CLASS链表上
-                                    drv->bind(dev)//设备驱动的bind接口函数
-                                    parent->driver->child_post_bind(dev)//父节点驱动的child_post_bind接口函数
-                                    uc->uc_drv->post_bind//设备所属类的驱动的post_bind接口函数（具体的设备节点就是在这个接口下在soc下进行展开的）
-```
-核心数据结构如下：  
+dm_init()：创建udevice和uclass空链表，创建根设备（绑定到gd->dm_root）。  
+dm_scan_platdata()：扫描U_BOOT_DEVICE定义设备，创建udevice和uclass对象，查找并绑定driver，调用probe。  
+dm_scan_fdt()：扫描FDT设备树文件定义设备，创建udevice和uclass对象，查找并绑定driver，调用probe。  
+这其中的核心数据结构有如下几个：  
+- uclass        ： 同类设备的抽象结构  
+- uclass_driver ： 同类设备的共通驱动  
+- udevice       ： 某类设备下的具体设备  
+- driver        ： 具体的设备驱动实例  
+这部分代码的详细解析还是看上面的Blog吧，只说一点。这部分代码中出现频率较高的一个结构为include/linux/list.h中定义的list_head结构。这是一个为了完成双向链表而设计的结构，但是大家仔细看这个结构会发现，它并没有指向结构体实例的指针，这样一来双向链表岂不是无法定位到结构体中的其它部分了吗？  
+其实这是一个Linux中常用的双向链表设计方式，也被称为嵌入式链表，这个结构通常被放在一个需要双向链表的结构体中，然后，当需要访问这个目标结构体时，需要使用一个container_of宏来反推出目标结构体的首地址。这个container_of宏定义在include/linux/kernel.h中，具体实现如下：  
 ```c
-U_BOOT_DRIVER(demo_shape_drv) = {
-    .name    = "demo_shape_drv",
-    .of_match = demo_shape_id,
-    .id    = UCLASS_DEMO,
-    .ofdata_to_platdata = shape_ofdata_to_platdata,
-    .ops    = &shape_ops,
-    .probe = dm_shape_probe,
-    .remove = dm_shape_remove,
-    .priv_auto_alloc_size = sizeof(struct shape_data),
-    .platdata_auto_alloc_size = sizeof(struct dm_demo_pdata),
-};
-
-#define U_BOOT_DRIVER(__name)                        \
-    ll_entry_declare(struct driver, __name, driver)
-    
-#define ll_entry_declare(_type, _name, _list)                \
-    _type _u_boot_list_2_##_list##_2_##_name __aligned(4)        \
-            __attribute__((unused,                \
-            section(".u_boot_list_2_"#_list"_2_"#_name)))
-
-struct driver {
-    char *name;
-    enum uclass_id id;
-    const struct udevice_id *of_match;
-    int (*bind)(struct udevice *dev);
-    int (*probe)(struct udevice *dev);
-    int (*remove)(struct udevice *dev);
-    int (*unbind)(struct udevice *dev);
-    int (*ofdata_to_platdata)(struct udevice *dev);
-    int (*child_post_bind)(struct udevice *dev);
-    int (*child_pre_probe)(struct udevice *dev);
-    int (*child_post_remove)(struct udevice *dev);
-    int priv_auto_alloc_size;
-    int platdata_auto_alloc_size;
-    int per_child_auto_alloc_size;
-    int per_child_platdata_auto_alloc_size;
-    const void *ops;    /* driver-specific operations */
-    uint32_t flags;
-};
-
-U_BOOT_DEVICE(demo0) = {
-    .name = "demo_shape_drv",
-    .platdata = &red_square,
-};
-
-#define U_BOOT_DEVICE(__name)                        \
-    ll_entry_declare(struct driver_info, __name, driver_info)   
-     
-struct driver_info {
-    const char *name;
-    const void *platdata;
-#if CONFIG_IS_ENABLED(OF_PLATDATA)
-    uint platdata_size;
-#endif
-};
-
-struct uclass {
-    void *priv;
-    struct uclass_driver *uc_drv;
-    struct list_head dev_head;
-    struct list_head sibling_node;
-};
-    
-UCLASS_DRIVER(demo) = {
-    .name        = "demo",
-    .id        = UCLASS_DEMO,
-};
-
-#define UCLASS_DRIVER(__name)                        \
-    ll_entry_declare(struct uclass_driver, __name, uclass)
-
-struct uclass_driver {
-    const char *name;
-    enum uclass_id id;
-    int (*post_bind)(struct udevice *dev);
-    int (*pre_unbind)(struct udevice *dev);
-    int (*pre_probe)(struct udevice *dev);
-    int (*post_probe)(struct udevice *dev);
-    int (*pre_remove)(struct udevice *dev);
-    int (*child_post_bind)(struct udevice *dev);
-    int (*child_pre_probe)(struct udevice *dev);
-    int (*init)(struct uclass *class);
-    int (*destroy)(struct uclass *class);
-    int priv_auto_alloc_size;
-    int per_device_auto_alloc_size;
-    int per_device_platdata_auto_alloc_size;
-    int per_child_auto_alloc_size;
-    int per_child_platdata_auto_alloc_size;
-    const void *ops;
-    uint32_t flags;
-};
-
-struct udevice {
-    const struct driver *driver;
-    const char *name;
-    void *platdata;
-    void *parent_platdata;
-    void *uclass_platdata;
-    int of_offset;
-    ulong driver_data;
-    struct udevice *parent;
-    void *priv;
-    struct uclass *uclass;
-    void *uclass_priv;
-    void *parent_priv;
-    struct list_head uclass_node;
-    struct list_head child_head;
-    struct list_head sibling_node;
-    uint32_t flags;
-    int req_seq;
-    int seq;
-#ifdef CONFIG_DEVRES
-    struct list_head devres_head;
-#endif
-};
+#define container_of(ptr, type, member) ({			\
+	const typeof( ((type *)0)->member ) *__mptr = (ptr);	\
+	(type *)( (char *)__mptr - offsetof(type,member) );})
 ```
-
-
+这里的语法十分晦涩，但基本的思想是把结构体投影到地址为0的地方，那么结构体成员的绝对地址就是其偏移量，得到链表结构自身的偏移量后，根据成员的p指针就可以反算出目标结构体变量的首地址。  
+如果觉得这样的实现太过晦涩，那么另外一种常见的做法就是在list_head的定义中再加入一个成员变量，使其指向所属的结构体首地址，FreeRTOS就是这么做的。  
+一定要熟悉这种嵌入式链表，因为将来在Linux内核的代码中，也到处可以见到它的身影。  
 7.  arch_cpu_init_dm  
 8.  board_early_init_f  
 9.  env_init  
