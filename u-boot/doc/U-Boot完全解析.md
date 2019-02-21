@@ -948,7 +948,10 @@ static init_fnc_t init_sequence_f[] = {
 2.  fdtdec_setup  
 这里是对设备树的设置。设备树本来是Linux中的概念，但是U-Boot在结构上深度借鉴了Linux，因此对于驱动的支持，也采用了设备树的形式。设备树的概念是从2012年之后逐步引入Linux的，因此在较晚的版本中才会有所体现。  
 总体上来说，设备树是独立于U-Boot核心代码的一个二进制文件，可以单独对其进行编译，并且可以用固定的命令对其进行操作，比如查看具体的设备、列表等等。  
-方便起见这里还是给出一篇介绍U-Boot设备树的Blog，需要的话可以自行理解一下。[《uboot常用的函式》](https://www.itread01.com/content/1545053172.html)   
+方便起见这里还是给出几篇介绍U-Boot设备树的Blog，需要的话可以自行理解一下。  
+[《uboot常用的函式》](https://www.itread01.com/content/1545053172.html)   
+[《linux设备树笔记--dts基本概念及语法》](https://e-mailky.github.io/2016-12-06-dts-introduce)  
+[《Linux设备树文件结构与解析深度分析》](https://blog.csdn.net/woyimibayi/article/details/77574736)  
 顺便说一下，童老师的视频中有一个重要的未涉及到的知识点，即U-Boot的驱动模型，因为童老师讲义中的U-Boot版本是2012年的，那时U-Boot还不存在驱动模型的概念，因此他的代码中也就看不到这一部分了。  
 具体来说fdtdec_setup函数的有效代码如下：  
 ```c
@@ -986,7 +989,10 @@ gd->fdt_blob中保存的是设备树的起始地址，它紧挨着bss段或是_e
 该函数表示U-Boot目前运行在board_init_f这个阶段。它会将gd->flags设定为BOOTSTAGEF_ALLOC。因为该函数没有太多实质的硬件操作，这里也不详细分析。  
 
 6.  initf_dm  
-该函数是初始化DM的第一步，这里需要先理解一个概念——DM，即driver module，也就是U-Boot驱动模型。这个概念可以参考一篇Blog，[《U-Boot Driver Model领域模型设计》](https://www.cnblogs.com/wahaha02/p/5987350.html)这里不再详细说明。  
+该函数是初始化DM的第一步，这里需要先理解一个概念——DM，即driver module，也就是U-Boot驱动模型。这个概念可以参考下面几篇Blog。  
+[《U-Boot Driver Model领域模型设计》](https://www.cnblogs.com/wahaha02/p/5987350.html)  
+[《uboot驱动模型(DM)分析》](https://www.cnblogs.com/gs1008612/p/8252845.html)  
+[《uboot 驱动模型》](https://blog.csdn.net/ooonebook/article/details/53234020)  
 下面列举该函数主要由以下三块组成：  
 dm_init()：创建udevice和uclass空链表，创建根设备（绑定到gd->dm_root）。  
 dm_scan_platdata()：扫描U_BOOT_DEVICE定义设备，创建udevice和uclass对象，查找并绑定driver，调用probe。  
@@ -1014,10 +1020,81 @@ dm_scan_fdt()：扫描FDT设备树文件定义设备，创建udevice和uclass对
 这个函数的内部啥也没干。  
 
 9.  env_init  
-该函数是执行环境变量的初始化，这要看环境变量放在什么地方，如果是放在Nor Flash中，那么执行的是common/env_flash.c中的函数，如果是放在Nand Flash中，那么执行的是common/env_nand.c中的函数。？？  
+该函数是执行环境变量的初始化，这要看环境变量放在什么地方，如果是放在Nor Flash中，那么执行的是common/env_flash.c中的函数，如果是放在Nand Flash中，那么执行的是common/env_nand.c中的函数。由于我们移植的U-Boot是从SD卡上启动的，因此，实际上我们使用的env_init函数位于common/env_mmc.c。  
+来看看函数内部都做了些什么。  
+```c
+	gd->env_addr	= (ulong)&default_environment[0];
+	gd->env_valid	= 1;
+```
+很简单，就是将环境变量的启示地址传递给gd->env_addr，并使能这个GD项。  
 
 10. init_baud_rate  
+该函数是将环境变量中的串口波特率设定设定给GD，相关代码如下：  
+```c
+	gd->baudrate = getenv_ulong("baudrate", 10, CONFIG_BAUDRATE);
+```
+
 11. serial_init  
+该函数位于drivers/serial/serial_uclass.c中，其具体处理如下：  
+```c
+	serial_find_console_or_panic();
+	gd->flags |= GD_FLG_SERIAL_READY;
+```
+其中的serial_find_console_or_panic函数详细处理如下：  
+```c
+static void serial_find_console_or_panic(void)
+{
+		struct udevice *dev;
+		int node;
+		if (CONFIG_IS_ENABLED(OF_CONTROL) && gd->fdt_blob) {
+			/* Check for a chosen console */
+			node = fdtdec_get_chosen_node(gd->fdt_blob, "stdout-path");
+			if (node < 0)
+				node = fdt_path_offset(gd->fdt_blob, "console");
+			if (!uclass_get_device_by_of_offset(UCLASS_SERIAL, node, &dev)) {
+				gd->cur_serial_dev = dev;
+				return;
+			}
+			/*
+			* If the console is not marked to be bound before relocation,
+			* bind it anyway.
+			*/
+			if (node > 0 && !lists_bind_fdt(gd->dm_root, gd->fdt_blob, node, &dev)) {
+				if (!device_probe(dev)) {
+					gd->cur_serial_dev = dev;
+					return;
+				}
+			}
+		}
+		if (!SPL_BUILD || !CONFIG_IS_ENABLED(OF_CONTROL) || !gd->fdt_blob) {
+			/*
+			* Try to use CONFIG_CONS_INDEX if available (it is numbered
+			* from 1!).
+			*
+			* Failing that, get the device with sequence number 0, or in
+			* extremis just the first serial device we can find. But we
+			* insist on having a console (even if it is silent).
+			*/
+#ifdef CONFIG_CONS_INDEX
+#define INDEX (CONFIG_CONS_INDEX - 1)
+#else
+#define INDEX 0
+#endif
+			if (!uclass_get_device_by_seq(UCLASS_SERIAL, INDEX, &dev) ||
+				!uclass_get_device(UCLASS_SERIAL, INDEX, &dev) ||
+				(!uclass_first_device(UCLASS_SERIAL, &dev) && dev)) {
+				gd->cur_serial_dev = dev;
+				return;
+			}
+#undef INDEX
+		}
+#ifdef CONFIG_REQUIRE_SERIAL_CONSOLE
+		panic_str("No serial driver found");
+#endif
+}
+```
+看到此函数前面的处理，忽然明白了一个道理——为啥在initcall_run_list的开始几个步骤中，需要先执行fdtdec_setup和initf_dm。这是因为在U-Boot初始化阶段，我们需要使能串口，而串口的信息就在U-Boot环境变量中。为了从一开始就让串口驱动工作在U-Boot驱动模型之下，我们必须在串口初始化之前就初始化好dts和dm。可以看到，此处的串口初始化最终就是采用device_probe这个形式来实现的。  
+
 12. console_init_f  
 13. fdtdec_prepare_fdt  
 14. display_options  
