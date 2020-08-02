@@ -1,8 +1,8 @@
 /*
 请在Linux/GNU环境下编译此文件：
-	gcc mktools.c -o mkbl2
+	gcc mkbl2.c -o mkbl2
 该工具的实际用法:
-	mkbl2 u-boot.bin bl2.bin 14336
+	mkbl2 u-boot-spl.bin bl2.bin 14336
 */
 
 #include <stdio.h>
