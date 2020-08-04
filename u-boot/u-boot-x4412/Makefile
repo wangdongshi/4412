@@ -743,7 +743,7 @@ ifneq ($(CONFIG_SECURE_BOOT), y)
 ALL-$(CONFIG_RAMBOOT_PBL) += u-boot.pbl
 endif
 endif
-ALL-$(CONFIG_SPL) += spl/u-boot-spl.bin spl/bl2.bin
+ALL-$(CONFIG_SPL) += spl/u-boot-spl.bin spl/x4412-bl1.bin spl/x4412-bl2.bin
 ALL-$(CONFIG_SPL_FRAMEWORK) += u-boot.img
 ALL-$(CONFIG_TPL) += tpl/u-boot-tpl.bin
 ALL-$(CONFIG_OF_SEPARATE) += u-boot.dtb u-boot-dtb.bin
@@ -1302,9 +1302,12 @@ cmd_cpp_lds = $(CPP) -Wp,-MD,$(depfile) $(cpp_flags) $(LDPPFLAGS) -ansi \
 u-boot.lds: $(LDSCRIPT) prepare FORCE
 	$(call if_changed_dep,cpp_lds)
 
-spl/bl2.bin: spl/u-boot-spl.bin
-	tools/mkbl2 spl/u-boot-spl.bin spl/bl2.bin 14336
-
+spl/x4412-bl1.bin: spl/u-boot-spl.bin
+	tools/mkbl1 spl/x4412-bl1.bin
+	
+spl/x4412-bl2.bin: spl/u-boot-spl.bin
+	tools/mkbl2 spl/u-boot-spl.bin spl/x4412-bl2.bin 14336
+	
 spl/u-boot-spl.bin: spl/u-boot-spl
 	@:
 spl/u-boot-spl: tools prepare $(if $(CONFIG_OF_SEPARATE),dts/dt.dtb)
@@ -1397,7 +1400,7 @@ CLEAN_DIRS  += $(MODVERDIR) \
 			$(filter-out include, $(shell ls -1 $d 2>/dev/null))))
 
 CLEAN_FILES += include/bmp_logo.h include/bmp_logo_data.h \
-	       boot* bl2* u-boot* MLO* SPL System.map
+	       boot* x4412-bl* u-boot* MLO* SPL System.map
 
 # Directories & files removed with 'make mrproper'
 MRPROPER_DIRS  += include/config include/generated spl tpl \
@@ -1601,6 +1604,14 @@ ifneq ($(cmd_files),)
 endif
 
 endif	# skip-makefile
+
+PHONY += mksd
+mksd:
+	sudo dd iflag=dsync oflag=dsync if=/dev/zero of=/dev/mmcblk0 count=10
+	sudo dd iflag=dsync oflag=dsync if=./spl/x4412-bl1.bin of=/dev/mmcblk0 seek=1
+	sudo dd iflag=dsync oflag=dsync if=./spl/x4412-bl2.bin of=/dev/mmcblk0 seek=17
+	sudo dd iflag=dsync oflag=dsync if=./u-boot.bin of=/dev/mmcblk0 seek=81
+	sudo sync
 
 PHONY += FORCE
 FORCE:

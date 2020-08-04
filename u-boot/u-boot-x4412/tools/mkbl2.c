@@ -11,30 +11,27 @@
 
 int main (int argc, char *argv[])
 {
-	FILE		*fp;
-	unsigned char	src;
-	char		*Buf, *a;
-	int		BufLen;
-	int		nbytes, fileLen;
-	int		count;
-	unsigned int	checksum = 0;
-	int		i;
+	FILE *fp;
+	char *Buf, *a;
+	int BufLen;
+	int nbytes, fileLen;
+	int count;
+	unsigned int checksum = 0;
+	int i;
 
-	if (argc != 4)		/* 如果参数个数不等于3，则打印使用帮助信息 */
-	{
+	if (argc != 4) { /* 如果参数个数不等于3，则打印使用帮助信息 */
 		printf("Usage: mkbl2 <source file> <destination file> <size> \n");
 		return -1;
 	}
 
-	BufLen = atoi(argv[3]);		/* 把字符串(14336)转换成整型数 */
-	Buf = (char *)malloc(BufLen);	/* 分配14K的缓存 */
-	memset(Buf, 0x00, BufLen);	/* 将该缓存清为0 */
+	BufLen = atoi(argv[3]); /* 把字符串(14336)转换成整型数 */
+	Buf = (char *)malloc(BufLen); /* 分配14K的缓存 */
+	memset(Buf, 0x00, BufLen); /* 将该缓存清为0 */
 
-	fp = fopen(argv[1], "r");	/* 以只读的方式打开原始bin文件(如u-boot.bin) */
-	if( fp == NULL)			/* 如果为空，则表示打开失败 */
-	{
+	fp = fopen(argv[1], "r"); /* 以只读的方式打开原始bin文件(如u-boot.bin) */
+	if( fp == NULL) { /* 如果为空，则表示打开失败 */
 		printf("source file open error\n");
-		free(Buf);		/* 释放刚刚分配的缓存 */
+		free(Buf); /* 释放刚刚分配的缓存 */
 		return -1;
 	}
 
@@ -47,43 +44,39 @@ int main (int argc, char *argv[])
 
 	nbytes = fread(Buf, 1, count, fp); /* 从原始的bin文件(如u-boot.bin)中读取count大小的数据到Buf中 */
 
-	if ( nbytes != count )		/* 判断是否读取成功 */
-	{
+	if (nbytes != count) { /* 判断是否读取成功 */
 		printf("source file read error\n");
 		free(Buf);
 		fclose(fp);
 		return -1;
 	}
 
-	fclose(fp);			/* 关闭刚刚打开的原始bin文件 */
+	fclose(fp); /* 关闭刚刚打开的原始bin文件 */
 
-	/* 得到BL2 + Signature */	/* 校验码就是将整个文件的每个字节全部加起来得到一个４字节整形数 */
-	for(i = 0;i < (14 * 1024) - 4;i++)
-	{
+	/* 得到BL2 + Signature */ /* 校验码就是将整个文件的每个字节全部加起来得到一个４字节整形数 */
+	for(i = 0;i < (14 * 1024) - 4;i++) {
 		checksum += (unsigned char)(Buf[i]);
 	}
 	*(unsigned int*)(Buf+i) = checksum; /* 将校验码写入到最后四个字节 */
 	
 	fp = fopen(argv[2], "w");
-	if (fp == NULL)
-	{
+	if (fp == NULL) {
 		printf("destination file open error\n");
 		free(Buf);
 		return -1;
 	}
 
-	a	= Buf;			/* 指向Buf的首地址 */
-	nbytes	= fwrite( a, 1, BufLen, fp);	/* 将得的到BL2 + Signature写入到目标文件中(bl2.bin) */
+	a = Buf; /* 指向Buf的首地址 */
+	nbytes = fwrite(a, 1, BufLen, fp); /* 将得的到BL2+Signature写入到目标文件中(bl2.bin) */
 
-	if ( nbytes != BufLen )		/* 判断是否写入成功 */
-	{
+	if (nbytes != BufLen) { /* 判断是否写入成功 */
 		printf("destination file write error\n");
 		free(Buf);
 		fclose(fp);
 		return -1;
 	}
 
-	free(Buf);			/* 做清理工作 */
+	free(Buf); /* 做清理工作 */
 	fclose(fp);
 
 	return 0;

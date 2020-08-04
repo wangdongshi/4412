@@ -55,6 +55,8 @@ mkenvimage-objs := mkenvimage.o os_support.o lib/crc32.o
 hostprogs-y += dumpimage mkimage
 hostprogs-$(CONFIG_FIT_SIGNATURE) += fit_info fit_check_sign
 
+hostprogs-y += mkbl1
+
 hostprogs-y += mkbl2
 
 FIT_SIG_OBJS-$(CONFIG_FIT_SIGNATURE) := common/image-sig.o
@@ -138,6 +140,7 @@ HOSTLOADLIBES_fit_check_sign := $(HOSTLOADLIBES_mkimage)
 
 hostprogs-$(CONFIG_EXYNOS5250) += mkexynosspl
 hostprogs-$(CONFIG_EXYNOS5420) += mkexynosspl
+hostprogs-$(CONFIG_X4412) += mkexynosspl
 HOSTCFLAGS_mkexynosspl.o := -pedantic
 
 ifdtool-objs := $(LIBFDT_OBJS) ifdtool.o
