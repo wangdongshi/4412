@@ -254,34 +254,8 @@ void copy_uboot_to_ram(void)
 		break;
 	}
 
-#ifdef CONFIG_X4412
-	if (copy_uboot)
-	{
-		/*
-		 * Here I use iram 0x020250000-0x020260000 (64k)
-		 * as an buffer, and copy u-boot from sd card to 
-		 * this buffer, then copy it to dram started 
-		 * from 0x43e00000.
-		 *
-		 */
-		unsigned int i, count = 0;
-		unsigned char *buffer = (unsigned char *)0x02050000;
-		unsigned char *dst = (unsigned char *)CONFIG_SYS_TEXT_BASE;
-		unsigned int step = (0x10000 / 512);
-
-		for (count = 0; count < UBOOT_SIZE_BLOC_COUNT; count+=step) {
-			/* copy u-boot from sdcard to iram firstly.  */
-			copy_uboot((u32)(UBOOT_START_OFFSET+count), (u32)step, (u32)buffer);
-			/* then copy u-boot from iram to dram. */
-			for (i=0; i<0x10000; i++) {
-				*dst++ = buffer[i];
-			}
-		}
-	}
-#else
 	if (copy_uboot)
 		copy_uboot(offset, size, CONFIG_SYS_TEXT_BASE);
-#endif
 }
 
 void memzero(void *s, size_t n)

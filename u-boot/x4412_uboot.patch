@@ -340,7 +340,7 @@ diff -ruN u-boot-2015.10/arch/arm/include/asm/mach-types.h u-boot-x4412/arch/arm
  #define MACH_TYPE_TUNA                 3458
 diff -ruN u-boot-2015.10/arch/arm/mach-exynos/clock_init_exynos4.c u-boot-x4412/arch/arm/mach-exynos/clock_init_exynos4.c
 --- u-boot-2015.10/arch/arm/mach-exynos/clock_init_exynos4.c	2015-10-20 07:59:38.000000000 +0800
-+++ u-boot-x4412/arch/arm/mach-exynos/clock_init_exynos4.c	2020-08-03 22:40:49.401043000 +0800
++++ u-boot-x4412/arch/arm/mach-exynos/clock_init_exynos4.c	2020-08-25 08:31:39.000000000 +0800
 @@ -30,16 +30,282 @@
  #include <asm/arch/clk.h>
  #include <asm/arch/clock.h>
@@ -593,9 +593,9 @@ diff -ruN u-boot-2015.10/arch/arm/mach-exynos/clock_init_exynos4.c u-boot-x4412/
 +	 * DOUTmmc3 	= MOUTmmc3 / (ratio + 1) = 100 (7)
 +	 * sclk_mmc3 	= DOUTmmc3 / (ratio + 1) = 50 (1)
 +	 * DOUTmmc2 	= MOUTmmc2 / (ratio + 1) = 100 (7)
-+	 * sclk_mmc2 	= DOUTmmc2 / (ratio + 1) = 50 (1)
++	 * sclk_mmc2 	= DOUTmmc2 / (ratio + 1) = 20 (4)
 +	*/
-+	set = MMC2_RATIO(7) | MMC2_PRE_RATIO(1) | MMC3_RATIO(7) |
++	set = MMC2_RATIO(7) | MMC2_PRE_RATIO(4) | MMC3_RATIO(7) |
 +		MMC3_PRE_RATIO(1);
 +
 +	clrsetbits_le32(&clk->div_fsys2, clr, set);
@@ -634,7 +634,7 @@ diff -ruN u-boot-2015.10/arch/arm/mach-exynos/clock_init_exynos4.c u-boot-x4412/
  }
 diff -ruN u-boot-2015.10/arch/arm/mach-exynos/dmc_init_exynos4.c u-boot-x4412/arch/arm/mach-exynos/dmc_init_exynos4.c
 --- u-boot-2015.10/arch/arm/mach-exynos/dmc_init_exynos4.c	2015-10-20 07:59:38.000000000 +0800
-+++ u-boot-x4412/arch/arm/mach-exynos/dmc_init_exynos4.c	2020-08-03 22:40:49.405043000 +0800
++++ u-boot-x4412/arch/arm/mach-exynos/dmc_init_exynos4.c	2020-08-25 00:42:04.000000000 +0800
 @@ -28,6 +28,28 @@
  #include "common_setup.h"
  #include "exynos4_setup.h"
@@ -650,13 +650,13 @@ diff -ruN u-boot-2015.10/arch/arm/mach-exynos/dmc_init_exynos4.c u-boot-x4412/ar
 +	.timingpower = 0x52000A3C,
 +	.zqcontrol = 0xE3854C03,
 +	.control0 = 0x71101008,
-+	.control1 = 0xe0000086,
++	.control1 = 0xE0000086,
 +	.control2 = 0x00000000,
 +	.concontrol = 0x0FFF301A,
-+	.prechconfig = 0xff000000,
++	.prechconfig = 0xFF000000,
 +	.memcontrol = 0x00312640,
-+	.memconfig0 = 0x40e01323,
-+	.memconfig1 = 0x60e01323,
++	.memconfig0 = 0x40C01323,
++	.memconfig1 = 0x60C01323,
 +	.dll_resync = FORCE_DLL_RESYNC,
 +	.dll_on = DLL_CONTROL_ON,
 +};
@@ -722,6 +722,19 @@ diff -ruN u-boot-2015.10/arch/arm/mach-exynos/Kconfig u-boot-x4412/arch/arm/mach
  source "board/samsung/trats2/Kconfig"
  source "board/samsung/odroid/Kconfig"
  source "board/samsung/arndale/Kconfig"
+diff -ruN u-boot-2015.10/arch/arm/mach-exynos/lowlevel_init.c u-boot-x4412/arch/arm/mach-exynos/lowlevel_init.c
+--- u-boot-2015.10/arch/arm/mach-exynos/lowlevel_init.c	2015-10-20 07:59:38.000000000 +0800
++++ u-boot-x4412/arch/arm/mach-exynos/lowlevel_init.c	2020-08-25 08:30:39.000000000 +0800
+@@ -220,7 +220,8 @@
+ 		debug_uart_init();
+ #endif
+ 		mem_ctrl_init(actions & DO_MEM_RESET);
+-		tzpc_init();
++		/* Delete tzpc_init function for jumping u-bbot from spl */
++		/*tzpc_init();*/
+ 	}
+ 
+ 	return actions & DO_WAKEUP;
 diff -ruN u-boot-2015.10/arch/arm/mach-exynos/Makefile u-boot-x4412/arch/arm/mach-exynos/Makefile
 --- u-boot-2015.10/arch/arm/mach-exynos/Makefile	2015-10-20 07:59:38.000000000 +0800
 +++ u-boot-x4412/arch/arm/mach-exynos/Makefile	2020-08-03 22:40:49.405043000 +0800
@@ -739,7 +752,7 @@ diff -ruN u-boot-2015.10/arch/arm/mach-exynos/Makefile u-boot-x4412/arch/arm/mac
  endif
 diff -ruN u-boot-2015.10/arch/arm/mach-exynos/spl_boot.c u-boot-x4412/arch/arm/mach-exynos/spl_boot.c
 --- u-boot-2015.10/arch/arm/mach-exynos/spl_boot.c	2015-10-20 07:59:38.000000000 +0800
-+++ u-boot-x4412/arch/arm/mach-exynos/spl_boot.c	2020-08-03 22:40:49.405043000 +0800
++++ u-boot-x4412/arch/arm/mach-exynos/spl_boot.c	2020-08-25 08:31:12.000000000 +0800
 @@ -185,7 +185,7 @@
  {
  	unsigned int bootmode = BOOT_MODE_OM;
@@ -762,40 +775,14 @@ diff -ruN u-boot-2015.10/arch/arm/mach-exynos/spl_boot.c u-boot-x4412/arch/arm/m
  		break;
  #ifdef CONFIG_SUPPORT_EMMC_BOOT
  	case BOOT_MODE_EMMC:
-@@ -254,8 +254,34 @@
+@@ -254,8 +254,8 @@
  		break;
  	}
  
 -	if (copy_bl2)
 -		copy_bl2(offset, size, CONFIG_SYS_TEXT_BASE);
-+#ifdef CONFIG_X4412
-+	if (copy_uboot)
-+	{
-+		/*
-+		 * Here I use iram 0x020250000-0x020260000 (64k)
-+		 * as an buffer, and copy u-boot from sd card to 
-+		 * this buffer, then copy it to dram started 
-+		 * from 0x43e00000.
-+		 *
-+		 */
-+		unsigned int i, count = 0;
-+		unsigned char *buffer = (unsigned char *)0x02050000;
-+		unsigned char *dst = (unsigned char *)CONFIG_SYS_TEXT_BASE;
-+		unsigned int step = (0x10000 / 512);
-+
-+		for (count = 0; count < UBOOT_SIZE_BLOC_COUNT; count+=step) {
-+			/* copy u-boot from sdcard to iram firstly.  */
-+			copy_uboot((u32)(UBOOT_START_OFFSET+count), (u32)step, (u32)buffer);
-+			/* then copy u-boot from iram to dram. */
-+			for (i=0; i<0x10000; i++) {
-+				*dst++ = buffer[i];
-+			}
-+		}
-+	}
-+#else
 +	if (copy_uboot)
 +		copy_uboot(offset, size, CONFIG_SYS_TEXT_BASE);
-+#endif
  }
  
  void memzero(void *s, size_t n)
@@ -1146,7 +1133,7 @@ diff -ruN u-boot-2015.10/drivers/serial/serial_s5p.c u-boot-x4412/drivers/serial
  static void __maybe_unused s5p_serial_baud(struct s5p_uart *uart, uint uclk,
 diff -ruN u-boot-2015.10/include/configs/x4412.h u-boot-x4412/include/configs/x4412.h
 --- u-boot-2015.10/include/configs/x4412.h	1970-01-01 08:00:00.000000000 +0800
-+++ u-boot-x4412/include/configs/x4412.h	2020-08-03 22:40:49.409043000 +0800
++++ u-boot-x4412/include/configs/x4412.h	2020-08-25 00:39:39.000000000 +0800
 @@ -0,0 +1,137 @@
 +/* Copyright (C) 2011 Samsung Electronics
 + *
@@ -1177,7 +1164,7 @@ diff -ruN u-boot-2015.10/include/configs/x4412.h u-boot-x4412/include/configs/x4
 +#define CONFIG_NR_DRAM_BANKS		4
 +#define CONFIG_SYS_SDRAM_BASE		0x40000000
 +#define PHYS_SDRAM_1			CONFIG_SYS_SDRAM_BASE
-+#define SDRAM_BANK_SIZE			(256 << 20)	/* 256 MB */
++#define SDRAM_BANK_SIZE			(256 << 20)
 +
 +/* memtest works on */
 +#define CONFIG_SYS_MEMTEST_START	CONFIG_SYS_SDRAM_BASE

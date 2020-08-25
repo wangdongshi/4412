@@ -220,7 +220,8 @@ int do_lowlevel_init(void)
 		debug_uart_init();
 #endif
 		mem_ctrl_init(actions & DO_MEM_RESET);
-		tzpc_init();
+		/* Delete tzpc_init function for jumping u-bbot from spl */
+		/*tzpc_init();*/
 	}
 
 	return actions & DO_WAKEUP;
