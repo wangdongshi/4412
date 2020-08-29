@@ -43,9 +43,9 @@ struct mem_timings mem = {
 	.control2 = 0x00000000,
 	.concontrol = 0x0FFF301A,
 	.prechconfig = 0xFF000000,
-	.memcontrol = 0x00312640,
+	.memcontrol = 0x00302640,
 	.memconfig0 = 0x40C01323,
-	.memconfig1 = 0x60C01323,
+	.memconfig1 = 0x60C00323, /* not use */
 	.dll_resync = FORCE_DLL_RESYNC,
 	.dll_on = DLL_CONTROL_ON,
 };
@@ -137,8 +137,8 @@ static void dmc_init(struct exynos4_dmc *dmc)
 	writel(mem.concontrol, &dmc->concontrol);
 
 	/*
-	 * Memor Burst length: 8
-	 * Number of chips: 2
+	 * Memory Burst length: 8
+	 * Number of chips: 1
 	 * Memory Bus width: 32 bit
 	 * Memory Type: DDR3
 	 * Additional Latancy for PLL: 1 Cycle
@@ -146,10 +146,12 @@ static void dmc_init(struct exynos4_dmc *dmc)
 	writel(mem.memcontrol, &dmc->memcontrol);
 
 	writel(mem.memconfig0, &dmc->memconfig0);
-	writel(mem.memconfig1, &dmc->memconfig1);
+	/* MEMCONFIG1 is not used */
+	/*writel(mem.memconfig1, &dmc->memconfig1);*/
 
 #ifdef CONFIG_X4412
-	writel(0x8000001F, &dmc->ivcontrol);
+	/* Memory channel interleaving size = 512 byte */
+	writel(0x80000009, &dmc->ivcontrol);
 #endif
 
 	/* Config Precharge Policy */

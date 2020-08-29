@@ -219,7 +219,7 @@ int do_lowlevel_init(void)
 		exynos_pinmux_config(PERIPH_ID_UART3, PINMUX_FLAG_NONE);
 		debug_uart_init();
 #endif
-		mem_ctrl_init(actions & DO_MEM_RESET);
+		mem_ctrl_init(actions & DO_MEM_RESET);		
 		/* Delete tzpc_init function for jumping u-bbot from spl */
 		/*tzpc_init();*/
 	}

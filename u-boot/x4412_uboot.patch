@@ -1,6 +1,6 @@
 diff -ruN u-boot-2015.10/arch/arm/cpu/armv7/start.S u-boot-x4412/arch/arm/cpu/armv7/start.S
 --- u-boot-2015.10/arch/arm/cpu/armv7/start.S	2015-10-20 07:59:38.000000000 +0800
-+++ u-boot-x4412/arch/arm/cpu/armv7/start.S	2020-08-03 22:40:49.393043000 +0800
++++ u-boot-x4412/arch/arm/cpu/armv7/start.S	2020-08-26 06:52:32.781522000 +0800
 @@ -69,6 +69,32 @@
  	bl	cpu_init_crit
  #endif
@@ -36,7 +36,7 @@ diff -ruN u-boot-2015.10/arch/arm/cpu/armv7/start.S u-boot-x4412/arch/arm/cpu/ar
  /*------------------------------------------------------------------------------*/
 diff -ruN u-boot-2015.10/arch/arm/dts/exynos4412-x4412.dts u-boot-x4412/arch/arm/dts/exynos4412-x4412.dts
 --- u-boot-2015.10/arch/arm/dts/exynos4412-x4412.dts	1970-01-01 08:00:00.000000000 +0800
-+++ u-boot-x4412/arch/arm/dts/exynos4412-x4412.dts	2020-08-03 22:40:49.393043000 +0800
++++ u-boot-x4412/arch/arm/dts/exynos4412-x4412.dts	2020-08-26 06:52:32.781522000 +0800
 @@ -0,0 +1,275 @@
 +/*
 + * X4412 board device tree source
@@ -315,7 +315,7 @@ diff -ruN u-boot-2015.10/arch/arm/dts/exynos4412-x4412.dts u-boot-x4412/arch/arm
 +};
 diff -ruN u-boot-2015.10/arch/arm/dts/Makefile u-boot-x4412/arch/arm/dts/Makefile
 --- u-boot-2015.10/arch/arm/dts/Makefile	2015-10-20 07:59:38.000000000 +0800
-+++ u-boot-x4412/arch/arm/dts/Makefile	2020-08-03 22:40:49.393043000 +0800
++++ u-boot-x4412/arch/arm/dts/Makefile	2020-08-26 06:52:32.781522000 +0800
 @@ -5,8 +5,8 @@
  	exynos4210-universal_c210.dtb \
  	exynos4210-trats.dtb \
@@ -329,7 +329,7 @@ diff -ruN u-boot-2015.10/arch/arm/dts/Makefile u-boot-x4412/arch/arm/dts/Makefil
  	exynos5250-spring.dtb \
 diff -ruN u-boot-2015.10/arch/arm/include/asm/mach-types.h u-boot-x4412/arch/arm/include/asm/mach-types.h
 --- u-boot-2015.10/arch/arm/include/asm/mach-types.h	2015-10-20 07:59:38.000000000 +0800
-+++ u-boot-x4412/arch/arm/include/asm/mach-types.h	2020-08-03 22:40:49.401043000 +0800
++++ u-boot-x4412/arch/arm/include/asm/mach-types.h	2020-08-26 06:52:32.781522000 +0800
 @@ -1062,6 +1062,7 @@
  #define MACH_TYPE_MONCH                3453
  #define MACH_TYPE_CURACAO              3454
@@ -340,7 +340,7 @@ diff -ruN u-boot-2015.10/arch/arm/include/asm/mach-types.h u-boot-x4412/arch/arm
  #define MACH_TYPE_TUNA                 3458
 diff -ruN u-boot-2015.10/arch/arm/mach-exynos/clock_init_exynos4.c u-boot-x4412/arch/arm/mach-exynos/clock_init_exynos4.c
 --- u-boot-2015.10/arch/arm/mach-exynos/clock_init_exynos4.c	2015-10-20 07:59:38.000000000 +0800
-+++ u-boot-x4412/arch/arm/mach-exynos/clock_init_exynos4.c	2020-08-25 08:31:39.000000000 +0800
++++ u-boot-x4412/arch/arm/mach-exynos/clock_init_exynos4.c	2020-08-26 06:52:32.785522000 +0800
 @@ -30,16 +30,282 @@
  #include <asm/arch/clk.h>
  #include <asm/arch/clock.h>
@@ -634,7 +634,7 @@ diff -ruN u-boot-2015.10/arch/arm/mach-exynos/clock_init_exynos4.c u-boot-x4412/
  }
 diff -ruN u-boot-2015.10/arch/arm/mach-exynos/dmc_init_exynos4.c u-boot-x4412/arch/arm/mach-exynos/dmc_init_exynos4.c
 --- u-boot-2015.10/arch/arm/mach-exynos/dmc_init_exynos4.c	2015-10-20 07:59:38.000000000 +0800
-+++ u-boot-x4412/arch/arm/mach-exynos/dmc_init_exynos4.c	2020-08-25 00:42:04.000000000 +0800
++++ u-boot-x4412/arch/arm/mach-exynos/dmc_init_exynos4.c	2020-08-30 00:57:40.000000000 +0800
 @@ -28,6 +28,28 @@
  #include "common_setup.h"
  #include "exynos4_setup.h"
@@ -654,9 +654,9 @@ diff -ruN u-boot-2015.10/arch/arm/mach-exynos/dmc_init_exynos4.c u-boot-x4412/ar
 +	.control2 = 0x00000000,
 +	.concontrol = 0x0FFF301A,
 +	.prechconfig = 0xFF000000,
-+	.memcontrol = 0x00312640,
++	.memcontrol = 0x00302640,
 +	.memconfig0 = 0x40C01323,
-+	.memconfig1 = 0x60C01323,
++	.memconfig1 = 0x60C00323, /* not use */
 +	.dll_resync = FORCE_DLL_RESYNC,
 +	.dll_on = DLL_CONTROL_ON,
 +};
@@ -673,18 +673,33 @@ diff -ruN u-boot-2015.10/arch/arm/mach-exynos/dmc_init_exynos4.c u-boot-x4412/ar
  static void phy_control_reset(int ctrl_no, struct exynos4_dmc *dmc)
  {
  	if (ctrl_no) {
-@@ -124,6 +148,10 @@
- 	writel(mem.memconfig0, &dmc->memconfig0);
- 	writel(mem.memconfig1, &dmc->memconfig1);
+@@ -113,8 +137,8 @@
+ 	writel(mem.concontrol, &dmc->concontrol);
  
-+#ifdef CONFIG_X4412
-+	writel(0x8000001F, &dmc->ivcontrol);
-+#endif
+ 	/*
+-	 * Memor Burst length: 8
+-	 * Number of chips: 2
++	 * Memory Burst length: 8
++	 * Number of chips: 1
+ 	 * Memory Bus width: 32 bit
+ 	 * Memory Type: DDR3
+ 	 * Additional Latancy for PLL: 1 Cycle
+@@ -122,7 +146,13 @@
+ 	writel(mem.memcontrol, &dmc->memcontrol);
+ 
+ 	writel(mem.memconfig0, &dmc->memconfig0);
+-	writel(mem.memconfig1, &dmc->memconfig1);
++	/* MEMCONFIG1 is not used */
++	/*writel(mem.memconfig1, &dmc->memconfig1);*/
 +
++#ifdef CONFIG_X4412
++	/* Memory channel interleaving size = 512 byte */
++	writel(0x80000009, &dmc->ivcontrol);
++#endif
+ 
  	/* Config Precharge Policy */
  	writel(mem.prechconfig, &dmc->prechconfig);
- 	/*
-@@ -175,6 +203,7 @@
+@@ -175,6 +205,7 @@
  	 * 0: full_sync
  	 */
  	writel(1, ASYNC_CONFIG);
@@ -692,7 +707,7 @@ diff -ruN u-boot-2015.10/arch/arm/mach-exynos/dmc_init_exynos4.c u-boot-x4412/ar
  #ifdef CONFIG_ORIGEN
  	/* Interleave: 2Bit, Interleave_bit1: 0x15, Interleave_bit0: 0x7 */
  	writel(APB_SFR_INTERLEAVE_CONF_VAL, EXYNOS4_MIU_BASE +
-@@ -204,6 +233,7 @@
+@@ -204,6 +235,7 @@
  		ABP_SFR_SLV_ADDRMAP_CONF_OFFSET);
  #endif
  #endif
@@ -702,7 +717,7 @@ diff -ruN u-boot-2015.10/arch/arm/mach-exynos/dmc_init_exynos4.c u-boot-x4412/ar
  	dmc_init(dmc);
 diff -ruN u-boot-2015.10/arch/arm/mach-exynos/Kconfig u-boot-x4412/arch/arm/mach-exynos/Kconfig
 --- u-boot-2015.10/arch/arm/mach-exynos/Kconfig	2015-10-20 07:59:38.000000000 +0800
-+++ u-boot-x4412/arch/arm/mach-exynos/Kconfig	2020-08-03 22:40:49.405043000 +0800
++++ u-boot-x4412/arch/arm/mach-exynos/Kconfig	2020-08-26 06:52:32.785522000 +0800
 @@ -19,6 +19,10 @@
  	bool "Exynos4412 Origen board"
  	select SUPPORT_SPL
@@ -724,12 +739,14 @@ diff -ruN u-boot-2015.10/arch/arm/mach-exynos/Kconfig u-boot-x4412/arch/arm/mach
  source "board/samsung/arndale/Kconfig"
 diff -ruN u-boot-2015.10/arch/arm/mach-exynos/lowlevel_init.c u-boot-x4412/arch/arm/mach-exynos/lowlevel_init.c
 --- u-boot-2015.10/arch/arm/mach-exynos/lowlevel_init.c	2015-10-20 07:59:38.000000000 +0800
-+++ u-boot-x4412/arch/arm/mach-exynos/lowlevel_init.c	2020-08-25 08:30:39.000000000 +0800
-@@ -220,7 +220,8 @@
++++ u-boot-x4412/arch/arm/mach-exynos/lowlevel_init.c	2020-08-30 00:54:36.000000000 +0800
+@@ -219,8 +219,9 @@
+ 		exynos_pinmux_config(PERIPH_ID_UART3, PINMUX_FLAG_NONE);
  		debug_uart_init();
  #endif
- 		mem_ctrl_init(actions & DO_MEM_RESET);
+-		mem_ctrl_init(actions & DO_MEM_RESET);
 -		tzpc_init();
++		mem_ctrl_init(actions & DO_MEM_RESET);		
 +		/* Delete tzpc_init function for jumping u-bbot from spl */
 +		/*tzpc_init();*/
  	}
@@ -737,7 +754,7 @@ diff -ruN u-boot-2015.10/arch/arm/mach-exynos/lowlevel_init.c u-boot-x4412/arch/
  	return actions & DO_WAKEUP;
 diff -ruN u-boot-2015.10/arch/arm/mach-exynos/Makefile u-boot-x4412/arch/arm/mach-exynos/Makefile
 --- u-boot-2015.10/arch/arm/mach-exynos/Makefile	2015-10-20 07:59:38.000000000 +0800
-+++ u-boot-x4412/arch/arm/mach-exynos/Makefile	2020-08-03 22:40:49.405043000 +0800
++++ u-boot-x4412/arch/arm/mach-exynos/Makefile	2020-08-26 06:52:32.785522000 +0800
 @@ -12,7 +12,10 @@
  ifdef CONFIG_SPL_BUILD
  obj-$(CONFIG_EXYNOS5)	+= clock_init_exynos5.o
@@ -752,7 +769,7 @@ diff -ruN u-boot-2015.10/arch/arm/mach-exynos/Makefile u-boot-x4412/arch/arm/mac
  endif
 diff -ruN u-boot-2015.10/arch/arm/mach-exynos/spl_boot.c u-boot-x4412/arch/arm/mach-exynos/spl_boot.c
 --- u-boot-2015.10/arch/arm/mach-exynos/spl_boot.c	2015-10-20 07:59:38.000000000 +0800
-+++ u-boot-x4412/arch/arm/mach-exynos/spl_boot.c	2020-08-25 08:31:12.000000000 +0800
++++ u-boot-x4412/arch/arm/mach-exynos/spl_boot.c	2020-08-26 06:52:32.785522000 +0800
 @@ -185,7 +185,7 @@
  {
  	unsigned int bootmode = BOOT_MODE_OM;
@@ -788,7 +805,7 @@ diff -ruN u-boot-2015.10/arch/arm/mach-exynos/spl_boot.c u-boot-x4412/arch/arm/m
  void memzero(void *s, size_t n)
 diff -ruN u-boot-2015.10/arch/arm/mach-exynos/x4412_setup.h u-boot-x4412/arch/arm/mach-exynos/x4412_setup.h
 --- u-boot-2015.10/arch/arm/mach-exynos/x4412_setup.h	1970-01-01 08:00:00.000000000 +0800
-+++ u-boot-x4412/arch/arm/mach-exynos/x4412_setup.h	2020-08-03 22:40:49.405043000 +0800
++++ u-boot-x4412/arch/arm/mach-exynos/x4412_setup.h	2020-08-26 06:52:32.789522000 +0800
 @@ -0,0 +1,227 @@
 +/*
 + * Copyright (C) 2014 Samsung Electronics
@@ -1019,7 +1036,7 @@ diff -ruN u-boot-2015.10/arch/arm/mach-exynos/x4412_setup.h u-boot-x4412/arch/ar
 +#endif /*__X4412_SETUP__ */
 diff -ruN u-boot-2015.10/board/samsung/x4412/Kconfig u-boot-x4412/board/samsung/x4412/Kconfig
 --- u-boot-2015.10/board/samsung/x4412/Kconfig	1970-01-01 08:00:00.000000000 +0800
-+++ u-boot-x4412/board/samsung/x4412/Kconfig	2020-08-03 22:40:49.405043000 +0800
++++ u-boot-x4412/board/samsung/x4412/Kconfig	2020-08-26 06:52:32.789522000 +0800
 @@ -0,0 +1,12 @@
 +if TARGET_X4412
 +
@@ -1035,7 +1052,7 @@ diff -ruN u-boot-2015.10/board/samsung/x4412/Kconfig u-boot-x4412/board/samsung/
 +endif
 diff -ruN u-boot-2015.10/board/samsung/x4412/Makefile u-boot-x4412/board/samsung/x4412/Makefile
 --- u-boot-2015.10/board/samsung/x4412/Makefile	1970-01-01 08:00:00.000000000 +0800
-+++ u-boot-x4412/board/samsung/x4412/Makefile	2020-08-05 07:32:12.000000000 +0800
++++ u-boot-x4412/board/samsung/x4412/Makefile	2020-08-26 06:52:32.789522000 +0800
 @@ -0,0 +1,12 @@
 +#
 +# Copyright (C) 2011 Samsung Electronics
@@ -1051,7 +1068,7 @@ diff -ruN u-boot-2015.10/board/samsung/x4412/Makefile u-boot-x4412/board/samsung
 +endif
 diff -ruN u-boot-2015.10/board/samsung/x4412/x4412.c u-boot-x4412/board/samsung/x4412/x4412.c
 --- u-boot-2015.10/board/samsung/x4412/x4412.c	1970-01-01 08:00:00.000000000 +0800
-+++ u-boot-x4412/board/samsung/x4412/x4412.c	2020-08-03 22:40:49.409043000 +0800
++++ u-boot-x4412/board/samsung/x4412/x4412.c	2020-08-26 06:52:32.789522000 +0800
 @@ -0,0 +1,38 @@
 +/*
 + * Copyright (C) 2011 Samsung Electronics
@@ -1093,7 +1110,7 @@ diff -ruN u-boot-2015.10/board/samsung/x4412/x4412.c u-boot-x4412/board/samsung/
 +#endif
 diff -ruN u-boot-2015.10/configs/x4412_defconfig u-boot-x4412/configs/x4412_defconfig
 --- u-boot-2015.10/configs/x4412_defconfig	1970-01-01 08:00:00.000000000 +0800
-+++ u-boot-x4412/configs/x4412_defconfig	2020-08-03 22:40:49.409043000 +0800
++++ u-boot-x4412/configs/x4412_defconfig	2020-08-26 06:52:32.793522000 +0800
 @@ -0,0 +1,16 @@
 +CONFIG_ARM=y
 +CONFIG_ARCH_EXYNOS=y
@@ -1113,7 +1130,7 @@ diff -ruN u-boot-2015.10/configs/x4412_defconfig u-boot-x4412/configs/x4412_defc
 +CONFIG_DM_USB=y
 diff -ruN u-boot-2015.10/drivers/serial/serial_s5p.c u-boot-x4412/drivers/serial/serial_s5p.c
 --- u-boot-2015.10/drivers/serial/serial_s5p.c	2015-10-20 07:59:38.000000000 +0800
-+++ u-boot-x4412/drivers/serial/serial_s5p.c	2020-08-03 22:40:49.409043000 +0800
++++ u-boot-x4412/drivers/serial/serial_s5p.c	2020-08-26 06:52:32.793522000 +0800
 @@ -62,12 +62,14 @@
  static void __maybe_unused s5p_serial_init(struct s5p_uart *uart)
  {
@@ -1133,7 +1150,7 @@ diff -ruN u-boot-2015.10/drivers/serial/serial_s5p.c u-boot-x4412/drivers/serial
  static void __maybe_unused s5p_serial_baud(struct s5p_uart *uart, uint uclk,
 diff -ruN u-boot-2015.10/include/configs/x4412.h u-boot-x4412/include/configs/x4412.h
 --- u-boot-2015.10/include/configs/x4412.h	1970-01-01 08:00:00.000000000 +0800
-+++ u-boot-x4412/include/configs/x4412.h	2020-08-25 00:39:39.000000000 +0800
++++ u-boot-x4412/include/configs/x4412.h	2020-08-26 06:52:32.793522000 +0800
 @@ -0,0 +1,137 @@
 +/* Copyright (C) 2011 Samsung Electronics
 + *
@@ -1274,7 +1291,7 @@ diff -ruN u-boot-2015.10/include/configs/x4412.h u-boot-x4412/include/configs/x4
 +#endif	/* __CONFIG_H */
 diff -ruN u-boot-2015.10/Makefile u-boot-x4412/Makefile
 --- u-boot-2015.10/Makefile	2015-10-20 07:59:38.000000000 +0800
-+++ u-boot-x4412/Makefile	2020-08-03 22:40:49.409043000 +0800
++++ u-boot-x4412/Makefile	2020-08-26 06:52:32.793522000 +0800
 @@ -238,8 +238,8 @@
  #########################################################################
  
@@ -1334,7 +1351,7 @@ diff -ruN u-boot-2015.10/Makefile u-boot-x4412/Makefile
  
 diff -ruN u-boot-2015.10/tools/Makefile u-boot-x4412/tools/Makefile
 --- u-boot-2015.10/tools/Makefile	2015-10-20 07:59:38.000000000 +0800
-+++ u-boot-x4412/tools/Makefile	2020-08-03 22:40:49.413043000 +0800
++++ u-boot-x4412/tools/Makefile	2020-08-26 06:52:32.793522000 +0800
 @@ -55,6 +55,10 @@
  hostprogs-y += dumpimage mkimage
  hostprogs-$(CONFIG_FIT_SIGNATURE) += fit_info fit_check_sign
@@ -1356,7 +1373,7 @@ diff -ruN u-boot-2015.10/tools/Makefile u-boot-x4412/tools/Makefile
  ifdtool-objs := $(LIBFDT_OBJS) ifdtool.o
 diff -ruN u-boot-2015.10/tools/mkbl1.c u-boot-x4412/tools/mkbl1.c
 --- u-boot-2015.10/tools/mkbl1.c	1970-01-01 08:00:00.000000000 +0800
-+++ u-boot-x4412/tools/mkbl1.c	2020-08-03 22:40:49.413043000 +0800
++++ u-boot-x4412/tools/mkbl1.c	2020-08-26 06:52:32.793522000 +0800
 @@ -0,0 +1,1044 @@
 +#include <stdio.h>
 +
@@ -2404,7 +2421,7 @@ diff -ruN u-boot-2015.10/tools/mkbl1.c u-boot-x4412/tools/mkbl1.c
 +}
 diff -ruN u-boot-2015.10/tools/mkbl2.c u-boot-x4412/tools/mkbl2.c
 --- u-boot-2015.10/tools/mkbl2.c	1970-01-01 08:00:00.000000000 +0800
-+++ u-boot-x4412/tools/mkbl2.c	2020-08-03 22:40:49.417043000 +0800
++++ u-boot-x4412/tools/mkbl2.c	2020-08-26 06:52:32.797522000 +0800
 @@ -0,0 +1,83 @@
 +/*
 +请在Linux/GNU环境下编译此文件：
