@@ -1,0 +1,12 @@
+if TARGET_X4412
+
+config SYS_BOARD
+	default "x4412"
+
+config SYS_VENDOR
+	default "samsung"
+
+config SYS_CONFIG_NAME
+	default "x4412"
+
+endif
